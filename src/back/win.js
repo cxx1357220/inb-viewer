@@ -1,0 +1,203 @@
+import {
+    BrowserWindow,
+    ipcMain,
+    dialog,
+    Tray,
+    Menu,
+    app
+} from 'electron'
+const appPath = app.getAppPath();
+console.log('appPath: ', appPath);
+
+const path = require('path');
+import {
+    createProtocol
+} from 'vue-cli-plugin-electron-builder/lib'
+let tray = null // 在外面创建tray变量，防止被自动删除，导致图标自动消失
+
+const setTray = () => {
+
+    tray = new Tray(path.join(appPath,
+        process.env.NODE_ENV !== 'production' ? '../public' : '', 'icon.ico'))
+    // console.log('tray: ', tray);
+
+    // 自定义托盘图标的内容菜单
+    const contextMenu = Menu.buildFromTemplate([{
+        label: '帮助',
+        click: function () {
+            createWindow('help')
+        }
+    }, {
+        label: '退出',
+        click: function () {
+            app.quit()
+        }
+    }])
+
+    tray.setToolTip('viewer') // 设置鼠标指针在托盘图标上悬停时显示的文本
+    tray.setContextMenu(contextMenu) // 设置图标的内容菜单
+    // 点击托盘图标，显示主窗口
+    tray.on("click", () => {
+        winMap['main'].show();
+        winMap['main'].setSkipTaskbar(false)
+    })
+}
+
+let winMap = {} //新窗口对象
+const winSend = (win, key, ...params) => {
+    try {
+        winMap[win].webContents.send(key, ...params)
+    } catch (error) {
+        // console.log('error: ', error);
+    }
+}
+let {
+    cutData
+} = require('./child')
+let {
+    compressData
+} = require('./compress')
+let {
+    copyData
+} = require('./copy')
+let {
+    repkgData
+} = require('./repkg')
+let {
+    whisperData
+} = require('./whisper')
+let {
+    newData
+} = require('./newProject')
+
+let {
+    visits
+} = require('./re')
+
+/**
+ * 创建窗口
+ */
+async function createWindow(winKey = 'main', obj = {}) {
+    if (winKey == 'content') {
+        let r = visits(obj)
+        if (r == 'error') {
+            return false
+        }
+        winKey = obj.basePath
+        obj.winKey = winKey
+    }
+
+    if (winMap[winKey]) {
+        winMap[winKey].focus()
+        return false
+    }
+    // Create the browser window.
+    let win = new BrowserWindow({
+        width: 800,
+        height: 600,
+        title: (obj.title || winKey) + ' - viewer',
+        webPreferences: {
+            nodeIntegration: true,
+            contextIsolation: false,
+            webSecurity: false,
+        }
+    })
+
+
+
+    if (process.env.WEBPACK_DEV_SERVER_URL) {
+        // Load the url of the dev server if in development mode
+        await win.loadURL(process.env.WEBPACK_DEV_SERVER_URL)
+        // if (!process.env.IS_TEST) win.webContents.openDevTools()
+    } else {
+        createProtocol('app')
+        // Load the index.html when not in development
+        await win.loadURL('app://./index.html')
+    }
+
+    if (winKey == 'main') {
+        win.webContents.send('home')
+        setTray()
+        win.on('close', (e) => {
+            e.preventDefault(); // 阻止退出程序
+            win.setSkipTaskbar(true) // 取消任务栏显示
+            win.hide(); // 隐藏主程序窗口
+        })
+    } else if (winKey == 'help') {
+        win.webContents.send('help')
+        win.on('close', (e) => {
+            delete winMap[winKey]
+        })
+    } else {
+        let cutStateMap = {}
+        cutData.list.forEach(list => {
+            if (winKey == list[0].basePath) {
+                cutStateMap[list[0].filePath] = 'waiting'
+            }
+        })
+        obj.cutStateMap = cutStateMap
+        win.webContents.send('newWindow', obj)
+
+        win.on('close', (e) => {
+            delete winMap[winKey]
+        })
+    }
+    winMap[winKey] = win
+
+}
+
+/**
+ * 新窗口打开文件(视频,图片)
+ * @param {*} event 
+ * @param {*} obj 
+ */
+const open = (event, obj) => {
+    createWindow('content', obj)
+
+}
+ipcMain.on('open', open)
+app.on('before-quit', async (e) => {
+    if (whisperData.state || repkgData.state || copyData.state || compressData.state || cutData.state || newData.state) {
+        let str = '任务'
+        whisperData.state && (str += ' 字幕解析 ')
+        repkgData.state && (str += ' pkg解压 ')
+        copyData.state && (str += ' 复制 ')
+        compressData.state && (str += ' 视频压缩 ')
+        cutData.state && (str += ' 视频剪切 ')
+        newData.state && (str += ' 新建 ')
+        str += '正在进行中，是否终止'
+        let a = dialog.showMessageBoxSync({
+            title: "exit", //信息提示框标题
+            message: str, //信息提示框内容
+            buttons: ["是", "否"], //下方显示的按钮
+            noLink: true, //win下的样式
+            type: "warning", //图标类型
+            cancelId: 1 //点击x号关闭返回值
+        });
+        if (a == 0) {
+            app.exit()
+        } else {
+            e.preventDefault()
+        }
+    } else {
+        app.exit()
+    }
+})
+
+const gotTheLock = app.requestSingleInstanceLock()
+if (!gotTheLock) {
+    app.exit()
+} else {
+    app.on('second-instance', (event, commandLine, workingDirectory) => {
+        // 当运行第二个实例时,将会聚焦到myWindow这个窗口
+        winMap['main'].show();
+        winMap['main'].setSkipTaskbar(false)
+    })
+}
+
+
+export {
+    winMap,
+    winSend,
+    createWindow
+}
