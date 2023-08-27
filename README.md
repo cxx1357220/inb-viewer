@@ -29,12 +29,12 @@ build
 npm run electron:build
 ```
 
-要是 process.env.FLUENTFFMPEG_COV 报错，狠心点直接把
+> 要是 process.env.FLUENTFFMPEG_COV 报错，狠心点直接把
 module.exports = process.env.FLUENTFFMPEG_COV ? require('./lib-cov/fluent-ffmpeg') : require('./lib/fluent-ffmpeg');
 这语句改了
 <https://github.com/fluent-ffmpeg/node-fluent-ffmpeg/issues/573>
 
-功能实现过程 
+### 功能实现过程 
 - 视频查看
 
 - 排序，查找
@@ -71,7 +71,7 @@ module.exports = process.env.FLUENTFFMPEG_COV ? require('./lib-cov/fluent-ffmpeg
 
 - （future） 减少使用ipcMain.on，方法弄到web去，降低内存占用
 
-- ~~qt封装ffplay加上gui ~~ 作为一个c小白，bug太多了，功能还没mpv强大，文件大小却跟mpv差不多，不能忍
+- ~~qt封装ffplay加上gui~~ 作为一个c小白，bug太多了，功能还没mpv强大，文件大小却跟mpv差不多，不能忍
 
 - ~~引入vlc~~引入mpv播放器，支持更多视频格式
 
