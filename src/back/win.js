@@ -156,7 +156,7 @@ const open = (event, obj) => {
 
 }
 ipcMain.on('open', open)
-app.on('before-quit', async (e) => {
+app.on('before-quit', (e) => {
     if (whisperData.state || repkgData.state || copyData.state || compressData.state || cutData.state || newData.state) {
         let str = '任务'
         whisperData.state && (str += ' 字幕解析 ')

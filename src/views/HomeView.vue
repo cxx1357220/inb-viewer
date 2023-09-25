@@ -80,6 +80,10 @@
           </el-input>
           <el-button size="mini" plain icon="el-icon-setting" @click="compressDrawer = true">压缩视频设置</el-button>
           <el-button size="mini" plain icon="el-icon-setting" @click="whisperDrawer = true">解析字幕设置</el-button>
+          <el-input size="mini" v-model="wallpaperPath" style="width: 280px;margin-right: 10px;"
+            placeholder="wallpaper路径"><el-button size="mini" slot="prepend" @click="setPath('file', 'wallpaperPath')"
+              icon="el-icon-folder">选择wallpaper路径</el-button>
+          </el-input>
         </el-form-item>
         <el-form-item>
           <span slot="label">功能：</span>
@@ -121,64 +125,10 @@
             <i class="el-icon-circle-plus-outline"></i>
           </div>
         </div>
-        <div v-for="obj, i in showList" :key="obj.jsonPath" @dblclick="open(obj)" v-loading="newStateMap[obj.jsonPath]"
+        <div v-for="obj, i in showList" :key="obj.jsonPath" v-loading="newStateMap[obj.jsonPath]"
           :element-loading-text="newStateMap[obj.jsonPath]" element-loading-spinner="el-icon-loading">
-          <lazy-component class="content-detail">
-
-            <div :class="['img-box', obj.type]" @click="open(obj)">
-              <!-- <img v-lazy="obj.img" alt="图片丢失" /> -->
-              <img v-urlCache="obj.img" alt="图片丢失" @load="cacheImg(obj.img)" />
-              <!-- el没有监听窗口大小变化 -->
-              <!-- <el-image :src="obj.img" lazy></el-image> -->
-              <i :class="[obj.type == 'video' ? 'el-icon-video-play' : 'el-icon-document']"></i>
-              <!-- <div class="visits" >
-                <i class="el-icon-view"></i>
-               
-              </div> -->
-              <el-button v-if="obj.visits" type="text" icon="el-icon-view" disabled> {{ obj.visits }}</el-button>
-
-            </div>
-            <div class="detail-box">
-              <div class="icons">
-                <p @click="openPath(obj)" title="资源管理器内打开"><i class="el-icon-folder-opened"></i></p>
-                <p @click="rmPath(obj, i)" title="删除"><i class="el-icon-delete"></i></p>
-              </div>
-              <div class="stars">
-                <b v-for="idx in [0, 1, 2, 3, 4]" :class="idx < obj.star ? 'star' : 'unstar'"
-                  @click="reStar(obj, i, idx)"></b>
-              </div>
-              <!-- <span>{{ obj.files }}</span> -->
-              <p @click="reDetail(obj)" title="detail">{{ obj.title || '-----' }}</p>
-
-              <!-- <p @click="add(obj,'cn-')">cn-</p>
-        <p @click="add(obj,'eu-')">eu-</p>
-        <p @click="add(obj,'jp-')">jp-</p> -->
-              <label>{{ obj.file }}</label>
-              <i v-size="obj.allSize"></i>
-              <span v-date="obj"></span>
-
-              <section v-if="obj.type == 'video'">
-                <stateButton v-if="compressStateMap[obj.jsonPath]" :state="compressStateMap[obj.jsonPath]"></stateButton>
-                <el-button size="mini" v-else @click="compress(obj)">压缩视频</el-button>
-              </section>
-              <section v-if="obj.type == 'video'">
-                <stateButton v-if="whisperStateMap[obj.jsonPath]" :state="whisperStateMap[obj.jsonPath]"></stateButton>
-                <el-button size="mini" v-else @click="whisper(obj)">制作字幕</el-button>
-              </section>
-              <section v-if="obj.type == 'scene'">
-                <stateButton v-if="repkgStateMap[obj.jsonPath]" :state="repkgStateMap[obj.jsonPath]"></stateButton>
-                <el-button v-else size="mini" @click="repkg(obj)">解压pkg</el-button>
-
-              </section>
-              <section v-if="(obj.type == 'scene' || obj.type == 'video') && hasWallpaper">
-                <el-button size="mini" @click="runWallpaper(obj.jsonPath)">wallpaper打开</el-button>
-              </section>
-              <section>
-                <stateButton v-if="copyStateMap[obj.jsonPath]" :state="copyStateMap[obj.jsonPath]"></stateButton>
-                <el-button v-else size="mini" @click="copyDir(obj)">复制</el-button>
-              </section>
-            </div>
-          </lazy-component>
+          <block :obj="obj" @reDetail="reDetail" @runWallpaper="runWallpaper" @copyDir="copyDir" @repkg="repkg"
+            @whisper="whisper" @compress="compress" @changeObj="changeObj" @cacheImg="cacheImg"></block>
         </div>
 
 
@@ -316,13 +266,12 @@ window.fs = require('fs')
 window.nodePath = require('path')
 const ipcRenderer = require('electron').ipcRenderer;
 const md5 = require('md5');
+import block from '@/components/block.vue';
 
-import stateButton from '@/components/stateButton.vue';
 
 var QRCode = require('qrcode')
 export default {
   name: 'HomeView',
-  components: { stateButton },
   data() {
     return {
       loading: false,
@@ -337,11 +286,8 @@ export default {
       serverState: false,
       shareUrl: '',
       copyVal: '',
-      copyStateMap: {},
       compressDrawer: false,
       compressSet: {},
-      compressStateMap: {},
-      repkgStateMap: {},
       compressSizeList: [{
         value: '1920*1080'
       }, {
@@ -364,7 +310,6 @@ export default {
         value: '.flv'
       }],
       openFolderPathMap: {},
-      whisperStateMap: {},
       whisperDrawer: false,
       whisperSet: { type: ['-ovtt'], model: '' },
       modelList: [],
@@ -376,10 +321,6 @@ export default {
       },
       downPercentMap: {},
       languageList: [
-        {
-          "label": "English",
-          "value": "en"
-        },
         {
           "label": "Arabic",
           "value": "ar"
@@ -640,27 +581,12 @@ export default {
       tags: ['Music'],
       filterTag: '',
       filterFolder: '',
-      hasWallpaper: false,
+      wallpaperPath: '',
       imgCachePath: ''
     }
   },
+  components: { block },
   directives: {
-    date: {
-      bind(el, binding) {
-        try {
-          el.innerHTML = new Date(binding.value.date).toISOString().split('T')[0];
-        } catch (error) {
-          console.log(binding.value);
-        }
-      },
-      update(el, binding) {
-        try {
-          el.innerHTML = new Date(binding.value.date).toISOString().split('T')[0];
-        } catch (error) {
-          console.log(binding.value);
-        }
-      },
-    },
     size: {
       bind(el, binding) {
         try {
@@ -685,38 +611,20 @@ export default {
         }
       },
     },
-    urlCache: {
-      bind(el, binding) {
-        try {
-          let cache = localStorage.getItem(binding.value.split('?')[0])
-          if (cache) {
-            el.src = cache + '?cache=true&rand=' + Math.random();
-          } else {
-            el.src = binding.value
-          }
 
-        } catch (error) {
-          // console.log(binding.value);
-        }
-      },
-      update(el, binding) {
-        let cache = localStorage.getItem(binding.value.split('?')[0])
-        if (cache) {
-          el.src = cache + '?cache=true&rand=' + Math.random();
-        } else {
-          el.src = binding.value
-        }
-      },
-    },
   },
   watch: {
     filterVal(n) {
-      if(n=='665533'){
+      if (n == '665533') {
         ipcRenderer.send('openTool')
       }
     },
     copyVal(n) {
       localStorage.setItem('copyVal', n)
+    },
+
+    wallpaperPath(n) {
+      localStorage.setItem('wallpaperPath', n)
     },
     showList: {
       deep: true,
@@ -734,8 +642,17 @@ export default {
     }
   },
   created() {
+    window.onon = () => {
+
+      console.log(this.$store.state);
+      this.$store.commit('setRepkgStateMap', ["D:\\Steam\\steamapps\\workshop\\content\\431960\\1350400986\\project.json", Math.random() * 1000])
+    }
     sessionStorage.getItem('imgCachePath') && (this.imgCachePath = sessionStorage.getItem('imgCachePath'))
     this.copyVal = localStorage.getItem('copyVal') || ''
+    this.wallpaperPath = localStorage.getItem('wallpaperPath') || ''
+    if (!this.wallpaperPath) {
+      ipcRenderer.send('wallpaperPath')
+    }
     this.tags = localStorage.getItem('tags') ? JSON.parse(localStorage.getItem('tags')) : ['Music']
     let old = localStorage.getItem('allDataMap')
     if (old) {
@@ -758,16 +675,16 @@ export default {
     })
 
     ipcRenderer.on('percent', (e, obj) => {
-      this.$set(this.compressStateMap, obj.jsonPath, obj.percent)
+      this.$store.commit('setCompressStateMap', [obj.jsonPath, obj.percent])
     })
     ipcRenderer.on('whisperPercent', (e, obj) => {
-      this.$set(this.whisperStateMap, obj.jsonPath, obj.percent)
+      this.$store.commit('setWhisperStateMap', [obj.jsonPath, obj.percent])
     })
     ipcRenderer.on('copyPercent', (e, obj) => {
-      this.$set(this.copyStateMap, obj.jsonPath, obj.percent)
+      this.$store.commit('setCopyStateMap', [obj.jsonPath, obj.percent])
     })
     ipcRenderer.on('repkgPercent', (e, obj) => {
-      this.$set(this.repkgStateMap, obj.jsonPath, obj.percent)
+      this.$store.commit('setRepkgStateMap', [obj.jsonPath, obj.percent])
     })
     ipcRenderer.on('newPercent', (e, obj) => {
       this.$set(this.newStateMap, obj.jsonPath, obj.percent)
@@ -869,8 +786,8 @@ export default {
     ipcRenderer.on('log', (e, ...msg) => {
       console.warn(...msg);
     })
-    ipcRenderer.on('hasWallpaper', (e, boolean) => {
-      this.hasWallpaper = boolean
+    ipcRenderer.on('wallpaperPath', (e, str) => {
+      this.wallpaperPath = str
     })
 
     ipcRenderer.on('imgCachePath', (e, string) => {
@@ -882,89 +799,29 @@ export default {
 
   },
   methods: {
-    cacheImg(url) {
-      const souceUrl = url.split('?')[0]
-      if (url.indexOf('?cache=true') == -1 && !localStorage.getItem(souceUrl)) {
-        let to = nodePath.join(this.imgCachePath, md5(souceUrl))
-        fs.copyFile(decodeURIComponent(souceUrl), decodeURIComponent(to), (err) => {
-          if (err) {
-            console.log('err: ', err);
-          } else {
-            localStorage.setItem(souceUrl, to)
-          }
-        })
-      }
 
-    },
     clearState() {
-      for (const key in this.copyStateMap) {
-        if (this.copyStateMap[key] == 'done' || this.copyStateMap[key] == 'error') {
-          this.$set(this.copyStateMap, key, '')
-          delete this.copyStateMap[key];
-        }
-      }
-      for (const key in this.repkgStateMap) {
-        if (this.repkgStateMap[key] == 'done' || this.repkgStateMap[key] == 'error') {
-          this.$set(this.repkgStateMap, key, '')
-          delete this.repkgStateMap[key];
-        }
-      }
-      for (const key in this.whisperStateMap) {
-        if (this.whisperStateMap[key] == 'done' || this.whisperStateMap[key] == 'error') {
-          this.$set(this.whisperStateMap, key, '')
-          delete this.whisperStateMap[key];
-        }
-      }
-      for (const key in this.compressStateMap) {
-        if (this.compressStateMap[key] == 'done' || this.compressStateMap[key] == 'error') {
-          this.$set(this.compressStateMap, key, '')
-          delete this.compressStateMap[key];
-        }
-      }
-
-      for (const key in this.newStateMap) {
-        if (this.newStateMap[key] == 'done' || this.newStateMap[key] == 'error') {
-          this.$set(this.newStateMap, key, '')
-          delete this.newStateMap[key];
-        }
-      }
-
-      // this.copyStateMap
-      // this.repkgStateMap
-      // this.whisperStateMap
-      // this.compressStateMap
+      this.$store.commit('clear')
     },
     inputFile() {
       this.loading = true
       ipcRenderer.send('readJSON')
     },
-    open(obj) {
-      this.showList.some((o, i) => {
-        if (o.jsonPath == obj.jsonPath) {
-          obj.visits ? obj.visits++ : (obj.visits = 1)
-          this.$set(this.showList[i], 'visits', obj.visits)
-          return true
-        } else {
-          return false
-        }
-      })
-      this.allDataMap[obj.jsonPath]['visits'] = obj.visits
-      localStorage.setItem('allDataMap', JSON.stringify(this.allDataMap))
-      ipcRenderer.send('open', obj)
-    },
-    openPath(obj) {
-      ipcRenderer.send('openPath', obj.jsonPath)
-    },
-    rmPath(obj, i) {
-      this.$confirm('rm path：' + obj.title + '?')
-        .then(_ => {
-          ipcRenderer.send('rmPath', obj)
-          this.showList.splice(i, 1)
-          delete this.allDataMap[obj.jsonPath]
-          localStorage.setItem('allDataMap', JSON.stringify(this.allDataMap))
-        })
-        .catch(_ => { });
-    },
+
+
+    cacheImg(url) {
+            const souceUrl = url.split('?')[0]
+            if (url.indexOf('?cache=true') == -1 && !localStorage.getItem(souceUrl)) {
+                let to = nodePath.join(this.imgCachePath, md5(souceUrl))
+                fs.copyFile(decodeURIComponent(souceUrl), decodeURIComponent(to), (err) => {
+                    if (err) {
+                        console.log('err: ', err);
+                    } else {
+                        localStorage.setItem(souceUrl, to)
+                    }
+                })
+            }
+        },
     async dataCount() {
       ipcRenderer.send('openTool')
       await new Promise(res => {
@@ -996,7 +853,7 @@ export default {
         delete this.allDataMap[key];
       }
       this.showList.length = 0
-      this.showList.splice(0, this.showList.length)
+      this.showList.splice(0, 0)
       for (let key in this.openFolderPathMap) {
         delete this.openFolderPathMap[key];
       }
@@ -1010,35 +867,23 @@ export default {
       }
 
     },
-    reStar(obj, i, idx) {
-      obj.star = idx + 1
-      this.$set(this.showList, i, obj)
-      this.allDataMap[obj.jsonPath] = obj
+
+
+    changeObj(obj, type) {
+      if (type == 'delete') {
+        this.showList.some((o, i) => {
+          if (o.jsonPath == obj.jsonPath) {
+            this.showList.splice(i, 1)
+            return true
+          } else {
+            return false
+          }
+        })
+        delete this.allDataMap[obj.jsonPath]
+      } else {
+        this.allDataMap[obj.jsonPath] = obj
+      }
       localStorage.setItem('allDataMap', JSON.stringify(this.allDataMap))
-      ipcRenderer.send('reStar', obj)
-    },
-    add(obj, value) {
-      obj.newTitle = value + obj.title
-      ipcRenderer.send('reTitle', obj)
-    },
-    reTitle(obj) {
-      this.$prompt('', '修改title', {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        inputValue: obj.title,
-        inputPattern: /\S+/,
-        inputErrorMessage: 'Not null'
-      }).then(({ value }) => {
-        if (value != null && value != "") {
-          obj.newTitle = value
-          ipcRenderer.send('reTitle', obj)
-        }
-      }).catch(() => {
-        this.$message({
-          type: 'info',
-          message: 'cancel'
-        });
-      });
     },
     reDetail(obj) {
       this.detail = JSON.parse(JSON.stringify(obj));
@@ -1136,24 +981,40 @@ export default {
     },
 
     repkg(obj) {
-      this.$set(this.repkgStateMap, obj.jsonPath, 'waiting')
+      this.$store.commit('setRepkgStateMap', [obj.jsonPath, 'waiting'])
       ipcRenderer.send('repkg', obj)
     },
     repkgList() {
       let filter = [];
       this.showList.forEach(obj => {
         if (obj.type == 'scene') {
-          this.$set(this.repkgStateMap, obj.jsonPath, 'waiting')
+          this.$store.commit('setRepkgStateMap', [obj.jsonPath, 'waiting'])
           filter.push(obj)
         }
       })
       ipcRenderer.send('repkgList', filter)
     },
     compress(obj) {
-      this.$set(this.compressStateMap, obj.jsonPath, 'waiting')
+      if (!this.compressSet.type && !this.compressSet.vcodec && !this.compressSet.size) {
+        this.compressDrawer = true
+        this.$message({
+          type: 'warning',
+          message: '未选择压缩设置'
+        });
+        return false
+      }
+      this.$store.commit('setCompressStateMap', [obj.jsonPath, 'waiting'])
       ipcRenderer.send('compress', obj, this.compressSet)
     },
     compressList() {
+      if (!this.compressSet.type && !this.compressSet.vcodec && !this.compressSet.size) {
+        this.compressDrawer = true
+        this.$message({
+          type: 'warning',
+          message: '未选择压缩设置'
+        });
+        return false
+      }
       this.$confirm('', '压缩显示的所有视频', {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
@@ -1162,7 +1023,7 @@ export default {
         let filter = [];
         this.showList.forEach(obj => {
           if (obj.type == 'video') {
-            this.$set(this.compressStateMap, obj.jsonPath, 'waiting')
+            this.$store.commit('setCompressStateMap', [obj.jsonPath, 'waiting'])
             filter.push(obj)
           }
         })
@@ -1183,7 +1044,7 @@ export default {
         });
         return false
       }
-      this.$set(this.copyStateMap, obj.jsonPath, 'waiting')
+      this.$store.commit('setCopyStateMap', [obj.jsonPath, 'waiting'])
       ipcRenderer.send('copyDir', obj, this.copyVal)
     },
     xcopyList() {
@@ -1196,7 +1057,7 @@ export default {
       }
       let list = this.showList
       list.forEach(obj => {
-        this.$set(this.copyStateMap, obj.jsonPath, 'waiting')
+        this.$store.commit('setCopyStateMap', [obj.jsonPath, 'waiting'])
       })
       ipcRenderer.send('xcopyList', list, this.copyVal)
     },
@@ -1216,7 +1077,7 @@ export default {
             delete this.allDataMap[obj.jsonPath]
           })
           this.showList.length = 0;
-          this.showList.splice(0, this.showList.length)
+          this.showList.splice(0, 0)
           localStorage.setItem('allDataMap', JSON.stringify(this.allDataMap))
         } else {
           this.$message({
@@ -1249,11 +1110,8 @@ export default {
       console.log('out: ', out);
     },
     whisper(obj) {
-      this.$set(this.whisperStateMap, obj.jsonPath, 'waiting')
+      this.$store.commit('setWhisperStateMap', [obj.jsonPath, 'waiting'])
       ipcRenderer.send('whisperCpp', obj, this.whisperSet)
-      // whisperCpp(obj, this.whisperSet, (obj) => {
-      //   this.$set(this.whisperStateMap, obj.jsonPath, obj.percent)
-      // })
     },
     searchTags(q, cb) {
       var r = this.tags;
@@ -1322,6 +1180,7 @@ export default {
     reread() {
       if (this.filterFolder) {
         this.loading = true
+        this.showList.length = 0
         for (let key in this.allDataMap) {
           if (this.allDataMap[key].openFolderPath == this.filterFolder) {
             delete this.allDataMap[key];
@@ -1344,19 +1203,30 @@ export default {
       }
     },
     runWallpaper(path) {
-      ipcRenderer.send('runWallpaper', path)
+      if (!this.wallpaperPath) {
+        this.$message({
+          type: 'warning',
+          message: '请先选择wallpaper32.exe路径'
+        });
+        return false
+      }
+      ipcRenderer.send('runWallpaper', path, this.wallpaperPath)
     },
-    toTop(){
+    toTop() {
       window.scrollTo({
-        top:0,
-        behavior:"smooth"
-    })
+        top: 0,
+        behavior: "smooth"
+      })
     }
   }
 
 }
 </script>
 <style lang="less">
+.el-notification__content p {
+  word-break: break-all;
+}
+
 .home {
   min-height: 100vh;
 }
@@ -1480,6 +1350,10 @@ export default {
   height: 10px;
 }
 
+
+
+
+
 .home-list {
   display: flex;
   flex-wrap: wrap;
@@ -1539,218 +1413,7 @@ export default {
     text-align: center;
     font-size: 12px;
 
-    .content-detail:empty {
-      min-height: 200px;
-    }
 
-    .content-detail {
-
-      // padding: 5px;
-      background: white;
-      border: none;
-      border-radius: 0px;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, .3);
-      -moz-box-shadow: 0 1px 3px rgba(0, 0, 0, .3);
-      -webkit-box-shadow: 0 1px 3px rgba(0, 0, 0, .3);
-
-      // border-radius: 10px;
-
-    }
-
-
-
-    .img-box {
-      position: relative;
-      padding-top: 100%;
-      width: 100%;
-      background-color: #F5F7FA;
-      overflow: hidden;
-      padding-bottom: 0;
-      // border-radius: 10px;
-
-      .el-image {
-        width: 100%;
-        height: 100%;
-        position: absolute;
-        top: 0;
-        left: 0;
-
-        img {
-          // position: absolute;
-          // top: 0;
-          // left: 0;
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-          transition: transform .6s;
-        }
-      }
-
-      img {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        transition: transform .6s;
-      }
-
-      &>i {
-        display: none;
-        font-size: 32px;
-        position: absolute;
-        top: calc(50% - 16px);
-        left: calc(50% - 16px);
-        cursor: pointer;
-        color: white;
-      }
-
-      &>.el-button {
-        padding: 0;
-        font-size: 10px;
-        z-index: 9;
-        position: absolute;
-        bottom: 5px;
-        left: 5px;
-
-        // color: #606266;
-        span {
-          margin: 0;
-          // color: #606266;
-          font-weight: 100;
-        }
-      }
-
-      &:hover {
-        img {
-          filter: brightness(0.5);
-          transform: scale(1.2);
-        }
-
-        &>i {
-          display: block;
-        }
-      }
-    }
-
-    .detail-box {
-      padding: 0 5px 5px;
-
-      &>div {
-        width: 100%;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        flex-direction: row;
-      }
-
-      &>i {
-        display: block;
-        text-align: right;
-      }
-
-      &>span {
-        color: gray;
-        display: block;
-        word-break: break-word;
-        text-align: right;
-      }
-
-      section>button {
-        width: 100%;
-      }
-
-      section+section {
-        padding-top: 2px;
-      }
-
-      label {
-        display: block;
-        color: gray;
-        word-break: break-word;
-        text-align: left;
-      }
-
-
-
-
-
-      p {
-        color: #67c23a;
-        cursor: pointer;
-        word-break: break-word;
-        font-size: 12px;
-        text-align: left;
-      }
-
-      p+p {
-        color: #f56c6c;
-      }
-
-      .icons {
-        margin-top: 5px;
-
-        &>p:last-child {
-          padding: 2px 7px;
-          border: 1px solid #f56c6c;
-          border-radius: 70% 0 50% 0;
-
-          &:hover {
-            // border-color: #f56c6c;
-            background-color: #f56c6c;
-            color: white;
-          }
-        }
-
-        &>p:first-child {
-          padding: 2px 7px;
-          border: 1px solid #67c23a;
-          border-radius: 0 70% 0 50%;
-
-          &:hover {
-            // border-color: #67c23a;
-            background-color: #67c23a;
-            color: white;
-          }
-        }
-      }
-
-      .stars {
-        margin: 5px 0;
-
-        b {
-          display: block;
-          background-size: cover;
-          width: 15%;
-          height: 0;
-          padding-top: 15%;
-          border-radius: 50%;
-          cursor: pointer;
-          transition: transform .3s;
-          background-image: url(../assets/3.png);
-
-          &:hover {
-            transform: scale(0.8);
-          }
-        }
-
-        .star {
-          // background-color: #e6a23c;
-
-
-        }
-
-        .unstar {
-          // background-color: #F5F7FA;
-          filter: grayscale(1);
-          // background-image: url(../assets/unstar.png);
-          // background-image: url(../assets/3.png);
-
-
-        }
-      }
-    }
 
 
 

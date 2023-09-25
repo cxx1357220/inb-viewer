@@ -36,6 +36,7 @@
 - 需要复制去的路径（wallpaper会对本地的订阅他人的文件进行更改和删除，可以复制到别的地方）
 - 用[ffmpeg](https://github.com/FFmpeg)进行视频刚改的简单配置
 - 用whisper.cpp对视频进行语音转文字的简单配置，[whisper-cpp](https://github.com/ggerganov/whisper.cpp)虽然没有[whisper](https://github.com/openai/whisper)好用，但不用考虑兼容性。。。用显卡倒是比cpu快，但考虑各种显卡的驱动。。。
+- wallpaper.exe 的路径，第一次进应用当路径为空时，会自动查询电脑注册表看有没有该路径并设置（很慢）。也可手动设置路径。
 
 #### 功能
 

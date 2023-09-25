@@ -26,7 +26,7 @@ const throttlePercent=throttle((jsonPath,d)=>{
         percent: d
     })
 })
-async function pathSize(p) {
+function pathSize(p) {
     let size = 0
 
     function finder(p) {
@@ -104,7 +104,7 @@ const newProject = (event, obj) => {
     ls.stderr.on('data', (err) => {
         console.log('err: ', err);
     });
-    ls.on('close', async (code) => {
+    ls.on('close', (code) => {
         console.log(`子进程退出: ${code}`);
 
         // if (code == null) {
@@ -137,7 +137,7 @@ const newProject = (event, obj) => {
             })
         }
 
-        let size = await pathSize(toPath)
+        let size = pathSize(toPath)
         winSend('main', 'callMap', {
             [path.join(toPath, 'project.json')]: {
                 allSize: size,
@@ -182,13 +182,13 @@ const newProject = (event, obj) => {
 
 
     // 临时-同盘内video
-    // fs.rename(obj.filePath, path.join(toPath, path.basename(obj.filePath)), async (err) => {
+    // fs.rename(obj.filePath, path.join(toPath, path.basename(obj.filePath)), (err) => {
     //     if (err) throw err;
     //     winSend('main', 'newPercent', {
     //         jsonPath: jsonPath,
     //         percent: ''
     //     })
-    //     let size = await pathSize(toPath)
+    //     let size =  pathSize(toPath)
     //     winSend('main', 'callMap', {
     //         [path.join(toPath, 'project.json')]: {
     //             allSize: size,

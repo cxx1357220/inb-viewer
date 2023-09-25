@@ -68,7 +68,8 @@ const compress = (event, obj, set) => {
         jsonPath = obj.jsonPath
     set.size && options.push('-s ' + set.size)
     set.type && (newName = newName + set.type)
-    options.push('-vcodec ' + (set.vcodec || 'copy'))
+    set.vcodec && options.push('-vcodec ' + set.vcodec)
+    // options.push('-vcodec ' + (set.vcodec || 'copy'))
 
     ffmpeg(obj.filePath)
         // .inputOptions(['-hwaccel cuvid'])

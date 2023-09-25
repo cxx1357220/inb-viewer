@@ -34,6 +34,7 @@
 <li>需要复制去的路径（wallpaper会对本地的订阅他人的文件进行更改和删除，可以复制到别的地方）</li>
 <li>用<a href="https://github.com/FFmpeg">ffmpeg</a>进行视频刚改的简单配置</li>
 <li>用whisper.cpp对视频进行语音转文字的简单配置，<a href="https://github.com/ggerganov/whisper.cpp">whisper-cpp</a>虽然没有<a href="https://github.com/openai/whisper">whisper</a>好用，但不用考虑兼容性。。。用显卡倒是比cpu快，但考虑各种显卡的驱动。。。</li>
+<li>wallpaper.exe 的路径，第一次进应用当路径为空时，会自动查询电脑注册表看有没有该路径并设置（很慢）。也可手动设置路径。</li>
 </ul>
 <h4>功能</h4>
 <ul>
@@ -47,7 +48,7 @@
 </ul>
 <h4>搜索</h4>
 <blockquote>
-<p>只搜索title，file，desc的内容，会显示总数和总大小</p>
+<p>只搜索title，file，desc的内容，会显示总数和总大小，输入665533会弹出浏览器F12调试</p>
 </blockquote>
 <h4>新建项目</h4>
 <blockquote>

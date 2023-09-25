@@ -12,11 +12,11 @@
         txtended: false
     }))
     app.use(bodyParser.json())
-    app.get('/api/list', async (req, res) => {
+    app.get('/api/list', (req, res) => {
         res.send(list)
     })
 
-    app.post('/api/contentList', async (req, res) => {
+    app.post('/api/contentList', (req, res) => {
         let params = req.body
         let basePath = params.basePath
         let imgs = [],
@@ -26,14 +26,14 @@
             imgExtList = ['.jpg', '.gif', '.png', '.jpeg'],
             videoExtList = ['.avi', '.wmv', '.mp4', '.mov', '.mpg','.mkv','.rmvb','.ts','.flv','.webm'],
             audioExtList = ['.wav', '.mp3', '.ogg']
-        const read = async (p) => {
-            let ls = await fs.readdirSync(p) || []
+        const read =  (p) => {
+            let ls =  fs.readdirSync(p) || []
             for (const o of ls) {
                 // console.log('o: ', o);
-                var stat = await fs.statSync(p + o);
+                var stat =  fs.statSync(p + o);
                 // console.log('stat: ', stat);
                 if (stat.isDirectory()) {
-                    await read(p + o + "\\")
+                     read(p + o + "\\")
                 } else {
                     let ext = path.extname(o).toLowerCase()
                     if (imgExtList.indexOf(ext) != -1 && (p + o) !== params.img) {
@@ -48,7 +48,7 @@
                 }
             }
         }
-        await read(basePath)
+         read(basePath)
         imgs = imgs.sort()
         videos = videos.sort()
         audios = audios.sort()
@@ -63,7 +63,7 @@
         })
     })
 
-    app.post('/api/changeStar', async (req, res) => {
+    app.post('/api/changeStar', (req, res) => {
         let params = req.body
         console.log('req: ', req.body);
         let stats = fs.statSync(params.jsonPath)
@@ -92,7 +92,7 @@
         })
     })
 
-    app.post('/api/visits', async (req, res) => {
+    app.post('/api/visits',  (req, res) => {
         let params = req.body
         console.log('req: ', req.body);
         let stats = fs.statSync(params.jsonPath)
@@ -121,7 +121,7 @@
         })
     })
 
-    app.post('/api/upload', async (req, res) => {
+    app.post('/api/upload',  (req, res) => {
         let uploadDir = decodeURIComponent(req.headers.basepath)
         var form = new multiparty.Form({
             uploadDir: uploadDir

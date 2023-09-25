@@ -10,7 +10,7 @@ let list = []
  * @param startPath  起始目录文件夹路径
  * @returns {Array}
  */
-async function findSync(startPath) {
+ function findSync(startPath) {
     function finder(p) {
         let files = fs.readdirSync(p);
         files.forEach((val, index) => {

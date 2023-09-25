@@ -1,11 +1,11 @@
 <template>
     <!-- <div class="view"> -->
-    <el-button size="mini" v-if="state == 'done'" type="success">done</el-button>
+    <div v-if="!state"><slot></slot></div>
+    <el-button size="mini" v-else-if="state == 'done'" type="success">done</el-button>
     <el-button size="mini" v-else-if="state == 'error'" type="danger">error</el-button>
     <el-button size="mini" v-else-if="state == 'waiting'" type="info">waiting</el-button>
     <!-- <el-button size="mini" v-else :loading="true" v-state="state"></el-button> -->
-    <el-button size="mini" v-else :loading="true" >{{ state }}</el-button>
-
+    <el-button size="mini" v-else :loading="true">{{ state }}</el-button>
     <!-- </div> -->
 </template>
 
@@ -17,7 +17,7 @@ export default {
         return {
         }
     },
-    props: ['state'],
+    props: ['path','map'],
     directives: {
         state: {
             bind(el, binding) {
@@ -36,6 +36,11 @@ export default {
                 }
             },
         },
+    },
+    computed:{
+        state(){
+            return this.$store.state[this.map][this.path]
+        }
     },
 
     created() {
