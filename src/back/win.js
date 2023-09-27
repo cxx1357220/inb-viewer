@@ -52,7 +52,8 @@ const winSend = (win, key, ...params) => {
     }
 }
 let {
-    cutData
+    cutData,
+    getData
 } = require('./child')
 let {
     compressData
@@ -157,14 +158,16 @@ const open = (event, obj) => {
 }
 ipcMain.on('open', open)
 app.on('before-quit', (e) => {
-    if (whisperData.state || repkgData.state || copyData.state || compressData.state || cutData.state || newData.state) {
+    if (whisperData.state || repkgData.state || copyData.state || compressData.state || cutData.state || newData.state || getData.state) {
         let str = '任务'
         whisperData.state && (str += ' 字幕解析 ')
         repkgData.state && (str += ' pkg解压 ')
         copyData.state && (str += ' 复制 ')
         compressData.state && (str += ' 视频压缩 ')
         cutData.state && (str += ' 视频剪切 ')
-        newData.state && (str += ' 新建 ')
+        newData.state && (str += ' 新建项目 ')
+        getData.state && (str += ' 获取视频时长 ')
+
         str += '正在进行中，是否终止'
         let a = dialog.showMessageBoxSync({
             title: "exit", //信息提示框标题

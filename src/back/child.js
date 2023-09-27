@@ -72,6 +72,7 @@ const times = (t) => {
     let l = t.split(':')
     return Number(l[0] * 3600) + Number(l[1] * 60) + Number(l[2])
 }
+// 状态
 const cutData = {
     state: false,
     list: []
@@ -157,42 +158,86 @@ const cutTime = (event, obj, isCode) => {
 ipcMain.on('cutTime', cutTime)
 
 
+const getData = {
+    state: false
+}
+/**
+ * 获取视频时长
+ * @param {*} event 
+ * @param {Array} list 
+ * @returns 
+ */
 const getListInfo = (event, list) => {
-    let out = {},
-        outTime = {},
-        outlist = [],
+    let callBack = {},
+        //     out = {},
+        //     outTime = {},
+        //     outlist = [],
         i = 0,
         len = list.length;
     if (!len) {
         return false
     }
+    getData.state = true
 
     const info = (i) => {
-        ffmpeg.ffprobe(list[i], function (err, metadata) {
-            console.log(i, ': ', list[i]);
-            console.log('metadata: ', metadata);
-            if (err) {
-                console.log('err: ', err);
-            } else {
-                metadata.streams.forEach(obj => {
-                    if (obj.codec_type == 'video') {
-                        out[list[i]] = obj.codec_name
-                    }
-                })
-                outTime[list[i]] = metadata.format.duration
-                outlist.push(metadata)
-            }
-
+        const next = () => {
             if (i < len - 1) {
                 console.log(i + '/' + (len - 1));
+                winSend('main', 'rateDuration', i + 1 + '/' + len)
                 i++
                 info(i)
             } else {
-
-                fs.writeFileSync('./outTime.json', JSON.stringify(outTime))
-                fs.writeFileSync('./aaaaa.json', JSON.stringify(out))
-                fs.writeFileSync('./zzzzz.json', JSON.stringify(outlist))
+                console.log("callBack", callBack);
+                getData.state = false
+                winSend('main', 'videoDuration', callBack)
+                // fs.writeFileSync('./outTime.json', JSON.stringify(outTime))
+                // fs.writeFileSync('./aaaaa.json', JSON.stringify(out))
+                // fs.writeFileSync('./zzzzz.json', JSON.stringify(outlist))
             }
+        }
+        ffmpeg.ffprobe(list[i].v, function (err, metadata) {
+            if (err) {
+                console.log('err: ', err);
+                next()
+            } else {
+                callBack[list[i].j] = {
+                    'videoDuration': metadata.format.duration
+                }
+                let stats = fs.statSync(list[i].j)
+                fs.readFile(list[i].j, 'utf-8', (err, call) => {
+                    if (err) {
+                        next()
+                        return false
+                    }
+                    let data = JSON.parse(call)
+                    data['inb-duration'] = metadata.format.duration
+                    fs.writeFile(list[i].j, JSON.stringify(data), (err) => {
+                        if (err) {
+                            console.log('write-err: ', err);
+                            next()
+                            return false
+                        }
+                        fs.utimes(
+                            list[i].j,
+                            new Date(stats.atime),
+                            new Date(stats.mtime),
+                            function (err) {
+                                next()
+                                err && (console.log('err: ', err));
+                            }
+                        );
+                    })
+                })
+                // metadata.streams.forEach(obj => {
+                //     if (obj.codec_type == 'video') {
+                //         out[list[i]] = obj.codec_name
+                //     }
+                // })
+                // outTime[list[i]] = metadata.format.duration
+                // outlist.push(metadata)
+            }
+
+
         });
     }
     info(i)
@@ -238,5 +283,6 @@ const imgSetPoster = (event, obj, s) => {
 ipcMain.on('imgSetPoster', imgSetPoster)
 
 export {
-    cutData
+    cutData,
+    getData
 }

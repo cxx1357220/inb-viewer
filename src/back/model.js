@@ -22,8 +22,8 @@ var whisperModelPath = path.join(
  */
 const setModelList = () => {
     fs.readdir(whisperModelPath, (err, back) => {
-        console.log('err: ', err);
         if (err) {
+            console.log('err: ', err);
             return false
         }
         let ls = []

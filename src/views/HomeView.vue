@@ -39,6 +39,9 @@
           <el-button size="mini" plain
             :icon="key == 'visits' ? (sortT == 1 ? 'el-icon-caret-bottom' : 'el-icon-caret-top') : ''"
             :type="key == 'visits' ? 'primary' : ''" @click="sort('visits')">visits</el-button>
+          <el-button size="mini" plain
+            :icon="key == 'videoDuration' ? (sortT == 1 ? 'el-icon-caret-bottom' : 'el-icon-caret-top') : ''"
+            :type="key == 'videoDuration' ? 'primary' : ''" @click="sort('videoDuration')">duration</el-button>
         </el-form-item>
         <el-form-item>
           <span slot="label">过滤：</span>
@@ -93,7 +96,7 @@
           <el-button size="mini" @click="xcopyList">批量复制</el-button>
           <el-button size="mini" @click="rmList">批量删除</el-button>
           <!-- <el-button size="mini" @click="outTitle">输出title</el-button> -->
-          <!-- <el-button size="mini" @click="getInfo">video info</el-button> -->
+          <el-button size="mini" :loading="loadingDuration" @click="getInfo"><span v-show="loadingDuration">{{ rateDuration }}</span>获取视频时长</el-button>
           <el-button size="mini" @click="clearState">清除已操作状态</el-button>
           <!-- <el-button size="mini" @click="dataCount">数据统计</el-button> -->
           <el-popover trigger="hover" :disabled="!serverState" placement="bottom" effect="light">
@@ -185,6 +188,11 @@
         <el-form-item label="type">
           <el-select placeholder="空为不变" size="mini" clearable style="width:130px" v-model="compressSet.type">
             <el-option v-for="item in compressTypeList" :label="item.value" :value="item.value"></el-option>
+          </el-select>
+        </el-form-item>
+        <el-form-item label="fps">
+          <el-select placeholder="空为不变" size="mini" clearable style="width:130px" v-model="compressSet.fps">
+            <el-option v-for="item in compressFpsList" :label="item.value" :value="item.value"></el-option>
           </el-select>
         </el-form-item>
       </el-form>
@@ -292,6 +300,11 @@ export default {
         value: '1920*1080'
       }, {
         value: '1080*720'
+      }],
+      compressFpsList: [{
+        value: '30'
+      }, {
+        value: '25'
       }],
       compressVcodecList: [{
         //   value: 'copy'
@@ -582,7 +595,9 @@ export default {
       filterTag: '',
       filterFolder: '',
       wallpaperPath: '',
-      imgCachePath: ''
+      imgCachePath: '',
+      loadingDuration: false,
+      rateDuration:''
     }
   },
   components: { block },
@@ -796,6 +811,28 @@ export default {
       sessionStorage.setItem('imgCachePath', string)
     })
 
+    ipcRenderer.on('videoDuration', (e, obj) => {
+      Object.keys(obj).forEach(k => {
+        Object.assign(this.allDataMap[k], obj[k])
+      })
+      // this.showList.forEach((ele,i) => {
+      //   if(obj[ele.jsonPath]){
+      //     // Object.assign(ele,obj[ele.jsonPath])
+      //     this.$set(this.showList[i],'videoDuration',obj[ele.jsonPath].videoDuration)
+      //   }
+      // });
+      this.showList.length = 0
+      this.showList.splice(0, 0)
+      this.filterList(this.filterVal)
+      this.loadingDuration = false
+      this.rateDuration = ''
+      localStorage.setItem('allDataMap', JSON.stringify(this.allDataMap))
+    })
+    ipcRenderer.on('rateDuration', (e, s) => {
+      this.rateDuration = s
+    })
+    
+
 
   },
   methods: {
@@ -810,18 +847,18 @@ export default {
 
 
     cacheImg(url) {
-            const souceUrl = url.split('?')[0]
-            if (url.indexOf('?cache=true') == -1 && !localStorage.getItem(souceUrl)) {
-                let to = nodePath.join(this.imgCachePath, md5(souceUrl))
-                fs.copyFile(decodeURIComponent(souceUrl), decodeURIComponent(to), (err) => {
-                    if (err) {
-                        console.log('err: ', err);
-                    } else {
-                        localStorage.setItem(souceUrl, to)
-                    }
-                })
-            }
-        },
+      const souceUrl = url.split('?')[0]
+      if (url.indexOf('?cache=true') == -1 && !localStorage.getItem(souceUrl)) {
+        let to = nodePath.join(this.imgCachePath, md5(souceUrl))
+        fs.copyFile(decodeURIComponent(souceUrl), decodeURIComponent(to), (err) => {
+          if (err) {
+            console.log('err: ', err);
+          } else {
+            localStorage.setItem(souceUrl, to)
+          }
+        })
+      }
+    },
     async dataCount() {
       ipcRenderer.send('openTool')
       await new Promise(res => {
@@ -995,7 +1032,7 @@ export default {
       ipcRenderer.send('repkgList', filter)
     },
     compress(obj) {
-      if (!this.compressSet.type && !this.compressSet.vcodec && !this.compressSet.size) {
+      if (!this.compressSet.type && !this.compressSet.vcodec && !this.compressSet.size && !this.compressSet.fps) {
         this.compressDrawer = true
         this.$message({
           type: 'warning',
@@ -1007,7 +1044,7 @@ export default {
       ipcRenderer.send('compress', obj, this.compressSet)
     },
     compressList() {
-      if (!this.compressSet.type && !this.compressSet.vcodec && !this.compressSet.size) {
+      if (!this.compressSet.type && !this.compressSet.vcodec && !this.compressSet.size && !this.compressSet.fps) {
         this.compressDrawer = true
         this.$message({
           type: 'warning',
@@ -1168,13 +1205,23 @@ export default {
       })
     },
     getInfo() {
+      if (this.loadingDuration) {
+        return false
+      }
+      this.loadingDuration = true
       let list = [];
       this.showList.forEach((obj) => {
-        if (obj.type == 'video') {
-          list.push(obj.filePath)
+        if (obj.type == 'video' && !obj.videoDuration) {
+          list.push({ j: obj.jsonPath, v: obj.filePath })
         }
       })
       console.log('list: ', list);
+      if (!list.length) {
+        this.loadingDuration = false
+        this.rateDuration = ''
+        return false
+      }
+      this.rateDuration = '0/'+list.length
       ipcRenderer.send('getListInfo', list)
     },
     reread() {

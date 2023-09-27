@@ -29,10 +29,10 @@ var readPath = path.join(
  * @param {*} folderPath 
  * @returns 
  */
-const readJSON = (event,folderPath) => {
+const readJSON = (event, folderPath) => {
     const forked = fork(readPath);
     forked.on('message', function (obj) {
-        winSend('main', 'callMap', obj.map, obj.dirPath,obj.tags)
+        winSend('main', 'callMap', obj.map, obj.dirPath, obj.tags)
         forked.kill()
         obj = {}
     })
@@ -41,26 +41,30 @@ const readJSON = (event,folderPath) => {
     });
     forked.on('exit', function (code) {
         console.log('子进程已关闭，退出码exit ' + code);
+        if (code == 9999) {
+            winSend('main', 'callMap', {}, '', [])
+            winSend('main', 'error', '9999')
+        }
     });
-if(folderPath){
-    forked.send(folderPath)
-}else{
-    dialog.showOpenDialog({
-            properties: ['openDirectory'],
-        })
-        .then(files => {
-            console.log('files: ', files);
-            if (files.filePaths[0]) {
-                forked.send(files.filePaths[0])
-            } else {
-                winSend('main', 'callMap', {}, '',[])
+    if (folderPath) {
+        forked.send(folderPath)
+    } else {
+        dialog.showOpenDialog({
+                properties: ['openDirectory'],
+            })
+            .then(files => {
+                console.log('files: ', files);
+                if (files.filePaths[0]) {
+                    forked.send(files.filePaths[0])
+                } else {
+                    winSend('main', 'callMap', {}, '', [])
+                    forked.kill()
+                }
+            }).catch(err => {
+                console.log(err)
+                winSend('main', 'callMap', {}, '', [])
                 forked.kill()
-            }
-        }).catch(err => {
-            console.log(err)
-            winSend('main', 'callMap', {}, '',[])
-            forked.kill()
-        });
+            });
     }
 }
 ipcMain.on('readJSON', readJSON)

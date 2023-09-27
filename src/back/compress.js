@@ -69,6 +69,7 @@ const compress = (event, obj, set) => {
     set.size && options.push('-s ' + set.size)
     set.type && (newName = newName + set.type)
     set.vcodec && options.push('-vcodec ' + set.vcodec)
+    set.fps && options.push('-r ' + set.fps)
     // options.push('-vcodec ' + (set.vcodec || 'copy'))
 
     ffmpeg(obj.filePath)

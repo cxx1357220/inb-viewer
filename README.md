@@ -84,3 +84,5 @@ module.exports = process.env.FLUENTFFMPEG_COV ? require('./lib-cov/fluent-ffmpeg
 - 右下角托盘
 
 - 帮助页
+
+- 首页显示视频类型的时长

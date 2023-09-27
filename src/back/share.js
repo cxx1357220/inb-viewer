@@ -82,7 +82,7 @@
                     new Date(stats.atime),
                     new Date(stats.mtime),
                     function (err) {
-                        console.log('err: ', err);
+                        err&&(console.log('err: ', err));
                     }
                 );
             })
@@ -111,7 +111,7 @@
                     new Date(stats.atime),
                     new Date(stats.mtime),
                     function (err) {
-                        console.log('err: ', err);
+                        err&&(console.log('err: ', err));
                     }
                 );
             })
