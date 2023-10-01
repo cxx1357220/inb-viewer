@@ -12,7 +12,7 @@ let {
 /**
  * 文件管理器内打开文件夹
  * @param {*} event 
- * @param {*} obj 
+ * @param {string} s 路径
  */
 const openPath = (event, s) => {
     console.log('s: ', s);
@@ -32,7 +32,7 @@ ipcMain.on('openPath', openPath)
 /**
  * 删除文件夹
  * @param {*} event 
- * @param {*} obj 
+ * @param {object} obj 块信息
  */
 const rmPath = (event, obj) => {
     // shell.trashItem(obj.basePath).then(obj => console.log(obj)).catch(err => {
@@ -47,9 +47,9 @@ const rmPath = (event, obj) => {
 }
 ipcMain.on('rmPath', rmPath)
 /**
- * 输出文件数组
+ * 输出文件数组成json文件-树莓派
  * @param {*} event 
- * @param {*} list 
+ * @param {Array} list [obj] 块信息
  */
 const outList = (event, list) => {
     let fileMap = {}
@@ -83,7 +83,7 @@ ipcMain.on('openTool', openTool)
 /**
  * 设置路径
  * @param {*} event 
- * @param {*} obj 
+ * @param {object} obj 设置按钮的信息（key）
  */
 const setPath = (event, obj) => {
     console.log('obj: ', obj);

@@ -6,9 +6,14 @@
       <!-- el没有监听窗口大小变化 -->
       <!-- <el-image :src="obj.img" lazy></el-image> -->
       <i :class="[obj.type == 'video' ? 'el-icon-video-play' : 'el-icon-document']"></i>
-      <el-button class="visits" v-if="obj.visits" type="text" icon="el-icon-view" disabled> {{ obj.visits }}</el-button>
-      <el-button class="videoDuration" v-if="obj.videoDuration" type="text" icon="el-icon-time" disabled
-        ><span v-time="obj.videoDuration"></span></el-button>
+      <div class="visits" v-if="obj.visits">
+        <i class="el-icon-view"></i>
+        <span>{{ obj.visits }}</span>
+      </div>
+      <div class="video-duration" v-if="obj.videoDuration">
+        <i class="el-icon-time"></i>
+        <span v-time="obj.videoDuration"></span>
+      </div>
     </div>
     <div class="detail-box">
       <div class="icons">
@@ -289,36 +294,30 @@ export default {
     color: white;
   }
 
-  & .visits {
+  & .visits,
+  .video-duration {
     padding: 0;
     font-size: 10px;
     z-index: 10;
     position: absolute;
     bottom: 5px;
     left: 5px;
-
+    text-shadow: 1px 1px 0 #000;
+    color: white;
+    i{
+      padding-right: 4px;
+    }
     // color: #606266;
     span {
       margin: 0;
-      // color: #606266;
+      color: white;
       font-weight: 100;
     }
   }
 
-  &>.videoDuration {
-    padding: 0;
-    font-size: 10px;
-    z-index: 9;
-    position: absolute;
-    bottom: 5px;
+  &>.video-duration {
+    left: unset;
     right: 5px;
-
-    // color: #606266;
-    span {
-      margin: 0;
-      // color: #606266;
-      font-weight: 100;
-    }
   }
 
   &:hover {

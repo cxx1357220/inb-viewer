@@ -18,14 +18,21 @@ const iconv = require('iconv-lite');
 let {
     winSend
 } = require('./win')
-import {throttle} from './utils'
+import {
+    throttle
+} from './utils'
 
-const throttlePercent=throttle((jsonPath,d)=>{
+const throttlePercent = throttle((jsonPath, d) => {
     winSend('main', 'newPercent', {
         jsonPath: jsonPath,
         percent: d
     })
 })
+/**
+ * 路径下所有文件的大小总和
+ * @param {string} p 路径 
+ * @returns {String} 
+ */
 function pathSize(p) {
     let size = 0
 
@@ -49,6 +56,12 @@ const newData = {
     state: false,
     list: []
 }
+/**
+ * 新建块
+ * @param {*} event 
+ * @param {Object} obj 新建的主要信息
+ * @returns 
+ */
 const newProject = (event, obj) => {
     console.log('obj: ', obj);
     if (newData.state) {
@@ -97,7 +110,7 @@ const newProject = (event, obj) => {
             //     jsonPath: jsonPath,
             //     percent: d
             // })
-            throttlePercent(jsonPath,d)
+            throttlePercent(jsonPath, d)
         }
         // }
     });

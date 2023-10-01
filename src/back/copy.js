@@ -25,8 +25,8 @@ const throttlePercent=throttle((jsonPath,d)=>{
 /**
  * 复制文件夹
  * @param {*} event 
- * @param {Array} obj 
- * @param {String} copyVal 
+ * @param {object} obj 复制的块
+ * @param {String} copyVal 复制到的路径
  */
 const copyDir = (event, obj, copyVal) => {
     if (copyData.state) {
@@ -100,8 +100,8 @@ const copyDir = (event, obj, copyVal) => {
 /**
  * 批量复制文件夹
  * @param {*} event 
- * @param {Array} list 
- * @param {String} copyVal 
+ * @param {Array} list [obj] 复制的块数组
+ * @param {String} copyVal 复制到的路径
  * @returns 
  */
 const xcopyList = (event, list, copyVal) => {

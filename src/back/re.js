@@ -7,9 +7,9 @@ let {
 } = require('./win')
 
 /**
- * 改变json里的title,并且不变动文件的时间戳
+ * 改变json里的title,并且不变动文件的时间戳-不是很想合并到reDetail里
  * @param {*} event 
- * @param {*} obj 
+ * @param {Object} obj 块信息 
  */
 const reTitle = (event, obj) => {
     console.log('obj: ', obj);
@@ -47,9 +47,9 @@ ipcMain.on('reTitle', reTitle)
 
 
 /**
- * 改变json里的title,并且不变动文件的时间戳
+ * 改变json里的内容,并且不变动文件的时间戳
  * @param {*} event 
- * @param {*} obj 
+ * @param {Object} obj 块信息 
  */
 const reDetail = (event, obj) => {
     console.log('obj: ', obj);
@@ -87,9 +87,9 @@ const reDetail = (event, obj) => {
 }
 ipcMain.on('reDetail', reDetail)
 /**
- * 星级评级
+ * 星级评级-不是很想合并到reDetail里
  * @param {*} event 
- * @param {*} obj 
+ * @param {Object} obj 块信息 
  */
 const reStar = (event, obj) => {
     console.log('obj: ', obj);
@@ -127,8 +127,8 @@ ipcMain.on('reStar', reStar)
 
 
 /**
- * 阅读量
- * @param {*} obj 
+ * 更新阅读量
+ * @param {Object} obj 块信息 
  */
 const visits = (obj) => {
     console.log('obj: ', obj);

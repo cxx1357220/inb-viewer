@@ -47,8 +47,8 @@ let {
 /**
  * 设置帧为预览图文件
  * @param {*} event 
- * @param {object} obj 
- * @param {string} data 
+ * @param {object} obj 块数据
+ * @param {string} data 图片信息
  */
 const setPoster = (event, obj, data) => {
     let base = new Buffer.from(data.replace(/^data:image\/\w+;base64,/, ''), "base64")
@@ -63,15 +63,9 @@ const setPoster = (event, obj, data) => {
 }
 ipcMain.on('setPoster', setPoster)
 
-/**
- * 时间转换
- * @param {String} t 
- * @returns 
- */
-const times = (t) => {
-    let l = t.split(':')
-    return Number(l[0] * 3600) + Number(l[1] * 60) + Number(l[2])
-}
+import {
+    times
+} from './utils'
 // 状态
 const cutData = {
     state: false,
@@ -80,7 +74,8 @@ const cutData = {
 /**
  * 剪视频
  * @param {*} event 
- * @param {Object} obj 
+ * @param {Object} obj 视频信息
+ * @param {boolean} isCode 是否编码
  */
 const cutTime = (event, obj, isCode) => {
     winSend(obj.winKey, 'cutPercent', {
@@ -164,7 +159,7 @@ const getData = {
 /**
  * 获取视频时长
  * @param {*} event 
- * @param {Array} list 
+ * @param {Array} list 视频数据数组
  * @returns 
  */
 const getListInfo = (event, list) => {
@@ -266,10 +261,10 @@ ipcMain.on('getListInfo', getListInfo)
 
 
 /**
- * 设置帧为预览图文件
+ * 设置图片文件为预览图文件
  * @param {*} event 
- * @param {object} obj 
- * @param {string} data 
+ * @param {object} obj 块数据
+ * @param {string} s 图片路径
  */
 const imgSetPoster = (event, obj, s) => {
     fs.copyFile(s, obj.img.split('?rand=')[0], (err) => {

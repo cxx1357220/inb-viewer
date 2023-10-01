@@ -23,7 +23,7 @@ const repkgData = {
 /**
  * 解压PKG
  * @param {*} event 
- * @param {*} obj 
+ * @param {Object} obj 块信息
  */
 const repkg = (event, obj) => {
     if (repkgData.state) {
@@ -64,7 +64,7 @@ ipcMain.on('repkg', repkg)
 /**
  * 解压PKGlist
  * @param {*} event 
- * @param {*} list 
+ * @param {Array} list [obj] 块信息数组
  */
 const repkgList = (event, list) => {
     let ls = list.map(obj => [obj])

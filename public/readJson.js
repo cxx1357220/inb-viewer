@@ -6,7 +6,7 @@ let sizePathMap = {}
 // let filesMap = {}
 let list = []
 /**
- * 
+ * 读取文件夹
  * @param startPath  起始目录文件夹路径
  * @returns {Array}
  */

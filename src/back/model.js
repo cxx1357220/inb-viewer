@@ -41,10 +41,10 @@ const setModelList = () => {
 }
 
 /**
- * 下载model
+ * 下载whisper - model
  * @param {*} event 
- * @param {*} name 
- * @param {*} url 
+ * @param {string} name model名
+ * @param {string} url 下载路径
  */
 const downModel = (event, name, url) => {
     console.log('curl -L ' + url + ' -o ' + whisperModelPath + '\\' + name);

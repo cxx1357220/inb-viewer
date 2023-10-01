@@ -35,15 +35,10 @@ var ffmpegPath = path.join(
     'ffmpeg.exe'
 )
 ffmpeg.setFfmpegPath(ffmpegPath);
-/**
- * 时间转换
- * @param {String} t 
- * @returns 
- */
-const times = (t) => {
-    let l = t.split(':')
-    return Number(l[0] * 3600) + Number(l[1] * 60) + Number(l[2])
-}
+import {
+    times
+} from './utils'
+
 const compressData = {
     state: false, //ffmpeg压缩视频进行中
     list: [] //压缩任务队列
@@ -53,8 +48,8 @@ const compressData = {
 /**
  * 压缩视频
  * @param {*} event 
- * @param {*} obj 
- * @param {*} set 
+ * @param {object} obj 块数据
+ * @param {object} set 压缩设置
  * @returns 
  */
 const compress = (event, obj, set) => {
@@ -108,8 +103,8 @@ const compress = (event, obj, set) => {
 /**
  * 压缩数组内大文件视频
  * @param {*} event 
- * @param {*} list 
- * @param {*} set 
+ * @param {Array} list [obj] 块数据数组
+ * @param {object} set 压缩设置
  */
 const compressList = (event, list, set) => {
     let ls = list.map(obj => [obj, set])
@@ -148,13 +143,18 @@ ipcMain.on('compressList', compressList)
 // }
 // ipcMain.on('ffplay', ffplay)
 
-
 var mpvPath = path.join(
     appPath,
     process.env.NODE_ENV !== 'production' ? '../public' : '',
     'mpv',
     'mpv.exe'
 )
+/**
+ * mpv内打开视频
+ * @param {*} e 
+ * @param {Array} p 视频路径列表
+ * @param {Number} i 当前视频在列表中index
+ */
 const mpv = (e, p, i = 0) => {
     let str = mpvPath
 

@@ -26,7 +26,7 @@ var readPath = path.join(
 /**
  * (main)读取文件数组
  * @param {*} event 
- * @param {*} folderPath 
+ * @param {string} folderPath 读取的路径
  * @returns 
  */
 const readJSON = (event, folderPath) => {

@@ -44,17 +44,10 @@ var ffmpegPath = path.join(
 )
 
 ffmpeg.setFfmpegPath(ffmpegPath);
+import {
+    times
+} from './utils'
 
-
-/**
- * 时间转换
- * @param {String} t 
- * @returns 
- */
-const times = (t) => {
-    let l = t.split(':')
-    return Number(l[0] * 3600) + Number(l[1] * 60) + Number(l[2])
-}
 
 
 

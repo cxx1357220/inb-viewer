@@ -99,6 +99,7 @@
           <el-button size="mini" :loading="loadingDuration" @click="getInfo"><span v-show="loadingDuration">{{ rateDuration }}</span>获取视频时长</el-button>
           <el-button size="mini" @click="clearState">清除已操作状态</el-button>
           <!-- <el-button size="mini" @click="dataCount">数据统计</el-button> -->
+          <el-button size="mini" @click="showConcat=true">合并视频</el-button>
           <el-popover trigger="hover" :disabled="!serverState" placement="bottom" effect="light">
             <div class="tip">
               <canvas id="qrCode"></canvas>
@@ -264,7 +265,7 @@
         <el-button size="mini" type="primary" @click="saveDetail">确 定</el-button>
       </div>
     </el-dialog>
-
+    <concatVideo v-model.sync="showConcat"/>
   </div>
 </template>
 
@@ -275,6 +276,7 @@ window.nodePath = require('path')
 const ipcRenderer = require('electron').ipcRenderer;
 const md5 = require('md5');
 import block from '@/components/block.vue';
+import concatVideo from '@/components/concatVideo.vue';
 
 
 var QRCode = require('qrcode')
@@ -597,10 +599,11 @@ export default {
       wallpaperPath: '',
       imgCachePath: '',
       loadingDuration: false,
-      rateDuration:''
+      rateDuration:'',
+      showConcat:false
     }
   },
-  components: { block },
+  components: { block ,concatVideo},
   directives: {
     size: {
       bind(el, binding) {

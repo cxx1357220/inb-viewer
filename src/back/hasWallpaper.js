@@ -9,6 +9,7 @@ let {
     winSend
 } = require('./win')
 /**
+ * 获取wallpaper.exe路径
  * 不太兼容,安装选择库不是steam默认路径，而是安装在别的盘库就这测不到
  */
 const has = () => {
@@ -36,7 +37,12 @@ const has = () => {
     });
 }
 // has() 
-
+/**
+ * wallpaper打开块
+ * @param {*} event 
+ * @param {String} path 路径
+ * @param {String} wallpaperPath wallpaper.exe 路径
+ */
 const runWallpaper = (event, path,wallpaperPath) => {
     exec(wallpaperPath + ' -control openWallpaper -file "' + path + '"', (
         err, stdout, stderr) => {

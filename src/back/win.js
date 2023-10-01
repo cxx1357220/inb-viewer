@@ -70,7 +70,9 @@ let {
 let {
     newData
 } = require('./newProject')
-
+let {
+    concatData
+} = require('./concat')
 let {
     visits
 } = require('./re')
@@ -150,15 +152,14 @@ async function createWindow(winKey = 'main', obj = {}) {
 /**
  * 新窗口打开文件(视频,图片)
  * @param {*} event 
- * @param {*} obj 
+ * @param {object} obj 块数据
  */
 const open = (event, obj) => {
     createWindow('content', obj)
-
 }
 ipcMain.on('open', open)
 app.on('before-quit', (e) => {
-    if (whisperData.state || repkgData.state || copyData.state || compressData.state || cutData.state || newData.state || getData.state) {
+    if (whisperData.state || repkgData.state || copyData.state || compressData.state || cutData.state || newData.state || getData.state || concatData.state) {
         let str = '任务'
         whisperData.state && (str += ' 字幕解析 ')
         repkgData.state && (str += ' pkg解压 ')
@@ -167,7 +168,7 @@ app.on('before-quit', (e) => {
         cutData.state && (str += ' 视频剪切 ')
         newData.state && (str += ' 新建项目 ')
         getData.state && (str += ' 获取视频时长 ')
-
+        concatData.state && (str += ' 合并视频 ')
         str += '正在进行中，是否终止'
         let a = dialog.showMessageBoxSync({
             title: "exit", //信息提示框标题
@@ -192,7 +193,7 @@ if (!gotTheLock) {
     app.exit()
 } else {
     app.on('second-instance', (event, commandLine, workingDirectory) => {
-        // 当运行第二个实例时,将会聚焦到myWindow这个窗口
+        // 当运行第二个实例时,将会聚焦到main这个窗口
         winMap['main'].show();
         winMap['main'].setSkipTaskbar(false)
     })

@@ -13,9 +13,9 @@ let server = {
 /**
  * share服务
  * @param {*} event 
- * @param {*} boolean 
- * @param {*} list 
- * @param {*} map 
+ * @param {boolean} boolean 是否开启
+ * @param {Array} list share的列表
+ * @param {object} map 对应的路径修改map
  */
 const share = (event, boolean, list, map) => {
     // console.log('list: ', list);
@@ -48,7 +48,12 @@ const share = (event, boolean, list, map) => {
         server.close()
     }
 }
-
+/**
+ * 刷新share服务的数组
+ * @param {*} event 
+ * @param {Array} list share的列表
+ * @param {object} map 对应的路径修改map
+ */
 const reServeList = (event, list, map) => {
     shareJs.useArr(list, map)
 }
