@@ -10,38 +10,38 @@
         <el-form-item>
           <span slot="label">类型：</span>
           <el-button size="mini" plain :type="type == 'video' ? 'primary' : ''"
-            @click="changeType('video')">video</el-button>
+            @click="changeType('video')">视频</el-button>
           <el-button size="mini" plain :type="type == 'scene' ? 'primary' : ''"
-            @click="changeType('scene')">scene</el-button>
+            @click="changeType('scene')">场景</el-button>
           <el-button size="mini" plain :type="type == 'application' ? 'primary' : ''"
-            @click="changeType('application')">application</el-button>
+            @click="changeType('application')">应用</el-button>
           <el-button size="mini" plain :type="type == 'other' ? 'primary' : ''"
-            @click="changeType('other')">other</el-button>
-          <el-button size="mini" plain :type="type == 'all' ? 'primary' : ''" @click="changeType('all')">all</el-button>
+            @click="changeType('other')">其他</el-button>
+          <el-button size="mini" plain :type="type == 'all' ? 'primary' : ''" @click="changeType('all')">全部</el-button>
         </el-form-item>
         <el-form-item>
           <span slot="label">排序：</span>
           <el-button size="mini" plain
             :icon="key == 'date' ? (sortT == 1 ? 'el-icon-caret-bottom' : 'el-icon-caret-top') : ''"
-            :type="key == 'date' ? 'primary' : ''" @click="sort('date')">date</el-button>
+            :type="key == 'date' ? 'primary' : ''" @click="sort('date')">日期</el-button>
           <el-button size="mini" plain
             :icon="key == 'star' ? (sortT == 1 ? 'el-icon-caret-bottom' : 'el-icon-caret-top') : ''"
-            :type="key == 'star' ? 'primary' : ''" @click="sort('star')">star</el-button>
+            :type="key == 'star' ? 'primary' : ''" @click="sort('star')">星级</el-button>
           <el-button size="mini" plain
             :icon="key == 'allSize' ? (sortT == 1 ? 'el-icon-caret-bottom' : 'el-icon-caret-top') : ''"
-            :type="key == 'allSize' ? 'primary' : ''" @click="sort('allSize')">size</el-button>
+            :type="key == 'allSize' ? 'primary' : ''" @click="sort('allSize')">大小</el-button>
           <el-button size="mini" plain
             :icon="key == 'title' ? (sortT == 1 ? 'el-icon-caret-bottom' : 'el-icon-caret-top') : ''"
-            :type="key == 'title' ? 'primary' : ''" @click="sort('title')">title</el-button>
+            :type="key == 'title' ? 'primary' : ''" @click="sort('title')">标题</el-button>
           <el-button size="mini" plain
             :icon="key == 'file' ? (sortT == 1 ? 'el-icon-caret-bottom' : 'el-icon-caret-top') : ''"
-            :type="key == 'file' ? 'primary' : ''" @click="sort('file')">file</el-button>
+            :type="key == 'file' ? 'primary' : ''" @click="sort('file')">文件名</el-button>
           <el-button size="mini" plain
             :icon="key == 'visits' ? (sortT == 1 ? 'el-icon-caret-bottom' : 'el-icon-caret-top') : ''"
-            :type="key == 'visits' ? 'primary' : ''" @click="sort('visits')">visits</el-button>
+            :type="key == 'visits' ? 'primary' : ''" @click="sort('visits')">阅读量</el-button>
           <el-button size="mini" plain
             :icon="key == 'videoDuration' ? (sortT == 1 ? 'el-icon-caret-bottom' : 'el-icon-caret-top') : ''"
-            :type="key == 'videoDuration' ? 'primary' : ''" @click="sort('videoDuration')">duration</el-button>
+            :type="key == 'videoDuration' ? 'primary' : ''" @click="sort('videoDuration')">时长</el-button>
         </el-form-item>
         <el-form-item>
           <span slot="label">过滤：</span>
@@ -49,8 +49,8 @@
 
             <el-select class="filter-select filter-tags" @change="filterList(filterVal)" v-model="filterTag" size="mini"
               filterable default-first-option placeholder="tags">
-              <label slot="prefix" class="fix-text" type="">Tag:</label>
-              <el-option label="All" value="">
+              <label slot="prefix" class="fix-text" type="">标签:</label>
+              <el-option label="全部" value="">
               </el-option>
               <el-option v-for="str in tags" :label="str" :value="str">
               </el-option>
@@ -61,8 +61,8 @@
 
             <el-select class="filter-select" @change="filterList(filterVal)" v-model="filterFolder" size="mini" filterable
               default-first-option placeholder="tags">
-              <label slot="prefix" class="fix-text" type="">Folder:</label>
-              <el-option label="All" value="">
+              <label slot="prefix" class="fix-text" type="">文件夹:</label>
+              <el-option label="全部" value="">
               </el-option>
               <el-option v-for="v, k of openFolderPathMap" :label="k" :value="k">
               </el-option>
@@ -96,10 +96,11 @@
           <el-button size="mini" @click="xcopyList">批量复制</el-button>
           <el-button size="mini" @click="rmList">批量删除</el-button>
           <!-- <el-button size="mini" @click="outTitle">输出title</el-button> -->
-          <el-button size="mini" :loading="loadingDuration" @click="getInfo"><span v-show="loadingDuration">{{ rateDuration }}</span>获取视频时长</el-button>
+          <el-button size="mini" :loading="loadingDuration" @click="getInfo"><span v-show="loadingDuration">{{
+            rateDuration }}</span>获取视频时长</el-button>
           <el-button size="mini" @click="clearState">清除已操作状态</el-button>
           <!-- <el-button size="mini" @click="dataCount">数据统计</el-button> -->
-          <el-button size="mini" @click="showConcat=true">合并视频</el-button>
+          <el-button size="mini" @click="showConcat = true">合并视频</el-button>
           <el-popover trigger="hover" :disabled="!serverState" placement="bottom" effect="light">
             <div class="tip">
               <canvas id="qrCode"></canvas>
@@ -117,7 +118,7 @@
       </el-form>
     </nav>
     <div class="search layout">
-      <el-input type="text" prefix-icon="el-icon-search" :suffix="showList.length" size="mini" placeholder="search"
+      <el-input type="text" prefix-icon="el-icon-search" clearable :suffix="showList.length" size="mini" placeholder="search"
         v-model="filterVal" @change="filterList(filterVal)">
         <template slot="append"> {{ showList.length }}(<span v-size="showSize"></span>)</template>
       </el-input>
@@ -142,9 +143,9 @@
     <el-backtop></el-backtop>
 
 
-    <el-drawer title="字幕解析设置" :visible.sync="whisperDrawer">
-      <el-form label-width="80px" :model="whisperSet" class="demo-form-inline">
-        <el-form-item label="type">
+    <el-drawer title="字幕解析设置" :size="'50%'" :visible.sync="whisperDrawer">
+      <el-form label-width="140px" :model="whisperSet">
+        <el-form-item label="字幕文件类型：">
           <el-checkbox-group v-model="whisperSet.type" :min="1">
             <el-checkbox label="-ocsv" name="type">csv</el-checkbox>
             <el-checkbox label="-ovtt" name="type">vtt</el-checkbox>
@@ -153,45 +154,45 @@
             <el-checkbox label="-owts" name="type">words</el-checkbox>
           </el-checkbox-group>
         </el-form-item>
-        <el-form-item label="model">
+        <el-form-item label="解析ai模型：">
           <el-select size="mini" style="width:130px" v-model="whisperSet.model" placeholder="">
             <el-option v-for="item in modelList" :label="item.name" :value="item.path"></el-option>
           </el-select>
         </el-form-item>
-        <el-form-item label="translate">
+        <el-form-item label="翻译：">
           <el-switch v-model="whisperSet.translate"></el-switch>
         </el-form-item>
-        <el-form-item label="language">
+        <el-form-item label="解析语言：">
           <el-select size="mini" style="width:130px" clearable filterable v-model="whisperSet.language" placeholder="">
             <el-option v-for="o in languageList" :key="o.value" :value="o.value" :label="o.label"></el-option>
           </el-select>
         </el-form-item>
-        <el-form-item v-if="Object.keys(downModelMap).length" label="download">
+        <el-form-item v-if="Object.keys(downModelMap).length" label="ai模型下载：">
           <el-button v-for="(v, k) in downModelMap" size="mini" round @click="downModel(k, v)">
             {{ downPercentMap[k] ? downPercentMap[k] : k }}</el-button>
         </el-form-item>
 
       </el-form>
     </el-drawer>
-    <el-drawer title="压缩视频设置" :visible.sync="compressDrawer">
-      <el-form label-width="80px" :model="compressSet" class="demo-form-inline">
-        <el-form-item label="size">
+    <el-drawer title="压缩视频设置" :size="'50%'" :visible.sync="compressDrawer">
+      <el-form label-width="120px" :model="compressSet">
+        <el-form-item label="分辨率：">
           <el-autocomplete size="mini" class="inline-input" style="width: 130px;;margin-right: 10px; "
             v-model="compressSet.size" :fetch-suggestions="(query, cb) => querySearch(query, cb, compressSizeList)"
             placeholder="空为不变">
           </el-autocomplete>
         </el-form-item>
-        <el-form-item label="vcodec">
+        <el-form-item label="解码器：">
           <el-select placeholder="空为不变" size="mini" clearable style="width:130px" v-model="compressSet.vcodec">
             <el-option v-for="item in compressVcodecList" :label="item.value" :value="item.value"></el-option>
           </el-select>
         </el-form-item>
-        <el-form-item label="type">
+        <el-form-item label="后缀：">
           <el-select placeholder="空为不变" size="mini" clearable style="width:130px" v-model="compressSet.type">
             <el-option v-for="item in compressTypeList" :label="item.value" :value="item.value"></el-option>
           </el-select>
         </el-form-item>
-        <el-form-item label="fps">
+        <el-form-item label="帧率：">
           <el-select placeholder="空为不变" size="mini" clearable style="width:130px" v-model="compressSet.fps">
             <el-option v-for="item in compressFpsList" :label="item.value" :value="item.value"></el-option>
           </el-select>
@@ -200,39 +201,40 @@
     </el-drawer>
 
     <el-dialog title="新建项目" :visible.sync="showNewProjectDialog">
-      <el-form label-width="100px" :model="projectVal" class="demo-form-inline">
-        <el-form-item label="title：">
+      <el-form label-width="100px" :model="projectVal">
+        <el-form-item label="标题：">
           <el-input type="text" size="mini" v-model="projectVal.title"></el-input>
         </el-form-item>
-        <el-form-item label="type：">
+        <el-form-item label="类型：">
           <el-radio-group v-model="projectVal.type">
-            <el-radio label="video">video</el-radio>
-            <el-radio label="">other</el-radio>
+            <el-radio label="video">视频</el-radio>
+            <el-radio label="">其他</el-radio>
           </el-radio-group>
         </el-form-item>
-        <el-form-item label="desc：">
+        <el-form-item v-if="!projectVal.type" label="文件夹路径：">
+          <el-input size="mini" v-model="projectVal.dirPath" style="vertical-align: baseline;"
+            :class="projectVal.dirPath ? '' : 'warning'" placeholder="文件夹路径"><el-button size="mini" slot="prepend"
+              @click="setPath('dir', 'projectVal.dirPath')" icon="el-icon-folder">选择文件夹路径</el-button>
+          </el-input>
+        </el-form-item>
+        <el-form-item v-else label="文件路径：">
+          <el-input size="mini" v-model="projectVal.filePath" style="vertical-align: baseline;"
+            :class="projectVal.filePath ? '' : 'warning'" placeholder="文件路径"><el-button size="mini" slot="prepend"
+              @click="setPath('file', 'projectVal.filePath')" icon="el-icon-folder">选择文件路径</el-button>
+          </el-input>
+        </el-form-item>
+        <el-form-item label="描述：">
           <el-input type="textarea" size="mini" v-model="projectVal.description"></el-input>
         </el-form-item>
-        <el-form-item label="tags：">
+        <el-form-item label="标签：">
           <el-select v-model="projectVal.tags" multiple filterable allow-create default-first-option placeholder="tags">
             <el-option v-for="str in tags" :label="str" :value="str">
             </el-option>
           </el-select>
         </el-form-item>
 
-        <el-form-item v-if="!projectVal.type" label="dirPath：">
-          <el-input size="mini" v-model="projectVal.dirPath" style="vertical-align: baseline;"
-            :class="projectVal.dirPath ? '' : 'warning'" placeholder="文件夹路径"><el-button size="mini" slot="prepend"
-              @click="setPath('dir', 'projectVal.dirPath')" icon="el-icon-folder">选择文件夹路径</el-button>
-          </el-input>
-        </el-form-item>
-        <el-form-item v-else label="filePath：">
-          <el-input size="mini" v-model="projectVal.filePath" style="vertical-align: baseline;"
-            :class="projectVal.filePath ? '' : 'warning'" placeholder="文件路径"><el-button size="mini" slot="prepend"
-              @click="setPath('file', 'projectVal.filePath')" icon="el-icon-folder">选择文件路径</el-button>
-          </el-input>
-        </el-form-item>
-        <el-form-item label="savePath：">
+
+        <el-form-item label="保存路径：">
           <el-input size="mini" v-model="projectVal.savePath" style="vertical-align: baseline;"
             :class="projectVal.savePath ? '' : 'warning'" placeholder="保存路径"><el-button size="mini" slot="prepend"
               @click="setPath('dir', 'projectVal.savePath')" icon="el-icon-folder">选择保存路径</el-button>
@@ -246,14 +248,14 @@
       </div>
     </el-dialog>
     <el-dialog title="详情" :visible.sync="showDetailDialog">
-      <el-form label-width="100px" :model="detail" class="demo-form-inline">
-        <el-form-item label="title：">
+      <el-form label-width="100px" :model="detail">
+        <el-form-item label="标题：">
           <el-input type="text" size="mini" v-model="detail.title"></el-input>
         </el-form-item>
-        <el-form-item label="desc：">
+        <el-form-item label="描述：">
           <el-input type="textarea" size="mini" v-model="detail.description"></el-input>
         </el-form-item>
-        <el-form-item label="tags：">
+        <el-form-item label="标签：">
           <el-select v-model="detail.tags" multiple filterable allow-create default-first-option placeholder="tags">
             <el-option v-for="str in tags" :label="str" :value="str">
             </el-option>
@@ -265,7 +267,7 @@
         <el-button size="mini" type="primary" @click="saveDetail">确 定</el-button>
       </div>
     </el-dialog>
-    <concatVideo v-model.sync="showConcat"/>
+    <concatVideo v-model.sync="showConcat" />
   </div>
 </template>
 
@@ -599,11 +601,11 @@ export default {
       wallpaperPath: '',
       imgCachePath: '',
       loadingDuration: false,
-      rateDuration:'',
-      showConcat:false
+      rateDuration: '',
+      showConcat: false
     }
   },
-  components: { block ,concatVideo},
+  components: { block, concatVideo },
   directives: {
     size: {
       bind(el, binding) {
@@ -638,7 +640,7 @@ export default {
       }
     },
     copyVal(n) {
-      localStorage.setItem('copyVal', n)
+      localStorage.setItem('copyVal', n||"")
     },
 
     wallpaperPath(n) {
@@ -725,7 +727,16 @@ export default {
       this.whisperSet.model = ls[0]?.path
     })
     ipcRenderer.on('downPercent', (e, obj) => {
-      this.$set(this.downPercentMap, obj.name, obj.percent)
+      if (obj.code) {
+        this.$notify({
+          title: 'error',
+          message: obj.name + '模型下载失败，curl错误码' + obj.code,
+          duration: 0
+        });
+        this.$delete(this.downPercentMap, obj.name)
+      } else {
+        this.$set(this.downPercentMap, obj.name, obj.percent)
+      }
     })
 
     ipcRenderer.on('shareUrl', (e, str) => {
@@ -834,7 +845,7 @@ export default {
     ipcRenderer.on('rateDuration', (e, s) => {
       this.rateDuration = s
     })
-    
+
 
 
   },
@@ -1224,7 +1235,7 @@ export default {
         this.rateDuration = ''
         return false
       }
-      this.rateDuration = '0/'+list.length
+      this.rateDuration = '0/' + list.length
       ipcRenderer.send('getListInfo', list)
     },
     reread() {

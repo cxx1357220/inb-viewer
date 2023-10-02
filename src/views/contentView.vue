@@ -5,8 +5,8 @@
                 <!-- <img v-for=" s in imgs" v-lazy="s" alt=""> -->
                 <div class="img" v-for=" s in imgs" :key="s">
                     <div class="banner">
-                        <button @click="imgSetPoster(s)">setPoster</button>
-                        <button @click="openPath(s)">openPath</button>
+                        <button @click="imgSetPoster(s)">设置封面</button>
+                        <button @click="openPath(s)">打开路径</button>
                     </div>
                     <el-image :src="s" lazy :preview-src-list="imgs">
                     </el-image>

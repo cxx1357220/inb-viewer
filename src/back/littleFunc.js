@@ -63,6 +63,7 @@ const outList = (event, list) => {
         let base = path.dirname(key)
         console.log('base: ', base);
         fs.writeFileSync(base + "\\list.json", JSON.stringify(fileMap[key]))
+        openPath({},base + "\\list.json")
     }
 }
 ipcMain.on('outList', outList)

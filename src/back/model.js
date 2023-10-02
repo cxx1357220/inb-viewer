@@ -9,7 +9,7 @@ const {
 } = require('child_process');
 const appPath = app.getAppPath();
 let {
-   winSend
+    winSend
 } = require('./win')
 var whisperModelPath = path.join(
     appPath,
@@ -35,7 +35,7 @@ const setModelList = () => {
                 })
             }
         })
-        winSend('main','modelList', ls)
+        winSend('main', 'modelList', ls)
         console.log('ls: ', ls);
     })
 }
@@ -49,7 +49,7 @@ const setModelList = () => {
 const downModel = (event, name, url) => {
     console.log('curl -L ' + url + ' -o ' + whisperModelPath + '\\' + name);
     let ls = spawn('curl', ['-L', url, '-o', whisperModelPath + '\\' + name])
-    winSend('main','downPercent', {
+    winSend('main', 'downPercent', {
         name: name,
         percent: '0%'
     })
@@ -57,17 +57,26 @@ const downModel = (event, name, url) => {
         console.log('data: ', data.toString());
     });
     ls.stderr.on('data', (err) => {
-        winSend('main','downPercent', {
+        winSend('main', 'downPercent', {
             name: name,
             percent: (err.toString().match(/[0-9]+/g) || [0])[0] + "%"
         })
     });
     ls.on('close', (code) => {
-        winSend('main','downPercent', {
+        if (code) {
+            winSend('main', 'downPercent', {
+                name: name,
+                percent: 'error',
+                code: code
+            })
+            return false
+        }
+        winSend('main', 'downPercent', {
             name: name,
             percent: 'done'
         })
         setModelList()
+
     });
 }
 

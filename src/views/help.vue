@@ -1,6 +1,6 @@
 <template><div class="markdown-body"><h2>帮助文档</h2>
 <h3>主页</h3>
-<h4>选择文件</h4>
+<h4>选取文件</h4>
 <blockquote>
 <p>选择文件夹进行读取，wallpaper创意工坊文件夹路径一般为*\steam\steamapps\workshop\content\431960</p>
 </blockquote>
@@ -27,15 +27,34 @@
 </ul>
 <h4>过滤</h4>
 <ul>
-<li>tag标签</li>
-<li>folder ‘读取文件’获取过的文件夹，可刷新和清理单个读取的文件夹</li>
+<li>标签</li>
+<li>‘选取文件’获取过的文件夹，可刷新和清理单个读取的文件夹</li>
 </ul>
 <h4>设置</h4>
 <ul>
-<li>需要复制去的路径（wallpaper会对本地的订阅他人的文件进行更改和删除，可以复制到别的地方）</li>
-<li>用<a href="https://github.com/FFmpeg">ffmpeg</a>进行视频刚改的简单配置</li>
-<li>用whisper.cpp对视频进行语音转文字的简单配置，<a href="https://github.com/ggerganov/whisper.cpp">whisper-cpp</a>虽然没有<a href="https://github.com/openai/whisper">whisper</a>好用，但不用考虑兼容性。。。用显卡倒是比cpu快，但考虑各种显卡的驱动。。。</li>
-<li>wallpaper.exe 的路径，第一次进应用当路径为空时，会自动查询电脑注册表看有没有该路径并设置（很慢）。也可手动设置路径。</li>
+<li>
+<p>需要复制去的路径（wallpaper会对本地的订阅他人的文件进行更改和删除，可以复制到别的地方）</p>
+</li>
+<li>
+<p>用<a href="https://github.com/FFmpeg">ffmpeg</a>进行视频刚改的简单配置</p>
+<blockquote>
+<p>size为视频分辨率，vcodec为解码器，fps为帧率</p>
+</blockquote>
+</li>
+<li>
+<p>用whisper.cpp对视频进行语音转文字的简单配置，<a href="https://github.com/ggerganov/whisper.cpp">whisper-cpp</a>虽然没有<a href="https://github.com/openai/whisper">whisper</a>好用，但不用考虑兼容性。。。用显卡倒是比cpu快，但考虑各种显卡的驱动。。。</p>
+<blockquote>
+<p>慢的让人无语，模型越大质量越好也越慢;<br>
+翻译几乎没用，ai模型没有想象中好用，当然也可以自己弄一个ai模型;<br>
+ai模型下载地址有墙：<a href="https://huggingface.co/ggerganov/whisper.cpp">https://huggingface.co/ggerganov/whisper.cpp</a>;<br>
+可以自己手动下载ai模型到应用文件夹(*\viewer\resources\app\whisper-cpp\model);</p>
+<hr>
+<p>其实能看到字幕的方式挺多的，手机上挺多这个功能的，window11微软提供实时字幕功能，下载个Potplayer播放器也有实时字幕功能，还带翻译。当然，这些都是边看边翻译的。</p>
+</blockquote>
+</li>
+<li>
+<p>wallpaper.exe 的路径，第一次进应用当路径为空时，会自动查询电脑注册表看有没有该路径并设置（很慢）。也可手动设置路径。</p>
+</li>
 </ul>
 <h4>功能</h4>
 <ul>
@@ -45,17 +64,17 @@
 <li>批量复制展示的内容到已选好的复制路径</li>
 <li>批量删除展示的内容，密码665533，直接删除，不经过回收站</li>
 <li>获取展示的视频类型的时长</li>
-<li>清除已经操作的状态</li>
+<li>清除已经操作完成的状态</li>
 <li>合并视频，ffmepg -filter_complex 实现视频concat，相同编码下不进行解码还是蛮快的。解码真太慢了，cpu还吃满。</li>
 <li>局域网内服务，局域网内创建一个网站，可在局域网内查看展示的内容，网站密码665533</li>
 </ul>
 <h4>搜索</h4>
 <blockquote>
-<p>只搜索title，file，desc的内容，会显示总数和总大小，输入665533会弹出浏览器F12调试</p>
+<p>只搜索‘标题’、‘文件名’、‘描述’的内容，会显示总数和总大小，输入665533会弹出浏览器F12调试</p>
 </blockquote>
 <h4>新建项目</h4>
 <blockquote>
-<p>会有默认封面的一个项目，只有两种类型，video和other，filePath和dirPath分别为video和other需要保存的内容路径，savePath为新建项目需要保存到的路径</p>
+<p>会有默认封面的一个项目，只有两种类型，视频和其他，视频类型只需要一个视频文件路径，其他类型需要保存的文件夹路径</p>
 </blockquote>
 <h4>内容方块功能</h4>
 <ul>
@@ -63,10 +82,10 @@
 <li>资源管理器内打开文件夹</li>
 <li>删除，确认后直接删除，不经过回收站</li>
 <li>狗头评级</li>
-<li>修改title，desc，tags</li>
+<li>修改标题，描述，标签</li>
 <li>解压场景pkg</li>
-<li>压缩视频，仅限video类型</li>
-<li>制作字幕，仅限video类型</li>
+<li>压缩视频，仅限视频类型</li>
+<li>制作字幕，仅限视频类型</li>
 <li>wallpaper内打开项目，只支持场景和视频类型</li>
 <li>复制</li>
 </ul>
@@ -76,17 +95,17 @@
 <p>右下角设置按钮及不兼容格式时左上的按钮组</p>
 </blockquote>
 <ul>
-<li>set poster 设置当前帧为主页预览图片</li>
-<li>cut time 视频按照时间点切割成几段（ffmpeg并不能精准到秒切割视频），删掉所有时间点勾选libx264可修改视频格式</li>
-<li>open path 在资源管理器内打开视频所在路径</li>
-<li>in player 在<a href="https://github.com/mpv-player/mpv">mpv</a>播放器内打开视频（格式兼容比纯浏览器多）</li>
+<li>设置当前帧为主页预览图片</li>
+<li>视频按照时间点切割成几段（ffmpeg并不能精准到秒切割视频），删掉所有时间点勾选libx264可修改视频格式</li>
+<li>在资源管理器内打开视频所在路径</li>
+<li>在<a href="https://github.com/mpv-player/mpv">mpv</a>播放器内打开视频（格式兼容比纯浏览器多）</li>
 </ul>
 <h4>图片</h4>
 <blockquote>
 <p>左上的按钮组</p>
 </blockquote>
 <ul>
-<li>set poster 设置当前图片为主页预览图片</li>
-<li>open path 在资源管理器内打开图片所在路径</li>
+<li>设置当前图片为主页预览图片</li>
+<li>在资源管理器内打开图片所在路径</li>
 </ul>
 </div></template><style scoped src="../assets/markdown.css"></style>            <style scoped >                .markdown-body {                    padding: 20px;                }            </style><script>const { shell } = require('electron');window.onload=()=>{    const links = document.querySelectorAll('a[href]');    console.log(links);    links.forEach(link => {        link.addEventListener('click', e => {            const url = link.getAttribute('href');            e.preventDefault();            shell.openExternal(url);        });    });}</script>

@@ -8,26 +8,26 @@
         <div class="other" ref="banner" @mouseleave="showButton = false" @mouseenter="showButton = true">
             <i class="el-icon-setting"></i>
             <div class="banner" v-show="showButton">
-                <p v-if="!isAudio" @click="setPoster">set poster</p>
-                <p @click="cutTime">cut time</p>
-                <p @click="openPath">open path</p>
-                <p @click="inPlayer">in player</p>
+                <p v-if="!isAudio" @click="setPoster">设置封面</p>
+                <p @click="cutTime">剪切视频</p>
+                <p @click="openPath">打开路径</p>
+                <p @click="inPlayer">mpv内打开</p>
             </div>
         </div>
 
         <div class="err-banner" v-show="isERR">
-            <button @click="cutTime">cut time</button>
-            <button @click="openPath">open path</button>
-            <button @click="inPlayer">in player</button>
+            <button @click="cutTime">剪切视频</button>
+            <button @click="openPath">打开路径</button>
+            <button @click="inPlayer">mpv内打开</button>
         </div>
 
-        <el-dialog :title="'cut: ' + obj.file" :visible.sync="showDialog">
+        <el-dialog :title="'剪切: ' + obj.file" :visible.sync="showDialog">
             <div class="dialog">
                 <div v-for="obj, i in timeList">
                     <el-input style="width: 100px;" size="mini" v-model="obj.v" autocomplete="off"></el-input>
                     <el-button size="mini" @click="delTime(i)">删除</el-button>
                 </div>
-                <el-button size="mini" @click="newTimeInput">add</el-button>
+                <el-button size="mini" @click="newTimeInput">添加</el-button>
             </div>
             <div slot="footer" class="dialog-footer">
                 <el-checkbox size="mini" v-model="checked" style="margin-right:30px">libx264</el-checkbox>
@@ -99,27 +99,6 @@ export default {
         },
     },
     created() {
-        // ipcRenderer.on('cutTime', (e, str) => {
-        //     this.$message({
-        //         message: 'cutTime: ' + str
-        //     });
-        // })
-        // ipcRenderer.on('refreshImg', (e, str) => {
-        //     this.$message({
-        //         message: 'refreshImg: ' + str
-        //     });
-        // })
-        // ipcRenderer.on('codecName', (e, str) => {
-        //     console.log('str: ', str);
-        //     if (this.sustainType.indexOf(str) !== -1) {
-        //         this.$notify({
-        //             title: '',
-        //             message: '大部分浏览器不支持' + str + '视频解码',
-        //             duration: 0
-        //         });
-        //     }
-        // })
-        // ipcRenderer.send('getInfo', this.obj)
     },
     mounted() {
         let that = this
