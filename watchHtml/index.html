@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="cn">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>watch</title>
+</head>
+
+<body>
+    <!-- <script src="https://unpkg.com/vconsole@latest/dist/vconsole.min.js"></script>
+    <script>
+        // VConsole 默认会挂载到 `window.VConsole` 上
+        var vConsole = new window.VConsole();
+        // 接下来即可照常使用 `console` 等方法
+        console.log('Hello world');
+
+        // 结束调试后，可移除掉
+        // vConsole.destroy();
+    </script> -->
+    <button id="startButton">start connect</button>
+    <button id="playButton" disabled>play video</button>
+    <button id="closeButton" disabled>close connect</button>
+    <video id="video"></video>
+
+    <script>
+        let video = document.getElementById('video')
+        const startButton = document.getElementById('startButton');
+        const closeButton = document.getElementById('closeButton');
+        const playButton = document.getElementById('playButton');
+
+        let ws;
+        let stream = {}
+        let peer
+        let key
+        const gotMediaStream = () => {
+            let wsPath = 'ws://'+location.host+'?v=1&user=child'
+            ws = new WebSocket(wsPath);
+            ws.onopen = function () {
+                console.log('ws onopen');
+                // ws.send('from client: hello');
+            };
+            ws.onmessage = async function (e) {
+                console.log('onmessage: ', e);
+                let data = JSON.parse(e.data)
+                console.log('data: ', data);
+                if (data.msgType == 'offer') {
+                    console.log('setRemoteDescription');
+                    let st = new MediaStream([])
+                    video.srcObject = st
+                    peer = new RTCPeerConnection({
+                        iceServers: [
+                            // {
+                            //     urls: "stun:192.168.3.110:3478", 
+                            //     username: 'password', // 用户名    
+                            //     credential: 'password' // 密码   
+                            // },   
+                            // {
+                            //     urls: "turn:192.168.3.110:3478?transport=udp",
+                            //     username: 'password', // 用户名    
+                            //     credential: 'password' // 密码    
+                            // }
+                        ]
+                    });
+                    peer.addEventListener("track", (event) => {
+                        console.log('track-event: ', event);
+                        st.addTrack(event.track)
+                    })
+                    peer.onicecandidateerror = (event) => { console.log('err: ', event); };
+                    peer.onicecandidate = (event) => {
+                        console.log('onicecandidate: ', event.candidate);
+                        if (event.candidate) {
+                            ws.send(JSON.stringify({ key: key, msg: event.candidate, msgType: 'candidate' }))
+                        }
+                    };
+                    peer.setRemoteDescription(data.msg)
+                    peer.createAnswer().then(async a => {
+                        key = data.key
+                        await peer.setLocalDescription(a)
+                        ws.send(JSON.stringify({ key: data.key, msgType: 'answer', msg: a }))
+                    })
+                } else if (data.msgType == 'candidate') {
+                    let candidate = new RTCIceCandidate(data.msg);
+                    peer.addIceCandidate(candidate);
+                } else if (data.msgType == 'closeMe') {
+                    alert('main close me')
+                }
+
+            }
+            ws.onclose = async function (e) {
+                console.log('onclose: ', e);
+            }
+            ws.onerror = (e)=>{
+                console.log('onerror: ', e);
+            }
+
+        }
+        startButton.addEventListener('click', () => {
+            gotMediaStream()
+            startButton.className= 'bg'
+            playButton.removeAttribute('disabled')
+            closeButton.removeAttribute('disabled')
+            startButton.setAttribute('disabled',true)
+
+        });
+        closeButton.addEventListener('click', () => {
+            video.pause()
+            ws.close()
+            playButton.className = ''
+            playButton.re
+            startButton.className = ''
+            playButton.setAttribute('disabled',true)
+            closeButton.setAttribute('disabled',true)
+            startButton.removeAttribute('disabled')
+
+        });
+        playButton.addEventListener('click', () => {
+            video.play()
+            playButton.className = 'bg'
+        });
+
+    </script>
+    <style>
+        *{
+            margin: 0;
+            padding: 0;
+        }
+        button{
+            padding: 1px 6px;
+            cursor: pointer;
+        }
+        button:disabled{
+            cursor: no-drop;
+        }
+        video {
+            width: 100vw;
+        }
+        .bg{
+            background-color: greenyellow;
+        }
+    </style>
+</body>
+
+</html>

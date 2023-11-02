@@ -46,8 +46,15 @@
           <el-button size="mini" @click="repkg">解压pkg</el-button>
         </stateButton>
       </section>
-      <section v-if="obj.type == 'scene' || obj.type == 'video'">
-        <el-button size="mini" @click="runWallpaper">wallpaper打开</el-button>
+      <section v-if="obj.type == 'scene' || obj.type == 'video' || obj.type == 'web'">
+        <el-button :type="runningObj == (obj.jsonPath + '-A') ? 'success' : ''" size="mini"
+          @click="runWallpaper">Wallpaper
+          Engine</el-button>
+      </section>
+      <section v-if="obj.type == 'video' || obj.type == 'web'">
+        <el-button :type="runningObj == (obj.jsonPath + '-B') ? 'success' : ''" size="mini"
+          @click="electronWallpaper">electron
+          wallpaper</el-button>
       </section>
       <section>
         <stateButton :path="obj.jsonPath" map="copyStateMap">
@@ -165,7 +172,9 @@ export default {
     },
   },
   computed: {
-
+    runningObj() {
+      return this.$store.state.runningWallpaper
+    },
   },
 
   created() {
@@ -219,6 +228,15 @@ export default {
     },
     compress() {
       this.$emit('compress', this.obj)
+    },
+    electronWallpaper() {
+      if (this.runningObj == (this.obj.jsonPath + '-B')) {
+        ipcRenderer.send('closePaper')
+        this.$store.commit('setRunningWallpaper', '')
+      } else {
+        ipcRenderer.send('newPaper', this.obj)
+        this.$store.commit('setRunningWallpaper', this.obj.jsonPath + '-B')
+      }
     }
 
 
@@ -304,9 +322,11 @@ export default {
     left: 5px;
     text-shadow: 1px 1px 0 #000;
     color: white;
-    i{
+
+    i {
       padding-right: 4px;
     }
+
     // color: #606266;
     span {
       margin: 0;
@@ -448,5 +468,4 @@ export default {
 
     }
   }
-}
-</style>
+}</style>

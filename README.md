@@ -86,3 +86,9 @@ module.exports = process.env.FLUENTFFMPEG_COV ? require('./lib-cov/fluent-ffmpeg
 - 帮助页
 
 - 首页显示视频类型的时长
+
+- ~~rtmp直播屏幕~~,ffmpeg rtmp desktop 不如webrtc延迟低
+
+- webrtc分享屏幕
+
+- electron-as-wallpaper

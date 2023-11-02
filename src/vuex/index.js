@@ -8,9 +8,13 @@ const store = new Vuex.Store({
     repkgStateMap:{},
     whisperStateMap:{},
     copyStateMap:{},
-    compressStateMap:{}
+    compressStateMap:{},
+    runningWallpaper:'',
   },
   mutations: {
+    setRunningWallpaper (state,val) {
+      state.runningWallpaper = val
+    },
     setRepkgStateMap (state,[key,val]) {
       Vue.set(state.repkgStateMap,key ,val)
     },

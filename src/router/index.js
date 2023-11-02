@@ -23,12 +23,16 @@ const routes = [{
     path: '/content',
     name: 'content',
     component: () => import( /* webpackChunkName: "about" */ '../views/contentView.vue')
-  }
-  ,
+  },
   {
     path: '/help',
     name: 'help',
     component: () => import( /* webpackChunkName: "about" */ '../views/help.vue')
+  },
+  {
+    path: '/wallpaper',
+    name: 'wallpaper',
+    component: () => import( /* webpackChunkName: "about" */ '../views/wallpaper.vue')
   }
 ]
 

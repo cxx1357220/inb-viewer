@@ -62,6 +62,10 @@ const outList = (event, list) => {
     for (const key in fileMap) {
         let base = path.dirname(key)
         console.log('base: ', base);
+        if (base[base.length - 1] == '\\') {
+            base = base.slice(0, base.length - 1)
+            console.log('base: ', base);
+        }
         fs.writeFileSync(base + "\\list.json", JSON.stringify(fileMap[key]))
         openPath({},base + "\\list.json")
     }

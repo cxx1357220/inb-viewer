@@ -71,6 +71,13 @@ require('./back/re')
 require('./back/littleFunc')
 require('./back/hasWallpaper')
 
+// const {
+//   outStream
+// }=require('./back/outStream')
+//  outStream()
+
+require('./back/watchWs')
+
 // require('./back/copy')
 // require('./back/compress')
 // require('./back/child')

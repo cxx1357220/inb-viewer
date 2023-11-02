@@ -46,7 +46,6 @@
         <el-form-item>
           <span slot="label">过滤：</span>
           <el-button-group>
-
             <el-select class="filter-select filter-tags" @change="filterList(filterVal)" v-model="filterTag" size="mini"
               filterable default-first-option placeholder="tags">
               <label slot="prefix" class="fix-text" type="">标签:</label>
@@ -54,11 +53,9 @@
               </el-option>
               <el-option v-for="str in tags" :label="str" :value="str">
               </el-option>
-
             </el-select>
           </el-button-group>
           <el-button-group>
-
             <el-select class="filter-select" @change="filterList(filterVal)" v-model="filterFolder" size="mini" filterable
               default-first-option placeholder="tags">
               <label slot="prefix" class="fix-text" type="">文件夹:</label>
@@ -67,13 +64,11 @@
               <el-option v-for="v, k of openFolderPathMap" :label="k" :value="k">
               </el-option>
             </el-select>
-
             <el-button size="mini" v-show="filterFolder" title="reread" icon="el-icon-refresh" circle
               @click="reread"></el-button>
             <el-button size="mini" v-show="filterFolder" title="clear" icon="el-icon-circle-close" circle
               @click="clearFolderRead"></el-button>
           </el-button-group>
-
         </el-form-item>
         <el-form-item>
           <span slot="label">设置：</span>
@@ -106,9 +101,10 @@
               <canvas id="qrCode"></canvas>
               <span>{{ serverState ? shareUrl : '' }}</span>
             </div>
-            <el-button slot="reference" size="mini" :type="serverState ? 'success' : ''"
+            <el-button class="" slot="reference" size="mini" :type="serverState ? 'success' : ''"
               @click="server">局域网内服务</el-button>
           </el-popover>
+          <watchMe></watchMe>
         </el-form-item>
 
 
@@ -118,8 +114,8 @@
       </el-form>
     </nav>
     <div class="search layout">
-      <el-input type="text" prefix-icon="el-icon-search" clearable :suffix="showList.length" size="mini" placeholder="search"
-        v-model="filterVal" @change="filterList(filterVal)">
+      <el-input type="text" prefix-icon="el-icon-search" clearable :suffix="showList.length" size="mini"
+        placeholder="search" v-model="filterVal" @change="filterList(filterVal)">
         <template slot="append"> {{ showList.length }}(<span v-size="showSize"></span>)</template>
       </el-input>
     </div>
@@ -279,7 +275,7 @@ const ipcRenderer = require('electron').ipcRenderer;
 const md5 = require('md5');
 import block from '@/components/block.vue';
 import concatVideo from '@/components/concatVideo.vue';
-
+import watchMe from '@/components/watchMe.vue';
 
 var QRCode = require('qrcode')
 export default {
@@ -605,7 +601,7 @@ export default {
       showConcat: false
     }
   },
-  components: { block, concatVideo },
+  components: { block, concatVideo, watchMe },
   directives: {
     size: {
       bind(el, binding) {
@@ -640,11 +636,11 @@ export default {
       }
     },
     copyVal(n) {
-      localStorage.setItem('copyVal', n||"")
+      localStorage.setItem('copyVal', n || "")
     },
 
     wallpaperPath(n) {
-      localStorage.setItem('wallpaperPath', n)
+      localStorage.setItem('wallpaperPath', n || "")
     },
     showList: {
       deep: true,
@@ -850,7 +846,7 @@ export default {
 
   },
   methods: {
-
+    
     clearState() {
       this.$store.commit('clear')
     },
@@ -1264,14 +1260,21 @@ export default {
       }
     },
     runWallpaper(path) {
-      if (!this.wallpaperPath) {
-        this.$message({
-          type: 'warning',
-          message: '请先选择wallpaper32.exe路径'
-        });
-        return false
+      if (path + '-A' == this.$store.state.runningWallpaper) {
+        ipcRenderer.send('closeWallpaper')
+        this.$store.commit('setRunningWallpaper', '')
+      } else {
+        if (!this.wallpaperPath) {
+          this.$message({
+            type: 'warning',
+            message: '请先选择wallpaper32.exe路径'
+          });
+          return false
+        }
+        ipcRenderer.send('runWallpaper', path, this.wallpaperPath)
+        this.$store.commit('setRunningWallpaper', path + '-A')
       }
-      ipcRenderer.send('runWallpaper', path, this.wallpaperPath)
+
     },
     toTop() {
       window.scrollTo({
@@ -1324,6 +1327,10 @@ export default {
     flex-direction: column;
     justify-content: space-around;
     align-items: center;
+  }
+
+  .button {
+    margin-left: 10px;
   }
 
   .left {

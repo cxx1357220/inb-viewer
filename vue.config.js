@@ -59,7 +59,7 @@ module.exports = defineConfig({
           "deleteAppDataOnUninstall":true
         },
 
-        extraFiles: ['shareHtml'],
+        extraFiles: ['shareHtml','watchHtml'],
         // extraResources:['imgCache']
         // extraResources: [{
         //   "from": "node_modules/regedit/vbs",

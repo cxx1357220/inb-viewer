@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="cn">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>flv</title>
+</head>
+
+<body>
+    <script src="https://cdn.bootcdn.net/ajax/libs/flv.js/1.6.2/flv.min.js"></script>
+    <!-- <script src="https://unpkg.com/vconsole@latest/dist/vconsole.min.js"></script>
+    <script>
+        // VConsole 默认会挂载到 `window.VConsole` 上
+        var vConsole = new window.VConsole();
+        // 接下来即可照常使用 `console` 等方法
+        console.log('Hello world');
+
+        // 结束调试后，可移除掉
+        // vConsole.destroy();
+    </script> -->
+    <button id="playButton">play video</button>
+    <video id="video"></video>
+
+    <script>
+        let video = document.getElementById('video')
+        const playButton = document.getElementById('playButton');
+        // 获取推流视频
+        const flvStream = () => {
+            if (flvjs.isSupported()) {
+                var flvPlayer = flvjs.createPlayer({
+                    type: 'flv',
+                    url: 'ws://localhost:8000/live/STREAM_NAME.flv'
+                    , isLive: true,
+                });
+                flvPlayer.attachMediaElement(video);
+                flvPlayer.load();
+                flvPlayer.play();
+            }
+        }
+        playButton.addEventListener('click', () => {
+            flvStream()
+        });
+
+    </script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+        }
+
+        button {
+            padding: 1px 6px;
+            cursor: pointer;
+        }
+
+
+        video {
+            width: 100vw;
+        }
+    </style>
+</body>
+
+</html>

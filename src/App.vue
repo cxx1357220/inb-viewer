@@ -42,6 +42,12 @@ export default {
         name: 'help',
       })
     })
+    ipcRenderer.on('wallpaper', (e,obj) => {
+      this.$router.push({
+        name: 'wallpaper',
+        params: obj
+      })
+    })
     ipcRenderer.on('error', (e, obj) => {
       this.$notify({
         title: 'error',
