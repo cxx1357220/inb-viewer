@@ -34,11 +34,12 @@
         let peer
         let key
         const gotMediaStream = () => {
-            let wsPath = 'ws://'+location.host+'?v=1&user=child'
+            let wsPath = 'ws://' + location.host + '?v=1&user=child'
             ws = new WebSocket(wsPath);
             ws.onopen = function () {
                 console.log('ws onopen');
-                // ws.send('from client: hello');
+                playButton.removeAttribute('disabled')
+                closeButton.removeAttribute('disabled')
             };
             ws.onmessage = async function (e) {
                 console.log('onmessage: ', e);
@@ -84,34 +85,34 @@
                     peer.addIceCandidate(candidate);
                 } else if (data.msgType == 'closeMe') {
                     alert('main close me')
+                    ws.close()
                 }
 
             }
             ws.onclose = async function (e) {
                 console.log('onclose: ', e);
+                video.pause()
+                playButton.className = ''
+                playButton.re
+                startButton.className = ''
+                playButton.setAttribute('disabled', true)
+                closeButton.setAttribute('disabled', true)
+                startButton.removeAttribute('disabled')
             }
-            ws.onerror = (e)=>{
+            ws.onerror = (e) => {
                 console.log('onerror: ', e);
             }
 
         }
         startButton.addEventListener('click', () => {
             gotMediaStream()
-            startButton.className= 'bg'
-            playButton.removeAttribute('disabled')
-            closeButton.removeAttribute('disabled')
-            startButton.setAttribute('disabled',true)
+            startButton.className = 'bg'
+            startButton.setAttribute('disabled', true)
 
         });
         closeButton.addEventListener('click', () => {
-            video.pause()
             ws.close()
-            playButton.className = ''
-            playButton.re
-            startButton.className = ''
-            playButton.setAttribute('disabled',true)
-            closeButton.setAttribute('disabled',true)
-            startButton.removeAttribute('disabled')
+
 
         });
         playButton.addEventListener('click', () => {
@@ -121,21 +122,25 @@
 
     </script>
     <style>
-        *{
+        * {
             margin: 0;
             padding: 0;
         }
-        button{
+
+        button {
             padding: 1px 6px;
             cursor: pointer;
         }
-        button:disabled{
+
+        button:disabled {
             cursor: no-drop;
         }
+
         video {
             width: 100vw;
         }
-        .bg{
+
+        .bg {
             background-color: greenyellow;
         }
     </style>

@@ -96,12 +96,12 @@
           <el-button size="mini" @click="clearState">清除已操作状态</el-button>
           <!-- <el-button size="mini" @click="dataCount">数据统计</el-button> -->
           <el-button size="mini" @click="showConcat = true">合并视频</el-button>
-          <el-popover trigger="hover" :disabled="!serverState" placement="bottom" effect="light">
+          <el-popover trigger="hover" :open-delay	='500' :disabled="!serverState" placement="bottom">
             <div class="tip">
               <canvas id="qrCode"></canvas>
-              <span>{{ serverState ? shareUrl : '' }}</span>
+              <span>{{ shareUrl }}</span>
             </div>
-            <el-button class="" slot="reference" size="mini" :type="serverState ? 'success' : ''"
+            <el-button class="button" slot="reference" size="mini" :type="serverState ? 'success' : ''"
               @click="server">局域网内服务</el-button>
           </el-popover>
           <watchMe></watchMe>
@@ -1330,7 +1330,7 @@ export default {
   }
 
   .button {
-    margin-left: 10px;
+    margin-right: 10px;
   }
 
   .left {

@@ -8,12 +8,13 @@ const bodyParser = require('body-parser')
 let {
     winSend
 } = require('./win')
-let app
+let serve;
 /**
- * 打开watch，并返回网址，让前端rtc开始推流
+ * 打开watch，并返回网址，让前端rtc开始推流,
+ * 不开这个服务挂这个ws服务也没啥意思
  */
 const startWs = () => {
-    app = express();
+    let app = express();
     expressWs(app)
     app.use(bodyParser.urlencoded({
         txtended: false
@@ -108,7 +109,7 @@ const startWs = () => {
         }
     }
     const port = 3333
-    app.listen(port, () => {
+    serve = app.listen(port, () => {
         console.log(`${add}:${port}/app/`)
         winSend('main', 'watchUrl', `${add}:${port}/app/`)
     });
@@ -117,7 +118,7 @@ const startWs = () => {
  * 关闭watch
  */
 const closeWs = () => {
-    app.close()
+    serve.close()
 }
 
 

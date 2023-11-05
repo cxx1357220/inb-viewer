@@ -1,10 +1,10 @@
 <template>
-    <el-popover trigger="hover" :disabled="!watchState" placement="bottom" effect="light">
+    <el-popover trigger="hover" :open-delay	='500' :disabled="!watchState" placement="bottom">
         <div class="tip">
             <canvas ref="qrCode"></canvas>
-            <span>{{ watchState ? watchUrl : '' }}</span>
+            <span>{{ watchUrl }}</span>
         </div>
-        <el-button class="button" slot="reference" size="mini" :type="watchState ? 'success' : ''"
+        <el-button slot="reference" size="mini" :type="watchState ? 'success' : ''"
             @click="watchMe">局域网内分享屏幕</el-button>
     </el-popover>
 </template>
@@ -48,6 +48,7 @@ export default {
             }
         },
         closeWatch() {
+            ipcRenderer.send('closeWs', this.watchState)
             this.stream?.getTracks()
                 .forEach(track => track.stop())
             this.ws?.close()
