@@ -88,23 +88,9 @@ ipcMain.on('openTool', openTool)
 /**
  * 设置路径
  * @param {*} event 
- * @param {object} obj 设置按钮的信息（key）
+ * @param {object} opt 设置按钮的信息（key）
  */
-const setPath = (event, obj) => {
-    console.log('obj: ', obj);
-    let properties = obj.type == 'file' ? ['openFile'] : ['openDirectory']
-    dialog.showOpenDialog({
-            properties: properties
-        })
-        .then(files => {
-            if (files) {
-                winSend('main', 'setPath', {
-                    key: obj.key,
-                    path: files.filePaths[0]
-                });
-            }
-        }).catch(err => {
-            console.log(err)
-        });
+const setPath =async (event, opt) => {    
+    return await dialog.showOpenDialog(opt)
 }
-ipcMain.on('setPath', setPath)
+ipcMain.handle('setPath', setPath)

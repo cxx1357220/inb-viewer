@@ -17,7 +17,7 @@ export default {
 
   },
   beforeCreate() {
-    ipcRenderer.on('newWindow', (e, obj) => {
+    ipcRenderer.on('blockVal', (e, obj) => {
       console.log(obj);
       if (obj.type == 'video') {
         this.$router.push({
@@ -30,7 +30,13 @@ export default {
           params: obj
         })
       }
-
+    })
+    ipcRenderer.on('mdView', (e, obj) => {
+      console.log(obj);
+        this.$router.push({
+          name: 'mdView',
+          params: obj
+        })
     })
     ipcRenderer.on('home', (e) => {
       this.$router.push({

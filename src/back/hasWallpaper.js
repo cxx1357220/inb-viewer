@@ -74,7 +74,7 @@ const newPaper = async (event, obj) => {
         frame: false,
         show: false,
         webPreferences: {
-            nodeIntegration: true,
+            nodeIntegration: false,
             contextIsolation: false,
             webSecurity: false,
             backgroundThrottling: false,

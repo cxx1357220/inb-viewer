@@ -33,6 +33,11 @@ const routes = [{
     path: '/wallpaper',
     name: 'wallpaper',
     component: () => import( /* webpackChunkName: "about" */ '../views/wallpaper.vue')
+  },
+  {
+    path: '/mdView',
+    name: 'mdView',
+    component: () => import( /* webpackChunkName: "about" */ '../views/mdView.vue')
   }
 ]
 

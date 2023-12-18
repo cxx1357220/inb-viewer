@@ -10,53 +10,7 @@ let {
 
 
 
-/**
- * 设置合并视频保存路径
- * @param {*} event 
- */
-const setConcatPath = (event) => {
-    dialog.showOpenDialog({
-            properties: ['openDirectory'],
-        })
-        .then(files => {
-            if (files.filePaths.length) {
-                winSend('main', 'setConcatPath', files.filePaths[0]);
-            }
-        }).catch(err => {
-            console.log(err)
-        });
-}
-ipcMain.on('setConcatPath', setConcatPath)
 
-
-
-/**
- * 设置多个路径-合并的视频路径
- * @param {*} event 
- * @param {object} obj 按钮的信息（key）
- */
-const setConcatPaths = (event, obj) => {
-    console.log('obj: ', obj);
-    dialog.showOpenDialog({
-            properties: ['openFile', 'multiSelections'],
-            filters: [{
-                name: 'Movies',
-                extensions: ['mkv', 'avi', 'mp4', 'webm', 'ts']
-            }]
-        })
-        .then(files => {
-            if (files.filePaths.length) {
-                console.log('files: ', files);
-                winSend('main', 'setConcatPaths', {
-                    k: obj.k,
-                    files: files.filePaths
-                });
-            }
-        }).catch(err => {
-            console.log(err)
-        });
-}
-ipcMain.on('setConcatPaths', setConcatPaths)
 
 
 
@@ -190,7 +144,8 @@ const concatVideo = (event, obj) => {
         let inp = obj.savePath + '\\inb-concat.txt'
         let txtVal = ''
         res.forEach(s => {
-            txtVal += 'file ' + s.replaceAll('\\', '\\\\') + '\r\n'
+            // 格式离谱，带空格文件夹需要'包裹
+            txtVal += "file '" + s.replaceAll('\\', '\\\\') + "'\r\n"
         })
         fs.writeFileSync(inp, txtVal)
         ffmpeg()

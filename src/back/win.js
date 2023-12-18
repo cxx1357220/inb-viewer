@@ -77,17 +77,31 @@ let {
     visits
 } = require('./re')
 
+
 /**
  * 创建窗口
+ * @param {string} winType 窗口类型
+ * @param {object} obj 传的数据
+ * @returns 
  */
-async function createWindow(winKey = 'main', obj = {}) {
-    if (winKey == 'content') {
-        let r = visits(obj)
-        if (r == 'error') {
-            return false
-        }
-        winKey = obj.basePath
-        obj.winKey = winKey
+async function createWindow(winType = 'main', obj = {}) {
+    let winKey
+    switch (winType) {
+        case 'content':
+            let r = visits(obj)
+            if (r == 'error') {
+                return false
+            }
+            winKey = obj.basePath
+            obj.winKey = winKey
+            break;
+        case 'mdView':
+            winKey = obj.path
+            obj.winKey = winKey
+            break;
+        default:
+            winKey = winType
+            break;
     }
 
     if (winMap[winKey]) {
@@ -107,7 +121,7 @@ async function createWindow(winKey = 'main', obj = {}) {
     })
 
 
-
+    //url.format hash,query去取local并没那么理想
     if (process.env.WEBPACK_DEV_SERVER_URL) {
         // Load the url of the dev server if in development mode
         await win.loadURL(process.env.WEBPACK_DEV_SERVER_URL)
@@ -118,32 +132,44 @@ async function createWindow(winKey = 'main', obj = {}) {
         await win.loadURL('app://./index.html')
     }
 
-    if (winKey == 'main') {
-        win.webContents.send('home')
-        setTray()
-        win.on('close', (e) => {
-            e.preventDefault(); // 阻止退出程序
-            win.setSkipTaskbar(true) // 取消任务栏显示
-            win.hide(); // 隐藏主程序窗口
-        })
-    } else if (winKey == 'help') {
-        win.webContents.send('help')
-        win.on('close', (e) => {
-            delete winMap[winKey]
-        })
-    } else {
-        let cutStateMap = {}
-        cutData.list.forEach(list => {
-            if (winKey == list[0].basePath) {
-                cutStateMap[list[0].filePath] = 'waiting'
-            }
-        })
-        obj.cutStateMap = cutStateMap
-        win.webContents.send('newWindow', obj)
+    switch (winType) {
+        case 'main':
+            win.webContents.send('home')
+            setTray()
+            win.on('close', (e) => {
+                e.preventDefault(); // 阻止退出程序
+                win.setSkipTaskbar(true) // 取消任务栏显示
+                win.hide(); // 隐藏主程序窗口
+            })
+            break;
+        case 'help':
+            win.webContents.send('help')
+            win.on('close', (e) => {
+                delete winMap[winKey]
+            })
+            break;
+        case 'mdView':
+            win.webContents.send('mdView', obj)
+            win.on('close', (e) => {
+                delete winMap[winKey]
+            })
+            break;
 
-        win.on('close', (e) => {
-            delete winMap[winKey]
-        })
+        default:
+            let cutStateMap = {}
+            cutData.list.forEach(list => {
+                if (winKey == list[0].basePath) {
+                    cutStateMap[list[0].filePath] = 'waiting'
+                }
+            })
+            obj.cutStateMap = cutStateMap
+            win.webContents.send('blockVal', obj)
+
+            win.on('close', (e) => {
+                delete winMap[winKey]
+            })
+
+            break;
     }
     winMap[winKey] = win
 
@@ -153,9 +179,10 @@ async function createWindow(winKey = 'main', obj = {}) {
  * 新窗口打开文件(视频,图片)
  * @param {*} event 
  * @param {object} obj 块数据
+ * @param {string} wintype 类型
  */
-const open = (event, obj) => {
-    createWindow('content', obj)
+const open = (event, obj,type='content') => {
+    createWindow(type, obj)
 }
 ipcMain.on('open', open)
 app.on('before-quit', (e) => {

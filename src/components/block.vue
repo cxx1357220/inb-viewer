@@ -185,7 +185,7 @@ export default {
     open(obj) {
       obj.visits ? obj.visits++ : (obj.visits = 1)
       this.$emit('changeObj', this.obj)
-      ipcRenderer.send('open', obj)
+      ipcRenderer.send('open', obj, 'content')
     },
     cacheImg() {
       this.$emit('cacheImg', this.obj.img)
@@ -468,4 +468,5 @@ export default {
 
     }
   }
-}</style>
+}
+</style>

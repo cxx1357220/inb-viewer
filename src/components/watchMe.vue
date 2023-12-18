@@ -1,5 +1,5 @@
 <template>
-    <el-popover trigger="hover" :open-delay	='500' :disabled="!watchState" placement="bottom">
+    <el-popover trigger="hover" :popper-class="!watchState?'visibility-pop':''" placement="bottom">
         <div class="tip">
             <canvas ref="qrCode"></canvas>
             <span>{{ watchUrl }}</span>
@@ -30,7 +30,10 @@ export default {
         ipcRenderer.on('watchUrl', (e, str) => {
             this.watchUrl = str
             var canvas = this.$refs.qrCode
-            QRCode.toCanvas(canvas, str, function (error) {
+            QRCode.toCanvas(canvas, str, {
+                height:150,
+                width:150
+            }, function (error) {
                 if (error) console.error(error)
             })
             this.watchWin()
@@ -144,4 +147,6 @@ export default {
 
 }
 </script>
-<style lang="less" scoped></style>
+<style lang="less" scoped>
+
+</style>

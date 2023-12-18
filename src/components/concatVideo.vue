@@ -13,7 +13,7 @@
                                 @click="setPaths(file)" icon="el-icon-folder">选择文件路径</el-button>
 
 
-                                <el-button slot="append" size="mini" @click="del(i)">移除</el-button>
+                            <el-button slot="append" size="mini" @click="del(i)">移除</el-button>
 
                         </el-input>
                     </div>
@@ -116,27 +116,6 @@ export default {
     },
     created() {
         this.show = this.value
-        ipcRenderer.on('setConcatPaths', (e, obj) => {
-            console.log('obj: ', obj);
-            let i = this.files.findIndex(item => {
-                return obj.k == item.k
-            })
-            if (i != -1) {
-                let li = obj.files.map((o, idx) => {
-                    return {
-                        p: o,
-                        k: obj.k + '-' + idx
-                    }
-                })
-                console.log('li: ', li);
-                this.files[i].p = li.shift().p
-                this.files.splice(i + 1, 0, ...li)
-                console.log('this.files: ', this.files);
-            }
-        })
-        ipcRenderer.on('setConcatPath', (e, str) => {
-            this.savePath = str
-        })
 
         ipcRenderer.on('concatPercent', (e, str) => {
             switch (str) {
@@ -182,11 +161,50 @@ export default {
                 unSameFps: this.unSameFps
             });
         },
-        setPaths(obj) {
-            ipcRenderer.send("setConcatPaths", obj);
+        setPaths(file) {
+
+
+            ipcRenderer.invoke("setPath", {
+                properties: ['openFile', 'multiSelections'],
+                filters: [{
+                    name: 'Movies',
+                    extensions: ['mkv', 'avi', 'mp4', 'webm', 'ts']
+                }]
+            }).then(obj => {
+                console.log('obj: ', obj);
+
+                if (!obj.canceled) {
+                    let i = this.files.findIndex(item => {
+                        return file.k == item.k
+                    })
+                    if (i != -1) {
+                        let li = obj.filePaths.map((o, idx) => {
+                            return {
+                                p: o,
+                                k: file.k + '-' + idx
+                            }
+                        })
+                        console.log('li: ', li);
+                        this.files[i].p = li.shift().p
+                        this.files.splice(i + 1, 0, ...li)
+                        console.log('this.files: ', this.files);
+                    }
+
+                }
+
+
+            })
         },
         setPath() {
-            ipcRenderer.send("setConcatPath");
+            ipcRenderer.invoke("setPath", {
+                properties: ['openDirectory'],
+            }).then(obj => {
+                console.log('obj: ', obj);
+                if (!obj.canceled) {
+                    let s = obj.filePaths[0];
+                    this.savePath = s
+                }
+            })
         },
         add() {
             this.files.push({ k: Date.now(), p: '' })

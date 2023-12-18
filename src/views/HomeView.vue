@@ -74,12 +74,12 @@
           <span slot="label">设置：</span>
           <el-input size="mini" v-model="copyVal" :class="copyVal ? '' : 'warning'"
             style="width: 280px;margin-right: 10px;" placeholder="复制路径"><el-button size="mini" slot="prepend"
-              @click="setPath('dir', 'copyVal')" icon="el-icon-folder">选择复制路径</el-button>
+              @click="setPath('dir', ['copyVal'])" icon="el-icon-folder">选择复制路径</el-button>
           </el-input>
           <el-button size="mini" plain icon="el-icon-setting" @click="compressDrawer = true">压缩视频设置</el-button>
           <el-button size="mini" plain icon="el-icon-setting" @click="whisperDrawer = true">解析字幕设置</el-button>
           <el-input size="mini" v-model="wallpaperPath" style="width: 280px;margin-right: 10px;"
-            placeholder="wallpaper路径"><el-button size="mini" slot="prepend" @click="setPath('file', 'wallpaperPath')"
+            placeholder="wallpaper路径"><el-button size="mini" slot="prepend" @click="setPath('file', ['wallpaperPath'])"
               icon="el-icon-folder">选择wallpaper路径</el-button>
           </el-input>
         </el-form-item>
@@ -96,7 +96,7 @@
           <el-button size="mini" @click="clearState">清除已操作状态</el-button>
           <!-- <el-button size="mini" @click="dataCount">数据统计</el-button> -->
           <el-button size="mini" @click="showConcat = true">合并视频</el-button>
-          <el-popover trigger="hover" :open-delay	='500' :disabled="!serverState" placement="bottom">
+          <el-popover trigger="hover" :popper-class="!serverState ? 'visibility-pop' : ''" placement="bottom">
             <div class="tip">
               <canvas id="qrCode"></canvas>
               <span>{{ shareUrl }}</span>
@@ -210,13 +210,13 @@
         <el-form-item v-if="!projectVal.type" label="文件夹路径：">
           <el-input size="mini" v-model="projectVal.dirPath" style="vertical-align: baseline;"
             :class="projectVal.dirPath ? '' : 'warning'" placeholder="文件夹路径"><el-button size="mini" slot="prepend"
-              @click="setPath('dir', 'projectVal.dirPath')" icon="el-icon-folder">选择文件夹路径</el-button>
+              @click="setPath('dir', ['projectVal', 'dirPath'])" icon="el-icon-folder">选择文件夹路径</el-button>
           </el-input>
         </el-form-item>
         <el-form-item v-else label="文件路径：">
           <el-input size="mini" v-model="projectVal.filePath" style="vertical-align: baseline;"
             :class="projectVal.filePath ? '' : 'warning'" placeholder="文件路径"><el-button size="mini" slot="prepend"
-              @click="setPath('file', 'projectVal.filePath')" icon="el-icon-folder">选择文件路径</el-button>
+              @click="setPath('file', ['projectVal', 'filePath'])" icon="el-icon-folder">选择文件路径</el-button>
           </el-input>
         </el-form-item>
         <el-form-item label="描述：">
@@ -233,7 +233,7 @@
         <el-form-item label="保存路径：">
           <el-input size="mini" v-model="projectVal.savePath" style="vertical-align: baseline;"
             :class="projectVal.savePath ? '' : 'warning'" placeholder="保存路径"><el-button size="mini" slot="prepend"
-              @click="setPath('dir', 'projectVal.savePath')" icon="el-icon-folder">选择保存路径</el-button>
+              @click="setPath('dir', ['projectVal', 'savePath'])" icon="el-icon-folder">选择保存路径</el-button>
           </el-input>
         </el-form-item>
 
@@ -706,14 +706,7 @@ export default {
       this.$set(this.newStateMap, obj.jsonPath, obj.percent)
     })
 
-    ipcRenderer.on('setPath', (e, obj) => {
-      eval("this." + obj.key + " = obj.path")
-      if (obj.key == 'projectVal.filePath') {
-        if (this.projectVal.title == '') {
-          this.$set(this.projectVal, 'title', nodePath.basename(obj.path))
-        }
-      }
-    })
+
     ipcRenderer.on('modelList', (e, ls) => {
       // console.log('ls: ', ls);
       ls.forEach(obj => {
@@ -738,7 +731,10 @@ export default {
     ipcRenderer.on('shareUrl', (e, str) => {
       this.shareUrl = str
       var canvas = document.getElementById('qrCode')
-      QRCode.toCanvas(canvas, str, function (error) {
+      QRCode.toCanvas(canvas, str, {
+        height: 150,
+        width: 150
+      }, function (error) {
         if (error) console.error(error)
       })
     })
@@ -846,7 +842,7 @@ export default {
 
   },
   methods: {
-    
+
     clearState() {
       this.$store.commit('clear')
     },
@@ -1139,11 +1135,29 @@ export default {
         });
       });
     },
-    setPath(type, key) {
-      console.log('type, key: ', type, key);
-      ipcRenderer.send("setPath", {
-        type, key
-      });
+    setPath(type, arr) {
+      let properties = type == 'file' ? ['openFile'] : ['openDirectory']
+      ipcRenderer.invoke("setPath", {
+        properties
+      }).then(obj => {
+        console.log('obj: ', obj);
+        if (!obj.canceled) {
+          let s = obj.filePaths[0];
+          arr.reduce((a, b, i) => {
+            if ((i + 1) == arr.length) {
+              a[b] = s
+              if (b == 'filePath'&&this.projectVal.title == '') {
+                  this.$set(this.projectVal, 'title', nodePath.basename(s))
+              }
+            }
+            return a[b]
+          }, this)
+
+
+        }
+
+      })
+
     },
     async outTitle() {
       ipcRenderer.send('openTool')
@@ -1311,6 +1325,10 @@ export default {
   }
 }
 
+.visibility-pop {
+  visibility: hidden
+}
+
 .layout {
   display: flex;
   flex-direction: column;
@@ -1410,6 +1428,12 @@ export default {
   display: flex;
   flex-direction: column;
   align-items: center;
+  width: 160px;
+
+  canvas {
+    width: 150px;
+    height: 150px;
+  }
 }
 
 .check-input {
