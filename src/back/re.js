@@ -15,7 +15,7 @@ const reTitle = (event, obj) => {
     console.log('obj: ', obj);
     try {
         let stats = fs.statSync(obj.jsonPath)
-        fs.readFile(obj.jsonPath, 'utf-8', (err, call) => {
+        fs.readFile(obj.jsonPath, 'utf8', (err, call) => {
             if (err) {
                 return false
             }
@@ -55,7 +55,7 @@ const reDetail = (event, obj) => {
     console.log('obj: ', obj);
     try {
         let stats = fs.statSync(obj.jsonPath)
-        fs.readFile(obj.jsonPath, 'utf-8', (err, call) => {
+        fs.readFile(obj.jsonPath, 'utf8', (err, call) => {
             if (err) {
                 return false
             }
@@ -63,6 +63,15 @@ const reDetail = (event, obj) => {
             data.title = obj.title
             data.tags = obj.tags
             data.description = obj.description
+
+            data.videoCode = obj.videoCode
+            data.videoTitle = obj.videoTitle
+            data.videoTags = obj.videoTags
+            data.videoBigImage = obj.videoBigImage
+            data.videoMinImage = obj.videoMinImage
+            data.videoActs = obj.videoActs
+            data.videoPreviewImg = obj.videoPreviewImg
+            
             fs.writeFile(obj.jsonPath, JSON.stringify(data), (err) => {
                 if (err) {
                     return false
@@ -95,7 +104,7 @@ const reStar = (event, obj) => {
     console.log('obj: ', obj);
     try {
         let stats = fs.statSync(obj.jsonPath)
-        fs.readFile(obj.jsonPath, 'utf-8', (err, call) => {
+        fs.readFile(obj.jsonPath, 'utf8', (err, call) => {
             if (err) {
                 return false
             }
@@ -134,7 +143,7 @@ const visits = (obj) => {
     console.log('obj: ', obj);
     try {
         let stats = fs.statSync(obj.jsonPath)
-        fs.readFile(obj.jsonPath, 'utf-8', (err, call) => {
+        fs.readFile(obj.jsonPath, 'utf8', (err, call) => {
             if (err) {
                 return false
             }

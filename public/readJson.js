@@ -58,13 +58,13 @@ process.on('message', function (dirPath) {
             if (i >= list.length) {
                 return
             }
+            let data = {}
             try {
-                JSON.parse(fs.readFileSync(list[i].path, 'utf-8') || '{}')
+                data = JSON.parse(fs.readFileSync(list[i].path, 'utf8') || '{}')
             } catch (error) {
                 console.log('list[i].path: ', list[i].path);
                 console.log('error: ', error);
             }
-            let data = JSON.parse(fs.readFileSync(list[i].path, 'utf-8') || '{}')
             let basePath = list[i].basePath + '\\'
             if (data.file == 'scene.json') {
                 data.file = 'scene.pkg'
@@ -86,7 +86,14 @@ process.on('message', function (dirPath) {
                 openFolderPath: dirPath,
                 date: list[i].date,
                 tags: data.tags || [],
-                description: data.description || ''
+                description: data.description || '',
+                videoCode: data.videoCode,
+                videoTitle: data.videoTitle,
+                videoTags: data.videoTags,
+                videoBigImage: data.videoBigImage,
+                videoMinImage: data.videoMinImage,
+                videoActs: data.videoActs,
+                videoPreviewImg: data.videoPreviewImg,
             }
             tags = tags.concat(data.tags || [])
             read(i + 1)

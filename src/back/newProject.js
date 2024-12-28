@@ -189,7 +189,8 @@ const newProject = (event, obj) => {
             title: obj.title,
             type: obj.type,
             tags: obj.tags || [],
-            description: obj.description || ''
+            description: obj.description || '',
+            waitKey: obj.waitKey
         }
     }, obj.savePath, obj.tags || [])
 

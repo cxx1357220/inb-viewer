@@ -65,6 +65,9 @@ const {
 } = require('./back/model')
 require('./back/read')
 require('./back/serve')
+
+require('./back/ocrServe')
+
 // require('./back/whisper')
 // require('./back/repkg')
 require('./back/re')
@@ -77,6 +80,7 @@ require('./back/hasWallpaper')
 //  outStream()
 
 require('./back/watchWs')
+require('./back/screenshots')
 
 // require('./back/copy')
 // require('./back/compress')

@@ -99,6 +99,10 @@ async function createWindow(winType = 'main', obj = {}) {
             winKey = obj.path
             obj.winKey = winKey
             break;
+        case 'outDesc':
+            winKey = obj.basePath + 'Desc'
+            obj.winKey = winKey
+            break;
         default:
             winKey = winType
             break;
@@ -110,13 +114,14 @@ async function createWindow(winType = 'main', obj = {}) {
     }
     // Create the browser window.
     let win = new BrowserWindow({
-        width: 800,
-        height: 600,
+        width: winType=='main'?1000:800,
+        height: winType=='main'?750:600,
         title: (obj.title || winKey) + ' - viewer',
         webPreferences: {
             nodeIntegration: true,
             contextIsolation: false,
             webSecurity: false,
+            requestedExecutionLevel: 'requireAdministrator' // 或者 'highestAvailable'
         }
     })
 
@@ -131,6 +136,15 @@ async function createWindow(winType = 'main', obj = {}) {
         // Load the index.html when not in development
         await win.loadURL('app://./index.html')
     }
+    win.webContents.on('before-input-event', (event, input) => {
+        if (input.control && input.key.toLowerCase() === 'i') {
+            console.log('Pressed Control+I')
+            win.webContents.openDevTools({
+                mode: 'right'
+            })
+            event.preventDefault()
+        }
+    })
 
     switch (winType) {
         case 'main':
@@ -144,6 +158,12 @@ async function createWindow(winType = 'main', obj = {}) {
             break;
         case 'help':
             win.webContents.send('help')
+            win.on('close', (e) => {
+                delete winMap[winKey]
+            })
+            break;
+        case 'outDesc':
+            win.webContents.send('outDesc', obj)
             win.on('close', (e) => {
                 delete winMap[winKey]
             })
@@ -181,7 +201,7 @@ async function createWindow(winType = 'main', obj = {}) {
  * @param {object} obj 块数据
  * @param {string} wintype 类型
  */
-const open = (event, obj,type='content') => {
+const open = (event, obj, type = 'content') => {
     createWindow(type, obj)
 }
 ipcMain.on('open', open)

@@ -5,3 +5,5 @@
 # /public/ffmpeg
 /public/whisper-cpp/model
 /install_whisper.md
+/map.json
+/public/ocr

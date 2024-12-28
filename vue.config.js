@@ -67,6 +67,7 @@ module.exports = defineConfig({
         //   "filter": ["**/*"]
         // }]
       },
+      externals: ["electron-screenshots"]
       // extraResources: [{
       //   "from": "shareHtml",
       //   "to": ""

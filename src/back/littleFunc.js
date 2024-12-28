@@ -19,7 +19,7 @@ const openPath = (event, s) => {
     fs.access(s, fs.constants.F_OK, (err) => {
         if (err) {
             console.log('file not exists', err)
-            winSend('main', 'error', '系统找不到指定的路径：'+s)
+            winSend('main', 'error', '系统找不到指定的路径：' + s)
             return false
         }
         shell.showItemInFolder(s)
@@ -41,7 +41,18 @@ const rmPath = (event, obj) => {
     fs.rm(obj.basePath, {
         recursive: true
     }, (err) => {
-        console.log('err: ', err);
+        if (err) {
+            fs.chmod(obj.basePath, 0o775, (err) => {
+                if (err) {
+                    console.log('chmod err: ', err);
+                };
+                fs.rmdir(obj.basePath, {
+                    recursive: true
+                }, (err) => {
+                    console.log('rmdir err: ', err);
+                })
+            })
+        }
 
     })
 }
@@ -59,6 +70,7 @@ const outList = (event, list) => {
         }
         fileMap[obj.openFolderPath].push(obj)
     });
+    let time = new Date().getTime()
     for (const key in fileMap) {
         let base = path.dirname(key)
         console.log('base: ', base);
@@ -66,8 +78,14 @@ const outList = (event, list) => {
             base = base.slice(0, base.length - 1)
             console.log('base: ', base);
         }
+        try {
+            fs.renameSync(base + "\\list.json", base + "\\list-old-" + time + ".json");
+        } catch (error) {
+            console.log('error: ', error);
+        }
+
         fs.writeFileSync(base + "\\list.json", JSON.stringify(fileMap[key]))
-        openPath({},base + "\\list.json")
+        openPath({}, base + "\\list.json")
     }
 }
 ipcMain.on('outList', outList)
@@ -90,7 +108,7 @@ ipcMain.on('openTool', openTool)
  * @param {*} event 
  * @param {object} opt 设置按钮的信息（key）
  */
-const setPath =async (event, opt) => {    
+const setPath = async (event, opt) => {
     return await dialog.showOpenDialog(opt)
 }
 ipcMain.handle('setPath', setPath)

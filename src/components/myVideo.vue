@@ -74,7 +74,7 @@ export default {
         // 一个计算属性的 getter
         videoUrl() {
             // `this` 指向当前组件实例
-            return this.url.replace('#', '%23')
+            return this.url.replaceAll('#', '%23')
         }
     },
     directives: {

@@ -26,7 +26,8 @@
       <p @click="reDetail" title="detail">{{ obj.title || '-----' }}</p>
 
       <!-- <p @click="add(obj, 'vip-')">vip-</p> -->
-
+      <!-- <p @click="fixJsonFile(obj)">fixJsonFile</p> -->
+      <p @click="openDesc(obj)">getDesc</p>
       <label>{{ obj.file }}</label>
       <i v-size="obj.allSize"></i>
       <span v-date="obj"></span>
@@ -187,6 +188,9 @@ export default {
       this.$emit('changeObj', this.obj)
       ipcRenderer.send('open', obj, 'content')
     },
+    openDesc(obj) {
+      ipcRenderer.send('open', obj, 'outDesc')
+    },
     cacheImg() {
       this.$emit('cacheImg', this.obj.img)
     },
@@ -237,6 +241,19 @@ export default {
         ipcRenderer.send('newPaper', this.obj)
         this.$store.commit('setRunningWallpaper', this.obj.jsonPath + '-B')
       }
+    },
+    fixJsonFile(obj){
+      console.log('obj: ', obj);
+      let files = fs.readdirSync(obj.basePath);
+      let ls = files.filter(s=>s.toLowerCase()!='preview.jpg'&&s.toLowerCase()!='project.json')
+      let json ={"description":"","preview":"preview.jpg","tags":[],"type":"video"}
+      if(ls.length==1){
+        json.title = json.file = ls[0]
+      }else{
+        json.title = ls[0]
+        json.type = 'other'
+      }
+      fs.writeFileSync(obj.jsonPath, JSON.stringify(json))
     }
 
 
@@ -403,7 +420,7 @@ export default {
   }
 
   p+p {
-    color: #f56c6c;
+    color: #66b1ff;;
   }
 
   .icons {

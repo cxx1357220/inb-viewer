@@ -6,6 +6,7 @@ const {
     exec
 } = require('child_process');
 const iconv = require('iconv-lite');
+const fs = require('fs')
 let {
     winSend
 } = require('./win')
@@ -29,6 +30,14 @@ const throttlePercent=throttle((jsonPath,d)=>{
  * @param {String} copyVal 复制到的路径
  */
 const copyDir = (event, obj, copyVal) => {
+    // let lis = obj.basePath.split('\\')
+    // let newPaths = copyVal + '\\' + lis[lis.length - 2]
+    // fs.renameSync(obj.basePath, newPaths);
+    // winSend('main', 'copyPercent', {
+    //     jsonPath: obj.jsonPath,
+    //     percent: 'done'
+    // })
+    // return false
     if (copyData.state) {
         copyData.list.push([obj, copyVal])
         return false

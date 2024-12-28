@@ -1,60 +1,69 @@
 <template>
-    <el-tabs v-model="activeName" type="border-card">
-        <el-tab-pane label="media list" name="list">
-            <div class="list">
-                <!-- <img v-for=" s in imgs" v-lazy="s" alt=""> -->
-                <div class="img" v-for=" s in imgs" :key="s">
-                    <div class="banner">
-                        <button @click="imgSetPoster(s)">设置封面</button>
-                        <button @click="openPath(s)">打开路径</button>
+    <div>
+        <el-tabs v-model="activeName" type="border-card">
+            <el-tab-pane label="media list" name="list">
+                <div class="list">
+                    <!-- <img v-for=" s in imgs" v-lazy="s" alt=""> -->
+                    <div class="img" v-for=" s in imgs" :key="s">
+                        <div class="banner">
+                            <button v-show="showOcr" @click="ocr(s)">ocr</button>
+                            <button @click="imgSetPoster(s)">设置封面</button>
+                            <button @click="openPath(s)">打开路径</button>
+                        </div>
+                        <el-image :src="s" lazy :preview-src-list="imgs">
+                        </el-image>
                     </div>
-                    <el-image :src="s" lazy :preview-src-list="imgs">
-                    </el-image>
-                </div>
-                <div v-for="( s, i) in audios" :key="s" class="audio" v-loading="cutStateMap[s]"
-                    :element-loading-text="cutStateMap[s]">
-                    <!-- <audio controls :src="s">
+                    <div v-for="( s, i) in audios" :key="s" class="audio" v-loading="cutStateMap[s]"
+                        :element-loading-text="cutStateMap[s]">
+                        <!-- <audio controls :src="s">
                     </audio> -->
-                    <myVideo :fobj="obj" :url="s" :idx="i" :videoList="audios" isAudio="1" />
+                        <myVideo :fobj="obj" :url="s" :idx="i" :videoList="audios" isAudio="1" />
+                    </div>
+                    <div v-for="( s, i) in videos" :key="s" class="video" v-loading="cutStateMap[s]"
+                        :element-loading-text="cutStateMap[s]">
+                        <myVideo :fobj="obj" :url="s" :idx="i" :videoList="videos" />
+                    </div>
+                    <el-empty v-if="!imgs.length && !audios.length && !videos.length" description="nothing"></el-empty>
+
                 </div>
-                <div v-for="( s, i) in videos" :key="s" class="video" v-loading="cutStateMap[s]"
-                    :element-loading-text="cutStateMap[s]">
-                    <myVideo :fobj="obj" :url="s" :idx="i" :videoList="videos" />
+            </el-tab-pane>
+            <el-tab-pane label="html" v-if="haveHtml" name="html">
+                <iframe :src="obj.filePath" frameborder="0"></iframe>
+            </el-tab-pane>
+
+            <el-tab-pane label="markdown" name="md">
+                <div class="md-list">
+                    <el-input placeholder="请输入文件名" v-model="newName">
+                        <span slot="prepend">文件名:</span>
+                        <el-button :loading="newLoading" @click="newMd" slot="append"
+                            icon="el-icon-circle-plus-outline">新建</el-button>
+                    </el-input>
+
+                    <p v-for="o in mdList" :key="o.path">
+                        <label @click="open(o)">
+                            {{ o.name }}
+                        </label>
+                        <span>
+                            <i @click="openPath(o.path)" class="el-icon-folder-opened"></i>
+                            <i @click="delPath(o.path)" class="el-icon-delete"></i>
+                        </span>
+                    </p>
                 </div>
-                <el-empty v-if="!imgs.length && !audios.length && !videos.length" description="nothing"></el-empty>
-
-            </div>
-        </el-tab-pane>
-        <el-tab-pane label="html" v-if="haveHtml" name="html">
-            <iframe :src="obj.filePath" frameborder="0"></iframe>
-        </el-tab-pane>
-
-        <el-tab-pane label="markdown" name="md">
-            <div class="md-list">
-                <el-input placeholder="请输入文件名" v-model="newName">
-                    <span slot="prepend">文件名:</span>
-                    <el-button :loading="newLoading" @click="newMd" slot="append"
-                        icon="el-icon-circle-plus-outline">新建</el-button>
-                </el-input>
-
-                <p v-for="o in mdList" :key="o.path">
-                    <label @click="open(o)">
-                        {{ o.name }}
-                    </label>
-                    <span>
-                        <i @click="openPath(o.path)" class="el-icon-folder-opened"></i>
-                        <i @click="delPath(o.path)" class="el-icon-delete"></i>
-                    </span>
-                </p>
-            </div>
-        </el-tab-pane>
-    </el-tabs>
+            </el-tab-pane>
+        </el-tabs>
+        <el-dialog  :visible.sync="showText"   title="ocr->text">
+            <el-input v-model="ocrText"   :autosize="{ minRows: 5, maxRows: 15 }" type="textarea"
+                 />
+        </el-dialog>
+    </div>
 </template>
 
 <script>
 const ipcRenderer = require('electron').ipcRenderer;
 const path = require('path');
 const fs = require('fs');
+import axios from 'axios';
+
 import myVideo from '@/components/myVideo.vue';
 export default {
     name: 'imgList',
@@ -69,11 +78,15 @@ export default {
             cutStateMap: {},
             mdList: [],
             newName: '',
-            newLoading: false
+            newLoading: false,
+            showOcr: false,
+            ocrText:'',
+            showText:false
         }
     },
     components: { myVideo },
     created() {
+        this.showOcr = !(localStorage.getItem('ocrServe')=='false')
         console.log(this.$route.params);
         this.obj = this.$route.params;
         console.log('this.obj : ', this.obj);
@@ -141,7 +154,7 @@ export default {
         openPath(s) {
             ipcRenderer.send('openPath', s)
         },
-        open(obj){
+        open(obj) {
             ipcRenderer.send('open', obj, 'mdView')
         },
         delPath(s) {
@@ -156,17 +169,17 @@ export default {
                 }
             });
         },
-        singleName(i=0){
-            let name =  this.newName + (i?('('+i+').md'):'.md')
-            let s = path.join(this.obj.basePath,name)
-            console.log('s: ', s,i);
-            let has  = this.mdList.some(o=>o.path==s)
-            if(has){
-                return this.singleName(i+1)
-            }else{
+        singleName(i = 0) {
+            let name = this.newName + (i ? ('(' + i + ').md') : '.md')
+            let s = path.join(this.obj.basePath, name)
+            console.log('s: ', s, i);
+            let has = this.mdList.some(o => o.path == s)
+            if (has) {
+                return this.singleName(i + 1)
+            } else {
                 return {
                     name,
-                    path:s
+                    path: s
                 }
             }
         },
@@ -183,7 +196,7 @@ export default {
             }
             this.newLoading = true
             let obj = this.singleName()
-            fs.writeFile(obj.path,'', (err) => {
+            fs.writeFile(obj.path, '', (err) => {
                 this.newLoading = false
                 if (err) {
                     this.$message({
@@ -195,6 +208,37 @@ export default {
                 }
             })
 
+        },
+        async urlToFile(url, filename, mimeType = 'image/png') {
+            const response = await fetch(url);
+            const blob = await response.blob();
+            return new File([blob], filename, { type: mimeType });
+        },
+        async ocr(s) {
+            if (localStorage.getItem('ocrServe')=='false') {
+                this.showOcr = false
+                return false
+            }
+            // const urlWithoutPort = window.location.origin.replace(/:(\d+)/, '')
+            const formData = new FormData();
+            const file = await this.urlToFile(s, 'example.png');
+            formData.append('file', file);
+            axios.post('http://127.0.0.1:5000/api/ocr', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                }
+            }).then(response => {
+                console.log('上传成功', response.data);
+                this.res = response.data
+                this.ocrText = ''
+                this.res.res.forEach(element => {
+                    this.ocrText += element.value + '\n'
+                });
+                this.showText = true
+
+            }).catch(error => {
+                console.error('上传失败', error);
+            });
         }
     }
 

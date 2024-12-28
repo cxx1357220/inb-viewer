@@ -33,10 +33,10 @@ export default {
     })
     ipcRenderer.on('mdView', (e, obj) => {
       console.log(obj);
-        this.$router.push({
-          name: 'mdView',
-          params: obj
-        })
+      this.$router.push({
+        name: 'mdView',
+        params: obj
+      })
     })
     ipcRenderer.on('home', (e) => {
       this.$router.push({
@@ -48,9 +48,15 @@ export default {
         name: 'help',
       })
     })
-    ipcRenderer.on('wallpaper', (e,obj) => {
+    ipcRenderer.on('wallpaper', (e, obj) => {
       this.$router.push({
         name: 'wallpaper',
+        params: obj
+      })
+    })
+    ipcRenderer.on('outDesc', (e, obj) => {
+      this.$router.push({
+        name: 'outDesc',
         params: obj
       })
     })
@@ -76,5 +82,9 @@ export default {
 * {
   margin: 0;
   padding: 0;
+}
+
+.el-tag+.el-tag {
+  margin-left: 10px;
 }
 </style>

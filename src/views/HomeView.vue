@@ -1,5 +1,6 @@
 <template>
-  <div class="home" v-loading="loading">
+  <el-input type="password" v-model="password" v-if="password != 665533"></el-input>
+  <div class="home" v-loading="loading" v-else>
     <nav class="layout">
       <div class="left">
         <el-button size="big" type="primary" @click="inputFile">选取文件</el-button>
@@ -56,8 +57,8 @@
             </el-select>
           </el-button-group>
           <el-button-group>
-            <el-select class="filter-select" @change="filterList(filterVal)" v-model="filterFolder" size="mini" filterable
-              default-first-option placeholder="tags">
+            <el-select class="filter-select" @change="filterList(filterVal)" v-model="filterFolder" size="mini"
+              filterable default-first-option placeholder="tags">
               <label slot="prefix" class="fix-text" type="">文件夹:</label>
               <el-option label="全部" value="">
               </el-option>
@@ -90,12 +91,13 @@
           <el-button size="mini" @click="repkgList">批量解压pkg</el-button>
           <el-button size="mini" @click="xcopyList">批量复制</el-button>
           <el-button size="mini" @click="rmList">批量删除</el-button>
-          <!-- <el-button size="mini" @click="outTitle">输出title</el-button> -->
+          <el-button size="mini" @click="outTitle">输出title</el-button>
           <el-button size="mini" :loading="loadingDuration" @click="getInfo"><span v-show="loadingDuration">{{
             rateDuration }}</span>获取视频时长</el-button>
           <el-button size="mini" @click="clearState">清除已操作状态</el-button>
-          <!-- <el-button size="mini" @click="dataCount">数据统计</el-button> -->
+          <el-button size="mini" @click="dataCount">数据统计</el-button>
           <el-button size="mini" @click="showConcat = true">合并视频</el-button>
+          <el-button size="mini" @click="allout">批量获取详细信息</el-button>
           <el-popover trigger="hover" :popper-class="!serverState ? 'visibility-pop' : ''" placement="bottom">
             <div class="tip">
               <canvas id="qrCode"></canvas>
@@ -104,6 +106,7 @@
             <el-button class="button" slot="reference" size="mini" :type="serverState ? 'success' : ''"
               @click="server">局域网内服务</el-button>
           </el-popover>
+          <ocrServe></ocrServe>
           <watchMe></watchMe>
         </el-form-item>
 
@@ -121,10 +124,11 @@
     </div>
     <div v-loading="showLoading">
       <div class="home-list">
-        <div>
+        <div class="add-block">
           <div class="add-project" @click="showNewProjectDialog = true">
             <i class="el-icon-circle-plus-outline"></i>
           </div>
+          <p v-for="s in waitCopyMap"><i class="el-icon-coffee-cup"></i>{{ s }}</p>
         </div>
         <div v-for="obj, i in showList" :key="obj.jsonPath" v-loading="newStateMap[obj.jsonPath]"
           :element-loading-text="newStateMap[obj.jsonPath]" element-loading-spinner="el-icon-loading">
@@ -143,11 +147,7 @@
       <el-form label-width="140px" :model="whisperSet">
         <el-form-item label="字幕文件类型：">
           <el-checkbox-group v-model="whisperSet.type" :min="1">
-            <el-checkbox label="-ocsv" name="type">csv</el-checkbox>
-            <el-checkbox label="-ovtt" name="type">vtt</el-checkbox>
-            <el-checkbox label="-osrt" name="type">srt</el-checkbox>
-            <el-checkbox label="-otxt" name="type">text</el-checkbox>
-            <el-checkbox label="-owts" name="type">words</el-checkbox>
+            <el-checkbox v-for="o in whisperOutTypeList" :label="o.label" name="type">{{ o.name }}</el-checkbox>
           </el-checkbox-group>
         </el-form-item>
         <el-form-item label="解析ai模型：">
@@ -243,32 +243,14 @@
         <el-button size="mini" type="primary" @click="newProject">确 定</el-button>
       </div>
     </el-dialog>
-    <el-dialog title="详情" :visible.sync="showDetailDialog">
-      <el-form label-width="100px" :model="detail">
-        <el-form-item label="标题：">
-          <el-input type="text" size="mini" v-model="detail.title"></el-input>
-        </el-form-item>
-        <el-form-item label="描述：">
-          <el-input type="textarea" size="mini" v-model="detail.description"></el-input>
-        </el-form-item>
-        <el-form-item label="标签：">
-          <el-select v-model="detail.tags" multiple filterable allow-create default-first-option placeholder="tags">
-            <el-option v-for="str in tags" :label="str" :value="str">
-            </el-option>
-          </el-select>
-        </el-form-item>
-      </el-form>
-      <div slot="footer" class="dialog-footer">
-        <el-button size="mini" @click="showDetailDialog = false">取 消</el-button>
-        <el-button size="mini" type="primary" @click="saveDetail">确 定</el-button>
-      </div>
-    </el-dialog>
+    <detail v-model.sync="showDetailDialog" :detail="detail" :tags="tags" />
     <concatVideo v-model.sync="showConcat" />
   </div>
 </template>
 
 <script>
 
+import getDetail from '../tools/getDetail';
 window.fs = require('fs')
 window.nodePath = require('path')
 const ipcRenderer = require('electron').ipcRenderer;
@@ -276,12 +258,16 @@ const md5 = require('md5');
 import block from '@/components/block.vue';
 import concatVideo from '@/components/concatVideo.vue';
 import watchMe from '@/components/watchMe.vue';
+import ocrServe from '@/components/ocrServe.vue';
 
+import detail from '@/components/detail.vue';
+const config = require('../vuex/config')
 var QRCode = require('qrcode')
 export default {
   name: 'HomeView',
   data() {
     return {
+      password: '665533',
       loading: false,
       allDataMap: {},
       filterVal: '',
@@ -296,287 +282,21 @@ export default {
       copyVal: '',
       compressDrawer: false,
       compressSet: {},
-      compressSizeList: [{
-        value: '1920*1080'
-      }, {
-        value: '1080*720'
-      }],
-      compressFpsList: [{
-        value: '30'
-      }, {
-        value: '25'
-      }],
-      compressVcodecList: [{
-        //   value: 'copy'
-        // }, {
-        value: 'libx264'
-      }, {
-        value: 'libx265'
-      }],
-      compressTypeList: [{
-        value: '.mp4'
-      }, {
-        value: '.avi'
-      }, {
-        value: '.ts'
-      }, {
-        value: '.flv'
-      }],
+      compressSizeList: config.compressSizeList,
+      compressFpsList: config.compressFpsList,
+      compressVcodecList: config.compressVcodecList,
+      compressTypeList: config.compressTypeList,
       openFolderPathMap: {},
       whisperDrawer: false,
       whisperSet: { type: ['-ovtt'], model: '' },
+      whisperOutTypeList: config.whisperOutTypeList,
       modelList: [],
-      downModelMap: {
-        'ggml-small.bin': 'https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small.bin',
-        'ggml-medium.bin': 'https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-medium.bin',
-        'ggml-large.bin': 'https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large.bin',
-        'ggml-tiny.bin': 'https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.bin'
-      },
+      downModelMap: config.downModelMap,
       downPercentMap: {},
-      languageList: [
-        {
-          "label": "Arabic",
-          "value": "ar"
-        },
-        {
-          "label": "Armenian",
-          "value": "hy"
-        },
-        {
-          "label": "Azerbaijani",
-          "value": "az"
-        },
-        {
-          "label": "Basque",
-          "value": "eu"
-        },
-        {
-          "label": "Belarusian",
-          "value": "be"
-        },
-        {
-          "label": "Bengali",
-          "value": "bn"
-        },
-        {
-          "label": "Bulgarian",
-          "value": "bg"
-        },
-        {
-          "label": "Catalan",
-          "value": "ca"
-        },
-        {
-          "label": "Chinese",
-          "value": "zh"
-        },
-        {
-          "label": "Croatian",
-          "value": "hr"
-        },
-        {
-          "label": "Czech",
-          "value": "cs"
-        },
-        {
-          "label": "Danish",
-          "value": "da"
-        },
-        {
-          "label": "Dutch",
-          "value": "nl"
-        },
-        {
-          "label": "English",
-          "value": "en"
-        },
-        {
-          "label": "Estonian",
-          "value": "et"
-        },
-        {
-          "label": "Filipino",
-          "value": "tl"
-        },
-        {
-          "label": "Finnish",
-          "value": "fi"
-        },
-        {
-          "label": "French",
-          "value": "fr"
-        },
-        {
-          "label": "Galician",
-          "value": "gl"
-        },
-        {
-          "label": "Georgian",
-          "value": "ka"
-        },
-        {
-          "label": "German",
-          "value": "de"
-        },
-        {
-          "label": "Greek",
-          "value": "el"
-        },
-        {
-          "label": "Gujarati",
-          "value": "gu"
-        },
-        {
-          "label": "Hebrew",
-          "value": "iw"
-        },
-        {
-          "label": "Hindi",
-          "value": "hi"
-        },
-        {
-          "label": "Hungarian",
-          "value": "hu"
-        },
-        {
-          "label": "Icelandic",
-          "value": "is"
-        },
-        {
-          "label": "Indonesian",
-          "value": "id"
-        },
-        {
-          "label": "Irish",
-          "value": "ga"
-        },
-        {
-          "label": "Italian",
-          "value": "it"
-        },
-        {
-          "label": "Japanese",
-          "value": "ja"
-        },
-        {
-          "label": "Kannada",
-          "value": "kn"
-        },
-        {
-          "label": "Korean",
-          "value": "ko"
-        },
-        {
-          "label": "Latin",
-          "value": "la"
-        },
-        {
-          "label": "Latvian",
-          "value": "lv"
-        },
-        {
-          "label": "Lithuanian",
-          "value": "lt"
-        },
-        {
-          "label": "Macedonian",
-          "value": "mk"
-        },
-        {
-          "label": "Malay",
-          "value": "ms"
-        },
-        {
-          "label": "Maltese",
-          "value": "mt"
-        },
-        {
-          "label": "Norwegian",
-          "value": "no"
-        },
-        {
-          "label": "Persian",
-          "value": "fa"
-        },
-        {
-          "label": "Polish",
-          "value": "pl"
-        },
-        {
-          "label": "Portuguese",
-          "value": "pt"
-        },
-        {
-          "label": "Romanian",
-          "value": "ro"
-        },
-        {
-          "label": "Russian",
-          "value": "ru"
-        },
-        {
-          "label": "Serbian",
-          "value": "sr"
-        },
-        {
-          "label": "Slovak",
-          "value": "sk"
-        },
-        {
-          "label": "Slovenian",
-          "value": "sl"
-        },
-        {
-          "label": "Spanish",
-          "value": "es"
-        },
-        {
-          "label": "Swahili",
-          "value": "sw"
-        },
-        {
-          "label": "Swedish",
-          "value": "sv"
-        },
-        {
-          "label": "Tamil",
-          "value": "ta"
-        },
-        {
-          "label": "Telugu",
-          "value": "te"
-        },
-        {
-          "label": "Thai",
-          "value": "th"
-        },
-        {
-          "label": "Turkish",
-          "value": "tr"
-        },
-        {
-          "label": "Ukrainian",
-          "value": "uk"
-        },
-        {
-          "label": "Urdu",
-          "value": "ur"
-        },
-        {
-          "label": "Vietnamese",
-          "value": "vi"
-        },
-        {
-          "label": "Welsh",
-          "value": "cy"
-        },
-        {
-          "label": "Yiddish",
-          "value": "yi"
-        }
-      ],
+      languageList: config.languageList,
       showNewProjectDialog: false,
       newStateMap: {},
+      waitCopyMap: {},
       projectVal: {
         type: '',
         title: '',
@@ -601,7 +321,7 @@ export default {
       showConcat: false
     }
   },
-  components: { block, concatVideo, watchMe },
+  components: { block, concatVideo, watchMe, detail, ocrServe },
   directives: {
     size: {
       bind(el, binding) {
@@ -638,7 +358,6 @@ export default {
     copyVal(n) {
       localStorage.setItem('copyVal', n || "")
     },
-
     wallpaperPath(n) {
       localStorage.setItem('wallpaperPath', n || "")
     },
@@ -658,11 +377,6 @@ export default {
     }
   },
   created() {
-    window.onon = () => {
-
-      console.log(this.$store.state);
-      this.$store.commit('setRepkgStateMap', ["D:\\Steam\\steamapps\\workshop\\content\\431960\\1350400986\\project.json", Math.random() * 1000])
-    }
     sessionStorage.getItem('imgCachePath') && (this.imgCachePath = sessionStorage.getItem('imgCachePath'))
     this.copyVal = localStorage.getItem('copyVal') || ''
     this.wallpaperPath = localStorage.getItem('wallpaperPath') || ''
@@ -680,6 +394,9 @@ export default {
     ipcRenderer.on('callMap', (e, map, openFolderPath, tags) => {
       this.loading = false
       if (Object.keys(map).length) {
+        if (Object.keys(map).length == 1 && Object.values(map)[0].waitKey) {
+          delete this.waitCopyMap[Object.values(map)[0].waitKey]
+        }
         this.openFolderPathMap[openFolderPath] = window.btoa(openFolderPath).match(/[0-9a-zA-Z]/g).join('')
         Object.assign(this.allDataMap, map)
         localStorage.setItem('allDataMap', JSON.stringify(this.allDataMap))
@@ -689,7 +406,6 @@ export default {
       }
       map = ''
     })
-
     ipcRenderer.on('percent', (e, obj) => {
       this.$store.commit('setCompressStateMap', [obj.jsonPath, obj.percent])
     })
@@ -705,8 +421,6 @@ export default {
     ipcRenderer.on('newPercent', (e, obj) => {
       this.$set(this.newStateMap, obj.jsonPath, obj.percent)
     })
-
-
     ipcRenderer.on('modelList', (e, ls) => {
       // console.log('ls: ', ls);
       ls.forEach(obj => {
@@ -727,7 +441,6 @@ export default {
         this.$set(this.downPercentMap, obj.name, obj.percent)
       }
     })
-
     ipcRenderer.on('shareUrl', (e, str) => {
       this.shareUrl = str
       var canvas = document.getElementById('qrCode')
@@ -738,9 +451,6 @@ export default {
         if (error) console.error(error)
       })
     })
-
-
-
     ipcRenderer.on('newTitle', (e, obj) => {
       console.log('obj: ', obj);
       this.showList.some((o, i) => {
@@ -759,7 +469,6 @@ export default {
         message: 'new title: ' + obj.newTitle
       });
     })
-
     ipcRenderer.on('reDetail', (e, obj) => {
       console.log('obj: ', obj);
       this.showList.some((o, i) => {
@@ -767,6 +476,15 @@ export default {
           this.$set(this.showList[i], 'title', obj.title)
           this.$set(this.showList[i], 'description', obj.description)
           this.$set(this.showList[i], 'tags', obj.tags)
+
+          this.$set(this.showList[i], 'videoCode', obj.videoCode)
+          this.$set(this.showList[i], 'videoTitle', obj.videoTitle)
+          this.$set(this.showList[i], 'videoTags', obj.videoTags)
+          this.$set(this.showList[i], 'videoBigImage', obj.videoBigImage)
+          this.$set(this.showList[i], 'videoMinImage', obj.videoMinImage)
+          this.$set(this.showList[i], 'videoActs', obj.videoActs)
+          this.$set(this.showList[i], 'videoPreviewImg', obj.videoPreviewImg)
+
           return true
         } else {
           return false
@@ -775,13 +493,21 @@ export default {
       this.allDataMap[obj.jsonPath]['title'] = obj.title
       this.allDataMap[obj.jsonPath]['description'] = obj.description
       this.allDataMap[obj.jsonPath]['tags'] = obj.tags
+
+      this.allDataMap[obj.jsonPath]['videoCode'] = obj.videoCode
+      this.allDataMap[obj.jsonPath]['videoTitle'] = obj.videoTitle
+      this.allDataMap[obj.jsonPath]['videoTags'] = obj.videoTags
+      this.allDataMap[obj.jsonPath]['videoBigImage'] = obj.videoBigImage
+      this.allDataMap[obj.jsonPath]['videoMinImage'] = obj.videoMinImage
+      this.allDataMap[obj.jsonPath]['videoActs'] = obj.videoActs
+      this.allDataMap[obj.jsonPath]['videoPreviewImg'] = obj.videoPreviewImg
+
       localStorage.setItem('allDataMap', JSON.stringify(this.allDataMap))
       this.$message({
         type: 'success',
         message: 'new detail'
       });
     })
-
     ipcRenderer.on('refreshImg', (e, obj) => {
       const souceUrl = obj.img.split('?')[0]
       let to = nodePath.join(this.imgCachePath, md5(souceUrl))
@@ -803,30 +529,21 @@ export default {
       })
 
     })
-
     ipcRenderer.on('log', (e, ...msg) => {
       console.warn(...msg);
     })
     ipcRenderer.on('wallpaperPath', (e, str) => {
       this.wallpaperPath = str
     })
-
     ipcRenderer.on('imgCachePath', (e, string) => {
       console.log('string: ', string);
       this.imgCachePath = string
       sessionStorage.setItem('imgCachePath', string)
     })
-
     ipcRenderer.on('videoDuration', (e, obj) => {
       Object.keys(obj).forEach(k => {
         Object.assign(this.allDataMap[k], obj[k])
       })
-      // this.showList.forEach((ele,i) => {
-      //   if(obj[ele.jsonPath]){
-      //     // Object.assign(ele,obj[ele.jsonPath])
-      //     this.$set(this.showList[i],'videoDuration',obj[ele.jsonPath].videoDuration)
-      //   }
-      // });
       this.showList.length = 0
       this.showList.splice(0, 0)
       this.filterList(this.filterVal)
@@ -837,12 +554,20 @@ export default {
     ipcRenderer.on('rateDuration', (e, s) => {
       this.rateDuration = s
     })
-
-
-
+    ipcRenderer.on('changeBlockContent', (e, obj, key, val) => {
+      switch (key) {
+        case 'star':
+          this.allDataMap[obj.jsonPath][key] = val
+          break;
+        case 'visits':
+          this.allDataMap[obj.jsonPath][key] = this.allDataMap[obj.jsonPath][key] ? this.allDataMap[obj.jsonPath][key] + 1 : 1
+          break;
+        default:
+          break;
+      }
+    })
   },
   methods: {
-
     clearState() {
       this.$store.commit('clear')
     },
@@ -850,8 +575,41 @@ export default {
       this.loading = true
       ipcRenderer.send('readJSON')
     },
+    allout() {
+      const get = (i) => {
+        if (i > this.showList.length - 1) {
+          return false
+        }
 
-
+        let obj = this.showList[i];
+        getDetail(obj).then(res => {
+          let detail = Object.assign({}, obj, res)
+          ipcRenderer.send('reDetail', detail)
+          let image = new Image();
+          image.setAttribute('crossOrigin', 'anonymous');
+          image.onload = function () {
+            var canvas = document.createElement('canvas');
+            canvas.width = image.width;
+            canvas.height = image.height;
+            var context = canvas.getContext('2d');
+            context.drawImage(image, 0, 0, image.width, image.height);
+            var dataURL = canvas.toDataURL('image/jpeg');
+            ipcRenderer.send('setPoster', obj, dataURL)
+            i++
+            get(i)
+          }
+          image.onerror = () => {
+            i++
+            get(i)
+          }
+          image.src = detail.videoMinImage;
+        }).catch((error) => {
+          i++
+          get(i)
+        });
+      }
+      get(0)
+    },
     cacheImg(url) {
       const souceUrl = url.split('?')[0]
       if (url.indexOf('?cache=true') == -1 && !localStorage.getItem(souceUrl)) {
@@ -910,8 +668,6 @@ export default {
       }
 
     },
-
-
     changeObj(obj, type) {
       if (type == 'delete') {
         this.showList.some((o, i) => {
@@ -931,10 +687,6 @@ export default {
     reDetail(obj) {
       this.detail = JSON.parse(JSON.stringify(obj));
       this.showDetailDialog = true;
-    },
-    saveDetail() {
-      ipcRenderer.send('reDetail', this.detail)
-      this.showDetailDialog = false;
     },
     outList() {
       ipcRenderer.send('outList', this.showList)
@@ -984,11 +736,21 @@ export default {
         }
       }
       let isFolder = (obj) => {
-        // console.log('obj: ', obj);
+
         if (this.filterFolder == '') {
           return true
         } else {
           return obj.openFolderPath == this.filterFolder
+        }
+      }
+      let isDesc = (obj) => {
+        let ls = [].concat(obj?.videoActs, obj?.videoTags)
+        if (ls.join('').indexOf(n) != -1) {
+          console.log('ls: ', ls);
+          return true
+
+        } else {
+          return false
         }
       }
       this.showList.length = 0;
@@ -1003,7 +765,7 @@ export default {
           }
         } else {
           let reg = new RegExp(n, 'i');
-          if ((reg.test(obj.title) || reg.test(obj.file)) && isType(obj) && isTag(obj) && isFolder(obj)) {
+          if (isType(obj) && isTag(obj) && isFolder(obj) && (reg.test(obj.title) || reg.test(obj.file) || isDesc(obj))) {
             this.showList.push(obj)
             this.showSize += Number(obj.allSize)
           }
@@ -1022,7 +784,6 @@ export default {
       this.type = type;
       this.filterList(this.filterVal)
     },
-
     repkg(obj) {
       this.$store.commit('setRepkgStateMap', [obj.jsonPath, 'waiting'])
       ipcRenderer.send('repkg', obj)
@@ -1146,8 +907,8 @@ export default {
           arr.reduce((a, b, i) => {
             if ((i + 1) == arr.length) {
               a[b] = s
-              if (b == 'filePath'&&this.projectVal.title == '') {
-                  this.$set(this.projectVal, 'title', nodePath.basename(s))
+              if (b == 'filePath' && this.projectVal.title == '') {
+                this.$set(this.projectVal, 'title', nodePath.basename(s))
               }
             }
             return a[b]
@@ -1199,6 +960,7 @@ export default {
       }
     },
     newProject() {
+      let key;
       if (this.projectVal.type) {
         if (!this.projectVal.filePath) {
           this.$message({
@@ -1207,6 +969,7 @@ export default {
           });
           return
         }
+        key = md5(this.projectVal.filePath + '-' + this.projectVal.savePath)
       } else {
         if (!this.projectVal.dirPath) {
           this.$message({
@@ -1215,8 +978,11 @@ export default {
           });
           return
         }
+        key = md5(this.projectVal.dirPath + '-' + this.projectVal.savePath)
       }
+      this.projectVal.waitKey = key
       ipcRenderer.send('newProject', this.projectVal)
+      this.waitCopyMap[key] = this.projectVal.title
       this.showNewProjectDialog = false
       Object.assign(this.projectVal, {
         // type: '',
@@ -1271,6 +1037,18 @@ export default {
         }
         delete this.openFolderPathMap[this.filterFolder];
         localStorage.setItem('openFolderPathMap', JSON.stringify(this.openFolderPathMap))
+
+        // 获取localStorage中所有的key
+        let length = localStorage.length;
+        for (let i = 0; i < length; i++) {
+          let key = localStorage.key(i);
+          if (key?.indexOf(this.filterFolder) == 0) {
+            let value = localStorage.getItem(key);
+            fs.unlinkSync(value);
+            localStorage.removeItem(key)
+            i--
+          }
+        }
       }
     },
     runWallpaper(path) {
@@ -1462,6 +1240,22 @@ export default {
 
   .el-loading-text {
     text-align: center;
+  }
+
+  .add-block {
+    p {
+      margin-top: 5px;
+      word-break: break-all;
+      text-align: left;
+      padding: 5px;
+      box-shadow: 0 1px 3px rgb(0 0 0 / 30%);
+      background: white;
+      color: gray;
+    }
+
+    p:last-child {
+      border-radius: 0 0 10px 10px;
+    }
   }
 
   .add-project {
