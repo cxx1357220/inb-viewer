@@ -43,7 +43,7 @@ const startOcr = () => {
     serve.on('exit', (code) => {
         console.log('exit: ', code);
     });
-    console.log('ocrPath: ', ocrPath);
+    
     let ifaces = os.networkInterfaces()
     let add = '',
         port = 5000
@@ -66,15 +66,22 @@ const startOcr = () => {
 const closeOcr = () => {
     // serve.kill('SIGTERM');
     // serve.kill('SIGKILL')
-    kill(serve.pid, 'SIGKILL', (err) => {
-        if (err) {
-            console.error('无法终止进程:', err);
-        } else {
-            console.log('进程已终止');
-        }
-    });
+    if(serve&&serve.pid){
+        kill(serve.pid, 'SIGKILL', (err) => {
+            if (err) {
+                console.error('无法终止进程:', err);
+            } else {
+                console.log('进程已终止');
+                serve=''
+            }
+        });
+    }
+    
 }
-
+app.on('before-quit', (event, commandLine, workingDirectory) => {
+    console.log('before-quit');
+    closeOcr()
+})
 
 ipcMain.on('startOcr', startOcr)
 ipcMain.on('closeOcr', closeOcr)

@@ -430,7 +430,7 @@ export default {
       padding: 2px 7px;
       border: 1px solid #f56c6c;
       border-radius: 70% 0 50% 0;
-
+      color: #f56c6c;
       &:hover {
         // border-color: #f56c6c;
         background-color: #f56c6c;

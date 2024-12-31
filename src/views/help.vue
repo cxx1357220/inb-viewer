@@ -12,7 +12,7 @@
 <ul>
 <li>视频</li>
 <li>场景</li>
-<li>应用程序（wallpaper里基本上都是病毒，实在不行用沙盒玩，虽然沙盒也有漏洞，但好过裸奔）</li>
+<li>应用程序（wallpaper里基本上都是病毒，实在不行用沙盒，虽然沙盒也有漏洞，但好过裸奔）</li>
 <li>其他（网页以及未标注类型的，wallpaper里的网页引入的js也是很多莫名的代码，挖矿以及请求莫名其妙的节点，如果只要里边的图片和视频，先把里边的html，js，css文件删了）</li>
 </ul>
 <h4>排序</h4>
@@ -65,12 +65,16 @@ ai模型下载地址有墙：<a href="https://huggingface.co/ggerganov/whisper.c
 <li>批量删除展示的内容，密码665533，直接删除，不经过回收站</li>
 <li>获取展示的视频类型的时长</li>
 <li>清除已经操作完成的状态</li>
-<li>合并视频，ffmepg -filter_complex 实现视频concat，相同编码下不进行解码还是蛮快的。解码真太慢了，cpu还吃满。</li>
+<li>合并视频，ffmepg -filter_complex 实现视频concat，相同编码下不进行解码还是蛮快的。解码真太慢了，cpu还吃满</li>
+<li>批量获取屏幕信息，根据标题从imbd获取视频相关信息</li>
 <li>局域网内服务，局域网内创建一个网站，可在局域网内查看展示的内容，网站密码665533</li>
+<li>局域网内ocr服务，局域网内创建一个网站，可在局域网内对图片进行ocr，ocr来源<a href="https://paddlepaddle.github.io/PaddleOCR/main/index.html">paddleocr</a></li>
+<li>局域网内分享屏幕，局域网内创建一个网站，可查看电脑当前屏幕</li>
+<li>ctrl+alt+a 截图</li>
 </ul>
 <h4>搜索</h4>
 <blockquote>
-<p>只搜索‘标题’、‘文件名’、‘描述’的内容，会显示总数和总大小，输入665533会弹出浏览器F12调试</p>
+<p>只搜索‘标题’、‘文件名’、‘描述’，‘视频类型’，‘主演’的内容，会显示总数和总大小</p>
 </blockquote>
 <h4>新建项目</h4>
 <blockquote>
@@ -83,6 +87,7 @@ ai模型下载地址有墙：<a href="https://huggingface.co/ggerganov/whisper.c
 <li>删除，确认后直接删除，不经过回收站</li>
 <li>狗头评级</li>
 <li>修改标题，描述，标签</li>
+<li>getDesc，根据标题从imbd获取视频相关信息</li>
 <li>解压场景pkg</li>
 <li>压缩视频，仅限视频类型</li>
 <li>制作字幕，仅限视频类型</li>
@@ -105,6 +110,7 @@ ai模型下载地址有墙：<a href="https://huggingface.co/ggerganov/whisper.c
 <p>左上的按钮组</p>
 </blockquote>
 <ul>
+<li>开启ocr服务的时候，可对图片进行ocr</li>
 <li>设置当前图片为主页预览图片</li>
 <li>在资源管理器内打开图片所在路径</li>
 </ul>

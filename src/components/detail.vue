@@ -21,7 +21,7 @@
             <el-form-item v-if="detail.videoTitle" label="片名：">
                 {{ detail.videoTitle }}
             </el-form-item>
-            <el-form-item v-if="detail.type == 'video'" label="视频类型：">
+            <el-form-item v-if="detail.type == 'video'||(detail.videoTags && detail.videoTags.length)" label="视频类型：">
                 <template v-if="detail.videoTags">
                     <el-tag v-for="s in detail.videoTags " closable @close="handleTagClose(s)">{{ s }}</el-tag>
                 </template>
@@ -30,7 +30,7 @@
                 </el-input>
                 <el-button v-else class="button-new-tag" size="small" @click="showTagInput">+ New Tag</el-button>
             </el-form-item>
-            <el-form-item v-if="detail.type == 'video'" label="主演：">
+            <el-form-item v-if="detail.type == 'video'||(detail.videoActs && detail.videoActs.length)" label="主演：">
                 <template v-if="detail.videoActs">
                     <el-tag v-for="s in detail.videoActs " closable @close="handleActClose(s)">{{ s }}</el-tag>
                 </template>

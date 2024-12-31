@@ -92,3 +92,9 @@ module.exports = process.env.FLUENTFFMPEG_COV ? require('./lib-cov/fluent-ffmpeg
 - webrtc分享屏幕
 
 - electron-as-wallpaper
+
+- ocr，paddle ocr
+
+- ctrl+alt+a 截图
+
+- 根据名字获取视频信息 

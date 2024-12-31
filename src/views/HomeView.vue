@@ -250,7 +250,8 @@
 
 <script>
 
-import getDetail from '../tools/getDetail';
+import getDetailD from '../tools/getDetail';
+import getDetailZ from '../tools/getDetailZ';
 window.fs = require('fs')
 window.nodePath = require('path')
 const ipcRenderer = require('electron').ipcRenderer;
@@ -267,7 +268,7 @@ export default {
   name: 'HomeView',
   data() {
     return {
-      password: '665533',
+      password: '',
       loading: false,
       allDataMap: {},
       filterVal: '',
@@ -352,7 +353,8 @@ export default {
   watch: {
     filterVal(n) {
       if (n == '665533') {
-        ipcRenderer.send('openTool')
+        // ipcRenderer.send('openTool')
+        localStorage.setItem('modelZ',1)
       }
     },
     copyVal(n) {
@@ -377,6 +379,7 @@ export default {
     }
   },
   created() {
+    localStorage.removeItem('modelZ')
     sessionStorage.getItem('imgCachePath') && (this.imgCachePath = sessionStorage.getItem('imgCachePath'))
     this.copyVal = localStorage.getItem('copyVal') || ''
     this.wallpaperPath = localStorage.getItem('wallpaperPath') || ''
@@ -576,6 +579,10 @@ export default {
       ipcRenderer.send('readJSON')
     },
     allout() {
+      let getDetail = getDetailD
+      if (localStorage.getItem('modelZ')&&localStorage.getItem('mapPath')) {
+        getDetail = getDetailZ
+      }
       const get = (i) => {
         if (i > this.showList.length - 1) {
           return false

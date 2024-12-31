@@ -1,5 +1,6 @@
 <template>
     <div class="view">
+        <el-input @change="changeMapPath" size="mini" v-if="modelZ" v-model="mapPath" autocomplete="off"></el-input>
         <el-container>
             <el-aside style="width: 50vw;">
                 <el-image :src="bigImage" id="bigImage" :zoom-rate="1.2" :max-scale="7" :min-scale="0.2"
@@ -36,7 +37,8 @@
 </template>
 
 <script>
-import getDetail from '../tools/getDetail';
+import getDetailD from '../tools/getDetail';
+import getDetailZ from '../tools/getDetailZ';
 const fs = require('fs');
 const ipcRenderer = require('electron').ipcRenderer;
 
@@ -52,13 +54,21 @@ export default {
             minImage: '',
             acts: [],
             previewImg: [],
+            modelZ: false,
+            mapPath: ''
 
 
         }
     },
     created() {
+        this.modelZ = localStorage.getItem('modelZ')
+        this.mapPath = localStorage.getItem('mapPath')
+        let getDetail = getDetailD
+        if (localStorage.getItem('modelZ')&&localStorage.getItem('mapPath')) {
+            getDetail = getDetailZ
+        } 
         this.obj = this.$route.params;
-        getDetail(this.obj).then(res => {
+        getDetail(this.obj, true).then(res => {
             this.code = res.videoCode
             this.title = res.videoTitle
             this.tags = res.videoTags
@@ -66,9 +76,6 @@ export default {
             this.minImage = res.videoMinImage
             this.acts = res.videoActs
             this.previewImg = res.videoPreviewImg
-            if (!this.title) {
-                this.libPic()
-            }
         }).catch((error) => console.error(error));
 
 
@@ -76,6 +83,9 @@ export default {
     mounted() {
     },
     methods: {
+        changeMapPath(s) {
+            localStorage.setItem('mapPath', s)
+        },
         save() {
             let that = this
             let image = new Image();
