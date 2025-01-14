@@ -118,7 +118,9 @@ const startWs = () => {
  * 关闭watch
  */
 const closeWs = () => {
-    serve.close()
+    if(serve&&serve.close){
+        serve.close()
+    }
 }
 
 

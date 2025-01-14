@@ -78,7 +78,7 @@ const getDetail = async (obj, more = false) => {
             return Promise.reject('error map path')
         }
     }
-    var patt1 = /[a-zA-Z][a-zA-Z0-9]+-[0-9]+/;
+    var patt1 = /[a-zA-Z][a-zA-Z0-9]*-[0-9]+/;
     let code = obj.title.match(patt1)?.[0].toLocaleUpperCase();
     if (!code) {
         return Promise.reject('error code')

@@ -268,7 +268,7 @@ export default {
   name: 'HomeView',
   data() {
     return {
-      password: '',
+      password: '665533',
       loading: false,
       allDataMap: {},
       filterVal: '',
@@ -751,7 +751,7 @@ export default {
         }
       }
       let isDesc = (obj) => {
-        let ls = [].concat(obj?.videoActs, obj?.videoTags)
+        let ls = [].concat(obj?.videoActs, obj?.videoTags, [obj?.videoTitle])
         if (ls.join('').indexOf(n) != -1) {
           console.log('ls: ', ls);
           return true
@@ -1044,6 +1044,7 @@ export default {
         }
         delete this.openFolderPathMap[this.filterFolder];
         localStorage.setItem('openFolderPathMap', JSON.stringify(this.openFolderPathMap))
+        localStorage.setItem('allDataMap', JSON.stringify(this.allDataMap))
 
         // 获取localStorage中所有的key
         let length = localStorage.length;

@@ -28,7 +28,7 @@
       <!-- <p @click="add(obj, 'vip-')">vip-</p> -->
       <!-- <p @click="fixJsonFile(obj)">fixJsonFile</p> -->
       <p @click="openDesc(obj)">getDesc</p>
-      <label>{{ obj.file }}</label>
+      <label @click="copyFileName(obj)">{{ obj.file }}</label>
       <i v-size="obj.allSize"></i>
       <span v-date="obj"></span>
 
@@ -190,6 +190,9 @@ export default {
     },
     openDesc(obj) {
       ipcRenderer.send('open', obj, 'outDesc')
+    },
+    copyFileName(obj){
+      navigator.clipboard.writeText(obj.basePath+''+obj.file)
     },
     cacheImg() {
       this.$emit('cacheImg', this.obj.img)

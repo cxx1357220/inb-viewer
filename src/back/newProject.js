@@ -72,9 +72,6 @@ const newProject = (event, obj) => {
     let dirKey = new Date().getTime().toFixed()
     let jsonPath = path.join(obj.savePath, dirKey, 'project.json')
     let toPath = path.join(obj.savePath, dirKey)
-    fs.mkdirSync(toPath, {
-        recursive: true
-    })
     let json = {
         type: obj.type,
         title: obj.title,
@@ -82,6 +79,43 @@ const newProject = (event, obj) => {
         description: obj.description,
         "preview": "preview.jpg"
     }
+    try {
+        fs.mkdirSync(toPath, {
+            recursive: true
+        })
+    } catch (error) {
+        winSend('main', 'callMap', {
+            [path.join(toPath, 'project.json')]: {
+                allSize: "0.00",
+                basePath: toPath + '\\',
+                date: dirKey,
+                file: path.basename(obj.filePath),
+                filePath: json.file ? path.join(toPath, json.file) : path.join(toPath, 'project.json'),
+                img: path.join(toPath, 'preview.jpg'),
+                jsonPath: path.join(toPath, 'project.json'),
+                openFolderPath: obj.savePath,
+                size: "0.00",
+                star: 0,
+                title: obj.title,
+                type: obj.type,
+                tags: obj.tags || [],
+                description: obj.description || '',
+                waitKey: obj.waitKey
+            }
+        }, obj.savePath, obj.tags || [])
+        winSend('main', 'copyPercent', {
+            jsonPath: jsonPath,
+            percent: 'error',
+        })
+        winSend('main', 'error', '系统找不到指定的保存路径。')
+        newData.state = false
+        if (newData.list.length) {
+            newProject('', ...newData.list.shift())
+        }
+        return false
+    }
+    
+    
     let from, to, params = ['/tee', '/r:0'];
     if (obj.type == 'video') {
         json.file = path.basename(obj.filePath)

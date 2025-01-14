@@ -2,6 +2,7 @@ import {
     ipcMain,
     shell,
     dialog,
+    desktopCapturer
 } from 'electron'
 const fs = require('fs');
 const path = require('path');
@@ -112,3 +113,16 @@ const setPath = async (event, opt) => {
     return await dialog.showOpenDialog(opt)
 }
 ipcMain.handle('setPath', setPath)
+
+
+/**
+ * 获取可分享屏幕list
+ * @param {*} event 
+ */
+const getScreen = async (event) => {
+    return await desktopCapturer.getSources({ types: ['window','screen'],thumbnailSize: {
+        height: 600,
+        width: 600
+      },fetchWindowIcons:true})
+}
+ipcMain.handle('getScreen', getScreen)
