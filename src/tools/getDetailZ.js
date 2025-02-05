@@ -30,8 +30,8 @@ const libPic3 = async (c) => {
     }
     let minImage = `${map['baseUrl3']}${code}/${code}ps.jpg`
     let res = await fetch(minImage, requestOptions)
-    if(res.redirected ){
-        return  libPic4(c)
+    if (res.redirected) {
+        return libPic4(c)
     }
     return {
         videoBigImage: `${map['baseUrl3']}${code}/${code}pl.jpg`,
@@ -42,7 +42,7 @@ const libPic2 = async (c) => {
     let code = c.replace('-', '').toLowerCase()
     let minImage = `${map['baseUrl2']}${code}/${code}jp.jpg`
     let res = await fetch(minImage, requestOptions)
-    if(res.redirected ){
+    if (res.redirected) {
         return await libPic3(c)
     }
     return {
@@ -58,7 +58,7 @@ const libPic = async (c) => {
     }
     let minImage = `${map['baseUrl']}${code}/${code}ps.jpg`
     let res = await fetch(minImage, requestOptions)
-    if(res.redirected){
+    if (res.redirected) {
         return await libPic2(c)
     }
     return {
@@ -84,9 +84,9 @@ const getDetail = async (obj, more = false) => {
         return Promise.reject('error code')
     }
 
- 
 
-    return fetch(outUrl + code, requestOptions)
+
+    return fetch(outUrl + code + '/', requestOptions)
         .then((response) => response.text())
         .then(async (result) => {
             const $ = cheerio.load(result);

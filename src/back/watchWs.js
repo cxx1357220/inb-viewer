@@ -14,6 +14,9 @@ let serve;
  * 不开这个服务挂这个ws服务也没啥意思
  */
 const startWs = () => {
+    if(serve&&serve.close){
+        serve.close()
+    }
     let app = express();
     expressWs(app)
     app.use(bodyParser.urlencoded({
