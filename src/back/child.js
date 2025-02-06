@@ -15,6 +15,9 @@ if (platform == "darwin") {
 } else if (platform == "win32") {
     platform = "win";
 }
+const {
+    exec
+} = require('child_process');
 // var ffmpegPath = path.join(
 //     appPath,
 //     process.env.NODE_ENV !== 'production' ? '../public' : '',
@@ -86,7 +89,7 @@ const cutTime = (event, obj, isCode) => {
         cutData.list.push([obj, isCode])
         return false
     }
-    console.log('obj: ', obj);
+    // console.log('obj: ', obj);
     let duration = 1,
         segment_times = obj.currentTime,
         winKey = obj.winKey,
@@ -276,6 +279,130 @@ const imgSetPoster = (event, obj, s) => {
     })
 }
 ipcMain.on('imgSetPoster', imgSetPoster)
+
+
+/**
+ * 获取前后几分钟带sei信息的时间戳
+ * @param {*} event 
+ * @param {object} obj 块数据
+ * @returns Promise
+ */
+const getPtsTime = (event, obj) => {
+
+    const start = new Promise((resolve, reject) => {
+        // let s = `${ffmpegPath} -i "${obj.filePath}" -t 00:07:00 -vf "select=\'gt(scene\,0.4)\',showinfo" -vsync vfr -f null -`
+        let s = `${ffmpegPath} -i "${obj.filePath}" -t 00:07:00 -vf "select='eq(pict_type,PICT_TYPE_I)',showinfo" -vsync vfr -f null -`
+        console.log('s: ', s);
+        console.time('s')
+        exec(s, (error, stdout, stderr) => {
+            if (error) {
+                console.error(`exec error: ${error}`);
+                resolve()
+                return;
+            }
+
+            // 输出 ffmpeg 执行的结果
+            // console.log(`stdout: ${stdout}`);
+            // console.log(`stderr: ${stderr}`);
+            // console.log('stderr: ', stderr.split('\n'));
+            let list = stderr.split('\n')
+            const regex = /pts_time:(\d+\.\d+)/;
+            let lastTime, isSEI, isNext, nextTime
+            for (let i = list.length - 1; i >= 0; i--) {
+                const match = list[i].match(regex);
+                if (match) {
+                    let prevTime = Number(match[1])
+                    let match2 = list[i].match(/duration_time:(\d+\.\d+)/)
+                    let duration_time
+                    if(match2){
+                        duration_time = Number(match2[1]||0)
+                    }
+                    if (lastTime && (lastTime != duration_time)) {
+                        // winSend(obj.winKey, 'ptsTime', [{ v: nextTime }])
+                        resolve({ v: nextTime })
+                        break
+                    }
+                    lastTime = duration_time
+                    if (isSEI || isNext) {
+                        // winSend(obj.winKey, 'ptsTime', [{ v: prevTime }])
+                        resolve({ v: prevTime })
+                        break
+                    }
+                    nextTime = prevTime
+                } else if (list[i].includes('SEI')) {
+                    isSEI = true
+                } else if (s.includes('config out time_base')) {
+                    isNext = true
+                }
+            }
+            resolve()
+            console.timeEnd('s')
+
+        });
+    })
+    const end = new Promise(resolve => {
+        let alltime = `${ffprobePath} -i "${obj.filePath}" -show_entries format=duration -v quiet -of csv="p=0"`
+        console.time('e')
+        exec(alltime, (error, stdout, stderr) => {
+            if (error) {
+                console.error(`exec error: ${error}`);
+                resolve()
+                return;
+            }
+
+            // 输出 ffmpeg 执行的结果
+            // console.log(`stdout: ${stdout}`);
+            let ssTime = stdout - 420
+            // let ss = `${ffmpegPath} -ss ${ssTime} -i "${obj.filePath}"  -vf "select=\'gt(scene\,0.4)\',showinfo" -vsync vfr -f null -`
+            let ss = `${ffmpegPath} -ss ${ssTime} -i "${obj.filePath}"  -vf "select='eq(pict_type,PICT_TYPE_I)',showinfo" -vsync vfr -f null -`
+            console.log('ss: ', ss);
+            exec(ss, (error, stdout, stderr) => {
+                if (error) {
+                    console.error(`exec error: ${error}`);
+                    return;
+                }
+
+                // 输出 ffmpeg 执行的结果
+                // console.log(`stdout: ${stdout}`);
+                // console.log(`stderr: ${stderr}`);
+                // console.log('stderr: ', stderr.split('\n'));
+                let list = stderr.split('\n')
+                let prevTime;
+                const regex = /pts_time:(\d+\.\d+)/;
+                for (let i = 0; i < list.length; i++) {
+                    const match = list[i].match(regex);
+                    if (match) {
+                        prevTime = Number(ssTime) + Number(match[1])
+                    }
+                    if (list[i].includes('SEI')) {
+                        // winSend(obj.winKey, 'ptsTime', [{ v: prevTime }])
+                        resolve({ v: prevTime })
+                        break
+                    }
+                }
+                resolve()
+                console.timeEnd('e')
+
+            });
+        });
+    })
+    console.time('a')
+    return Promise.all([start,end]).then(res=>{
+        console.log('res: ', res);
+        let list = res.filter(o=>o)
+        if(list.length){
+            winSend(obj.winKey, 'ptsTime', list)
+        }
+        console.timeEnd('a')
+        return res
+    })
+
+}
+ipcMain.on('getPtsTime', getPtsTime)
+
+
+
+
 
 export {
     cutData,

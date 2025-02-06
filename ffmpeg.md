@@ -38,3 +38,22 @@ ffmpeg.exe -i D:\431960\2610181221\22-27-56.mp4 -f segment -segment_times 00:01:
 
 ffprobe -show_frames -select_streams v -of xml "D:\431960\2610181221\22-27-56.mp4" | findstr -n I > a.txt
 //pts_time 为关键帧时间戳，示例视频为62.5s有一次帧type='I',所以切00:01:00s会切到62.5s
+
+
+获取变化大的帧
+
+ public\ffmpeg\ffmpeg.exe -i "K:\123.mp4" -t 00:05:00 -vf "select='gt(scene\,0.99)',showinfo" -vsync vfr -f null - 2>e.txt
+
+
+获取关键帧
+
+ public\ffmpeg\ffmpeg.exe -i K:\123.mp4 -t 00:05:00 -vf "select='eq(pict_type,PICT_TYPE_I)',showinfo" -vsync vfr -f null -  2>t.txt
+
+
+
+
+
+
+
+
+ 

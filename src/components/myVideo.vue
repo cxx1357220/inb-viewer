@@ -99,6 +99,14 @@ export default {
         },
     },
     created() {
+        
+        ipcRenderer.on('ptsTime', (e, arr) => {
+            console.log('arr: ', arr);
+            this.timeList.push(...arr)
+            this.showDialog = true
+        })
+        ipcRenderer.send('getPtsTime', this.obj)
+
     },
     mounted() {
         let that = this
