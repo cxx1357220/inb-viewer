@@ -103,6 +103,10 @@ async function createWindow(winType = 'main', obj = {}) {
             winKey = obj.basePath + 'Desc'
             obj.winKey = winKey
             break;
+        case 'videoList':
+            winKey = 'videoList'
+            obj.winKey = winKey
+            break;
         default:
             winKey = winType
             break;
@@ -158,6 +162,12 @@ async function createWindow(winType = 'main', obj = {}) {
             break;
         case 'help':
             win.webContents.send('help')
+            win.on('close', (e) => {
+                delete winMap[winKey]
+            })
+            break;
+        case 'videoList':
+            win.webContents.send('videoList', obj)
             win.on('close', (e) => {
                 delete winMap[winKey]
             })

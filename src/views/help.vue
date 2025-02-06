@@ -64,6 +64,7 @@ ai模型下载地址有墙：<a href="https://huggingface.co/ggerganov/whisper.c
 <li>批量复制展示的内容到已选好的复制路径</li>
 <li>批量删除展示的内容，密码665533，直接删除，不经过回收站</li>
 <li>获取展示的视频类型的时长</li>
+<li>播放当前显示的视频，ctrl+-&gt; 下一个；ctrl+&lt;- 上一个；ctrl+d 删除</li>
 <li>清除已经操作完成的状态</li>
 <li>合并视频，ffmepg -filter_complex 实现视频concat，相同编码下不进行解码还是蛮快的。解码真太慢了，cpu还吃满</li>
 <li>批量获取屏幕信息，根据标题从imbd获取视频相关信息</li>

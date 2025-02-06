@@ -10,7 +10,7 @@
             <div class="banner" v-show="showButton">
                 <p v-if="!isAudio" @click="setPoster">设置封面</p>
                 <p @click="cutTime">剪切视频</p>
-                <p @click="getCutTime">获取拼接点</p>
+                <p v-if="obj.type=='video'" @click="getCutTime">获取拼接点</p>
                 <p @click="openPath">打开路径</p>
                 <p @click="inPlayer">mpv内打开</p>
             </div>
@@ -67,6 +67,13 @@ export default {
             handler(n) {
                 // console.log('n: ', n);
                 Object.assign(this.obj, n)
+                // setTimeout(() => {
+                //     this.player.currentTime(this.player.currentTime()+1200)
+                //     setTimeout(() => {
+                //         this.player.currentTime(this.player.currentTime()+1200)
+
+                //     }, 2000);
+                // }, 1000);
             }
         }
     },
@@ -100,7 +107,7 @@ export default {
         },
     },
     created() {
-        
+
         ipcRenderer.on('ptsTime', (e, arr) => {
             console.log('arr: ', arr);
             this.timeList.push(...arr)
@@ -122,7 +129,7 @@ export default {
                 }
             ],
             preload: 'metadata',
-            autoplay: false,
+            autoplay: that.isplay,
             fluid: true, // 自适应宽高
             // language: 'zh-CN', // 设置语言
             muted: false, // 是否静音
@@ -194,7 +201,7 @@ export default {
             var dataURL = canvas.toDataURL("image/png");  //将图片转成base64格式
             ipcRenderer.send('setPoster', this.obj, dataURL)
         },
-        getCutTime(){
+        getCutTime() {
             ipcRenderer.send('getPtsTime', this.obj)
 
         },

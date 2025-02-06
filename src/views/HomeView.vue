@@ -94,6 +94,9 @@
           <el-button size="mini" @click="outTitle">输出title</el-button>
           <el-button size="mini" :loading="loadingDuration" @click="getInfo"><span v-show="loadingDuration">{{
             rateDuration }}</span>获取视频时长</el-button>
+
+          <el-button size="mini" @click="openVideoList">播放当前列表</el-button>
+
           <el-button size="mini" @click="clearState">清除已操作状态</el-button>
           <el-button size="mini" @click="dataCount">数据统计</el-button>
           <el-button size="mini" @click="showConcat = true">合并视频</el-button>
@@ -569,6 +572,18 @@ export default {
           break;
       }
     })
+    ipcRenderer.on('rmPath', (e, obj) => {
+      delete this.allDataMap[obj.jsonPath]
+      this.showList.some((o, i) => {
+        if (o.jsonPath == obj.jsonPath) {
+          this.showList.splice(i, 1)
+          return true
+        } else {
+          return false
+        }
+      })
+      localStorage.setItem('allDataMap', JSON.stringify(this.allDataMap))
+    })
   },
   methods: {
     clearState() {
@@ -1020,6 +1035,12 @@ export default {
       }
       this.rateDuration = '0/' + list.length
       ipcRenderer.send('getListInfo', list)
+    },
+    openVideoList() {
+      let list = this.showList.filter(o=>o.type=='video')
+      if(list.length){
+        ipcRenderer.send('open', { list }, 'videoList')
+      }
     },
     reread() {
       if (this.filterFolder) {

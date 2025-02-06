@@ -98,3 +98,5 @@ module.exports = process.env.FLUENTFFMPEG_COV ? require('./lib-cov/fluent-ffmpeg
 - ctrl+alt+a 截图
 
 - 根据名字获取视频信息 
+
+- 播放当前显示的视频，ctrl+-> 下一个；ctrl+<- 上一个；ctrl+d 删除

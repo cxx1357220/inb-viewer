@@ -46,13 +46,21 @@ const rmPath = (event, obj) => {
             fs.chmod(obj.basePath, 0o775, (err) => {
                 if (err) {
                     console.log('chmod err: ', err);
+                } else {
+                    fs.rmdir(obj.basePath, {
+                        recursive: true
+                    }, (err) => {
+                        if (err) {
+                            console.log('rmdir err: ', err);
+                        } else {
+                            winSend('main', 'rmPath', obj)
+                        }
+                    })
                 };
-                fs.rmdir(obj.basePath, {
-                    recursive: true
-                }, (err) => {
-                    console.log('rmdir err: ', err);
-                })
+
             })
+        } else {
+            winSend('main', 'rmPath', obj)
         }
 
     })
@@ -120,9 +128,11 @@ ipcMain.handle('setPath', setPath)
  * @param {*} event 
  */
 const getScreen = async (event) => {
-    return await desktopCapturer.getSources({ types: ['window','screen'],thumbnailSize: {
-        height: 600,
-        width: 600
-      },fetchWindowIcons:true})
+    return await desktopCapturer.getSources({
+        types: ['window', 'screen'], thumbnailSize: {
+            height: 600,
+            width: 600
+        }, fetchWindowIcons: true
+    })
 }
 ipcMain.handle('getScreen', getScreen)

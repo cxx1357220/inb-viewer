@@ -60,6 +60,12 @@ export default {
         params: obj
       })
     })
+    ipcRenderer.on('videoList', (e, obj) => {
+      this.$router.push({
+        name: 'videoList',
+        params: obj
+      })
+    })
     ipcRenderer.on('error', (e, obj) => {
       this.$notify({
         title: 'error',
