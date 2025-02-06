@@ -109,7 +109,8 @@ const cutTime = (event, obj, isCode) => {
     } else {
         options.push('-c copy')
     }
-    ffmpeg(filePath)
+    return new Promise((resolve, reject) => {
+        ffmpeg(filePath)
         // .inputOptions(['-ss ' + start, '-to ' + obj.duration, '-accurate_seek'])
         // .outputOptions(['-y', '-c copy', '-avoid_negative_ts 1'])
         .outputOptions(options)
@@ -133,6 +134,7 @@ const cutTime = (event, obj, isCode) => {
                 filePath: filePath,
                 percent: 'done'
             })
+            resolve(filePath)
             cutData.state = false
             if (cutData.list.length) {
                 cutTime('', ...cutData.list.shift())
@@ -145,6 +147,7 @@ const cutTime = (event, obj, isCode) => {
                 filePath: filePath,
                 percent: 'error'
             })
+            reject(filePath)
             cutData.state = false
             if (cutData.list.length) {
                 cutTime('', ...cutData.list.shift())
@@ -152,8 +155,11 @@ const cutTime = (event, obj, isCode) => {
         })
         // .save(obj.basePath + 'del-part-' + obj.file)
         .save(saveFile)
+    })
+    
 }
 ipcMain.on('cutTime', cutTime)
+ipcMain.handle('cutTime', cutTime)
 
 
 const getData = {
@@ -307,28 +313,36 @@ const getPtsTime = (event, obj) => {
             // console.log('stderr: ', stderr.split('\n'));
             let list = stderr.split('\n')
             const regex = /pts_time:(\d+\.\d+)/;
-            let lastTime, isSEI, isNext, nextTime
+            let lastDuration_time, isSEI, isNext, lastPts_time,lastRange
             for (let i = list.length - 1; i >= 0; i--) {
                 const match = list[i].match(regex);
                 if (match) {
-                    let prevTime = Number(match[1])
+                    let pts_time = Number(match[1])
                     let match2 = list[i].match(/duration_time:(\d+\.\d+)/)
                     let duration_time
                     if(match2){
                         duration_time = Number(match2[1]||0)
                     }
-                    if (lastTime && (lastTime != duration_time)) {
-                        // winSend(obj.winKey, 'ptsTime', [{ v: nextTime }])
-                        resolve({ v: nextTime })
+                    if (lastDuration_time && (lastDuration_time != duration_time)) {
+                        // winSend(obj.winKey, 'ptsTime', [{ v: lastPts_time }])
+                        resolve({ v: lastPts_time })
                         break
                     }
-                    lastTime = duration_time
+                    if(lastRange&&lastPts_time&&Math.abs(lastPts_time-pts_time-lastRange>1)){
+                        console.log(lastPts_time,pts_time,lastRange, lastPts_time-pts_time-lastRange);
+                        resolve({ v: lastPts_time })
+                        break
+                    }
+                    if(lastPts_time){
+                        lastRange = lastPts_time - pts_time
+                    }
+                    lastDuration_time = duration_time
                     if (isSEI || isNext) {
-                        // winSend(obj.winKey, 'ptsTime', [{ v: prevTime }])
-                        resolve({ v: prevTime })
+                        // winSend(obj.winKey, 'ptsTime', [{ v: pts_time }])
+                        resolve({ v: pts_time })
                         break
                     }
-                    nextTime = prevTime
+                    lastPts_time = pts_time
                 } else if (list[i].includes('SEI')) {
                     isSEI = true
                 } else if (s.includes('config out time_base')) {
@@ -367,16 +381,24 @@ const getPtsTime = (event, obj) => {
                 // console.log(`stderr: ${stderr}`);
                 // console.log('stderr: ', stderr.split('\n'));
                 let list = stderr.split('\n')
-                let prevTime;
+                let pts_time,lastPts_time,lastRange;
                 const regex = /pts_time:(\d+\.\d+)/;
                 for (let i = 0; i < list.length; i++) {
                     const match = list[i].match(regex);
                     if (match) {
-                        prevTime = Number(ssTime) + Number(match[1])
+                        pts_time = Number(ssTime) + Number(match[1])
+                        if(lastRange&&lastPts_time&&Math.abs(pts_time-lastPts_time-lastRange)>1){
+                            resolve({ v: lastPts_time })
+                            break
+                        }
+                        if(lastPts_time){
+                            lastRange = pts_time - lastPts_time
+                        }
+                        lastPts_time = pts_time
                     }
                     if (list[i].includes('SEI')) {
-                        // winSend(obj.winKey, 'ptsTime', [{ v: prevTime }])
-                        resolve({ v: prevTime })
+                        // winSend(obj.winKey, 'ptsTime', [{ v: pts_time }])
+                        resolve({ v: pts_time })
                         break
                     }
                 }
@@ -399,7 +421,7 @@ const getPtsTime = (event, obj) => {
 
 }
 ipcMain.on('getPtsTime', getPtsTime)
-
+ipcMain.handle('getPtsTime', getPtsTime)
 
 
 

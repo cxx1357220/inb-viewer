@@ -10,6 +10,7 @@
             <div class="banner" v-show="showButton">
                 <p v-if="!isAudio" @click="setPoster">设置封面</p>
                 <p @click="cutTime">剪切视频</p>
+                <p @click="getCutTime">获取拼接点</p>
                 <p @click="openPath">打开路径</p>
                 <p @click="inPlayer">mpv内打开</p>
             </div>
@@ -105,7 +106,6 @@ export default {
             this.timeList.push(...arr)
             this.showDialog = true
         })
-        ipcRenderer.send('getPtsTime', this.obj)
 
     },
     mounted() {
@@ -193,6 +193,10 @@ export default {
             canvas.getContext("2d").drawImage(this.$refs.videoPlay, 0, 0, canvas.width, canvas.height);//截
             var dataURL = canvas.toDataURL("image/png");  //将图片转成base64格式
             ipcRenderer.send('setPoster', this.obj, dataURL)
+        },
+        getCutTime(){
+            ipcRenderer.send('getPtsTime', this.obj)
+
         },
         cutTime() {
             try {
