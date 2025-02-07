@@ -99,4 +99,4 @@ module.exports = process.env.FLUENTFFMPEG_COV ? require('./lib-cov/fluent-ffmpeg
 
 - 根据名字获取视频信息 
 
-- 播放当前显示的视频，ctrl+-> 下一个；ctrl+<- 上一个；ctrl+d 删除
+- 播放当前显示的视频，➡前进百分之10；⬅ 后退60s； ⬆ 上一个视频； ⬇ 下一个视频ctrl+d 删除；

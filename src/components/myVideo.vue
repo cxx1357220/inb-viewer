@@ -135,7 +135,7 @@ export default {
             muted: false, // 是否静音
             inactivityTimeout: false,
             playbackRates: [0.5, 1, 1.5, 2, 3, 5],
-            // bigPlayButton: false,
+            bigPlayButton: false,
             controlBar: {
                 fullscreenToggle: !that.isAudio,
                 volumePanel: {
@@ -243,7 +243,11 @@ export default {
         },
         openPath() {
             ipcRenderer.send('openPath', this.url)
-        }
+        },
+        forward(s){
+            s =s|| this.player.duration()/10;
+            this.player.currentTime(this.player.currentTime()+s)
+        },
     }
 
 }
