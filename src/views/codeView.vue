@@ -117,18 +117,21 @@ export default {
         },
         tabAdd() {
             let data = `
-// 记得点击右上角保存和使用按钮。
-const run = async (obj) => {
-    return Promise.resolve({
-        videoCode: '',
-        videoTitle: '',
-        videoTags: [],
-        videoBigImage: '',
-        videoMinImage: '',
-        videoActs: [],
-        videoPreviewImgs: []
-    })
-}
+var getDetailFunc = (function () { //别改这一行
+    // 记得点击右上角保存和使用按钮。
+    const run = async (obj) => {
+        return Promise.resolve({
+            videoCode: '',
+            videoTitle: '',
+            videoTags: [],
+            videoBigImage: '',
+            videoMinImage: '',
+            videoActs: [],
+            videoPreviewImgs: []
+        })
+    }
+    return run
+})() //别改这一行
             `
             this.$prompt('请输入名称', '', {
                 confirmButtonText: '确定',
@@ -200,9 +203,11 @@ const run = async (obj) => {
         border: 0;
         height: calc(100vh);
         overflow: hidden;
-        .el-tabs__header{
+
+        .el-tabs__header {
             padding: 0 10px;
         }
+
         .el-tab-pane {
             overflow: auto;
 

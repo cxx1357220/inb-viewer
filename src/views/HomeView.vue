@@ -621,7 +621,7 @@ export default {
             videoActs: res.videoActs,
             videoPreviewImgs: res.videoPreviewImgs,
             moreDetail: res.moreDetail
-          },)
+          })
           ipcRenderer.send('reDetail', detail)
           let image = new Image();
           image.setAttribute('crossOrigin', 'anonymous');
@@ -642,6 +642,10 @@ export default {
           }
           image.src = detail.videoMinImage;
         }).catch((error) => {
+          this.$message({
+              type: 'error',
+              message: '获取失败'
+          });
           i++
           get(i)
         });
