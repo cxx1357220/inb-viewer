@@ -77,6 +77,7 @@
             style="width: 280px;margin-right: 10px;" placeholder="复制路径"><el-button size="mini" slot="prepend"
               @click="setPath('dir', ['copyVal'])" icon="el-icon-folder">选择复制路径</el-button>
           </el-input>
+          <el-button size="mini" plain icon="el-icon-setting" @click="setMoreApi">获取更多信息设置</el-button>
           <el-button size="mini" plain icon="el-icon-setting" @click="compressDrawer = true">压缩视频设置</el-button>
           <el-button size="mini" plain icon="el-icon-setting" @click="whisperDrawer = true">解析字幕设置</el-button>
           <el-input size="mini" v-model="wallpaperPath" style="width: 280px;margin-right: 10px;"
@@ -92,15 +93,16 @@
           <el-button size="mini" @click="xcopyList">批量复制</el-button>
           <el-button size="mini" @click="rmList">批量删除</el-button>
           <el-button size="mini" @click="outTitle">输出title</el-button>
-          <el-button size="mini" :loading="loadingDuration" @click="getInfo"><span v-show="loadingDuration">{{
-            rateDuration }}</span>获取视频时长</el-button>
+          <el-button size="mini" :loading="loadingDuration" @click="getInfo">获取视频时长<span v-show="loadingDuration">({{
+            rateDuration }})</span></el-button>
 
           <el-button size="mini" @click="openVideoList">播放当前列表</el-button>
 
           <el-button size="mini" @click="clearState">清除已操作状态</el-button>
           <el-button size="mini" @click="dataCount">数据统计</el-button>
           <el-button size="mini" @click="showConcat = true">合并视频</el-button>
-          <el-button size="mini" @click="allout">批量获取详细信息</el-button>
+          <el-button size="mini" :loading="loadingDetail" @click="allout">批量获取详细信息<span v-show="loadingDetail">({{
+            rateDetail }})</span></el-button>
           <el-popover trigger="hover" :popper-class="!serverState ? 'visibility-pop' : ''" placement="bottom">
             <div class="tip">
               <canvas id="qrCode"></canvas>
@@ -253,8 +255,7 @@
 
 <script>
 
-import getDetailD from '../tools/getDetail';
-import getDetailZ from '../tools/getDetailZ';
+import getDetail from '../tools/runGet';
 window.fs = require('fs')
 window.nodePath = require('path')
 const ipcRenderer = require('electron').ipcRenderer;
@@ -322,6 +323,8 @@ export default {
       imgCachePath: '',
       loadingDuration: false,
       rateDuration: '',
+      loadingDetail: false,
+      rateDetail: '',
       showConcat: false
     }
   },
@@ -355,10 +358,9 @@ export default {
   },
   watch: {
     filterVal(n) {
-      if (n == '665533') {
-        // ipcRenderer.send('openTool')
-        localStorage.setItem('modelZ',1)
-      }
+      // if (n == '665533') {
+      //   // ipcRenderer.send('openTool')
+      // }
     },
     copyVal(n) {
       localStorage.setItem('copyVal', n || "")
@@ -382,8 +384,7 @@ export default {
     }
   },
   created() {
-    localStorage.removeItem('modelZ')
-    sessionStorage.getItem('imgCachePath') && (this.imgCachePath = sessionStorage.getItem('imgCachePath'))
+    localStorage.getItem('imgCachePath') && (this.imgCachePath = localStorage.getItem('imgCachePath'))
     this.copyVal = localStorage.getItem('copyVal') || ''
     this.wallpaperPath = localStorage.getItem('wallpaperPath') || ''
     if (!this.wallpaperPath) {
@@ -489,8 +490,8 @@ export default {
           this.$set(this.showList[i], 'videoBigImage', obj.videoBigImage)
           this.$set(this.showList[i], 'videoMinImage', obj.videoMinImage)
           this.$set(this.showList[i], 'videoActs', obj.videoActs)
-          this.$set(this.showList[i], 'videoPreviewImg', obj.videoPreviewImg)
-
+          this.$set(this.showList[i], 'videoPreviewImgs', obj.videoPreviewImgs)
+          this.$set(this.showList[i], 'moreDetail', obj.moreDetail)
           return true
         } else {
           return false
@@ -506,7 +507,8 @@ export default {
       this.allDataMap[obj.jsonPath]['videoBigImage'] = obj.videoBigImage
       this.allDataMap[obj.jsonPath]['videoMinImage'] = obj.videoMinImage
       this.allDataMap[obj.jsonPath]['videoActs'] = obj.videoActs
-      this.allDataMap[obj.jsonPath]['videoPreviewImg'] = obj.videoPreviewImg
+      this.allDataMap[obj.jsonPath]['videoPreviewImgs'] = obj.videoPreviewImgs
+      this.allDataMap[obj.jsonPath]['moreDetail'] = obj.moreDetail
 
       localStorage.setItem('allDataMap', JSON.stringify(this.allDataMap))
       this.$message({
@@ -544,7 +546,10 @@ export default {
     ipcRenderer.on('imgCachePath', (e, string) => {
       console.log('string: ', string);
       this.imgCachePath = string
-      sessionStorage.setItem('imgCachePath', string)
+      localStorage.setItem('imgCachePath', string)
+    })
+    ipcRenderer.on('baseGetDetailPath', (e, string) => {
+      localStorage.setItem('baseGetDetailPath', string)
     })
     ipcRenderer.on('videoDuration', (e, obj) => {
       Object.keys(obj).forEach(k => {
@@ -594,18 +599,29 @@ export default {
       ipcRenderer.send('readJSON')
     },
     allout() {
-      let getDetail = getDetailD
-      if (localStorage.getItem('modelZ')&&localStorage.getItem('mapPath')) {
-        getDetail = getDetailZ
+      if (this.loadingDetail) {
+        return false
       }
       const get = (i) => {
+        this.loadingDetail = true
+        this.rateDetail = i+ '/' + this.showList.length
         if (i > this.showList.length - 1) {
+          this.loadingDetail = false
           return false
         }
 
         let obj = this.showList[i];
         getDetail(obj).then(res => {
-          let detail = Object.assign({}, obj, res)
+          let detail = Object.assign({}, obj, {
+            videoCode: res.videoCode,
+            videoTitle: res.videoTitle,
+            videoTags: res.videoTags,
+            videoBigImage: res.videoBigImage,
+            videoMinImage: res.videoMinImage,
+            videoActs: res.videoActs,
+            videoPreviewImgs: res.videoPreviewImgs,
+            moreDetail: res.moreDetail
+          },)
           ipcRenderer.send('reDetail', detail)
           let image = new Image();
           image.setAttribute('crossOrigin', 'anonymous');
@@ -1037,8 +1053,8 @@ export default {
       ipcRenderer.send('getListInfo', list)
     },
     openVideoList() {
-      let list = this.showList.filter(o=>o.type=='video')
-      if(list.length){
+      let list = this.showList.filter(o => o.type == 'video')
+      if (list.length) {
         ipcRenderer.send('open', { list }, 'videoList')
       }
     },
@@ -1102,6 +1118,9 @@ export default {
         top: 0,
         behavior: "smooth"
       })
+    },
+    setMoreApi() {
+      ipcRenderer.send('open', {}, 'codeView')
     }
   }
 

@@ -38,6 +38,12 @@ export default {
         params: obj
       })
     })
+    ipcRenderer.on('codeView', (e, obj) => {
+      this.$router.push({
+        name: 'codeView',
+        params: obj
+      })
+    })
     ipcRenderer.on('home', (e) => {
       this.$router.push({
         name: 'home',

@@ -27,7 +27,7 @@
 
       <!-- <p @click="add(obj, 'vip-')">vip-</p> -->
       <!-- <p @click="fixJsonFile(obj)">fixJsonFile</p> -->
-      <p @click="openDesc(obj)">getDesc</p>
+      <p @click="openDesc(obj)">获取更多信息</p>
       <label @click="copyFileName(obj)">{{ obj.file }}</label>
       <i v-size="obj.allSize"></i>
       <span v-date="obj"></span>

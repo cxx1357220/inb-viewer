@@ -1,6 +1,5 @@
 <template>
     <div class="view">
-        <el-input @change="changeMapPath" size="mini" v-if="modelZ" v-model="mapPath" autocomplete="off"></el-input>
         <el-container>
             <el-aside style="width: 50vw;">
                 <el-image :src="bigImage" id="bigImage" :zoom-rate="1.2" :max-scale="7" :min-scale="0.2"
@@ -29,16 +28,15 @@
         </el-container>
 
         <footer>
-            <el-image v-for="url, i in previewImg" style="width: 100px; height: 100px" :src="url" :zoom-rate="1.2"
-                :max-scale="7" :min-scale="0.2" :preview-src-list="previewImg" :initial-index="i" fit="cover" />
+            <el-image v-for="url, i in previewImgs" style="width: 100px; height: 100px" :src="url" :zoom-rate="1.2"
+                :max-scale="7" :min-scale="0.2" :preview-src-list="previewImgs" :initial-index="i" fit="cover" />
         </footer>
 
     </div>
 </template>
 
 <script>
-import getDetailD from '../tools/getDetail';
-import getDetailZ from '../tools/getDetailZ';
+import getDetail from '../tools/runGet';
 const fs = require('fs');
 const ipcRenderer = require('electron').ipcRenderer;
 
@@ -53,39 +51,37 @@ export default {
             bigImage: '',
             minImage: '',
             acts: [],
-            previewImg: [],
-            modelZ: false,
-            mapPath: ''
+            previewImgs: [],
+            detail: {}
 
 
         }
     },
     created() {
-        this.modelZ = localStorage.getItem('modelZ')
-        this.mapPath = localStorage.getItem('mapPath')
-        let getDetail = getDetailD
-        if (localStorage.getItem('modelZ')&&localStorage.getItem('mapPath')) {
-            getDetail = getDetailZ
-        } 
         this.obj = this.$route.params;
         getDetail(this.obj, true).then(res => {
+            console.log('res: ', res);
+            this.detail = res
             this.code = res.videoCode
             this.title = res.videoTitle
             this.tags = res.videoTags
             this.bigImage = res.videoBigImage
             this.minImage = res.videoMinImage
             this.acts = res.videoActs
-            this.previewImg = res.videoPreviewImg
-        }).catch((error) => console.error(error));
+            this.previewImgs = res.videoPreviewImgs
+        }).catch((error) => {
+            console.error(error)
+            this.$message({
+                type: 'error',
+                message: '获取失败'
+            });
+        });
 
 
     },
     mounted() {
     },
     methods: {
-        changeMapPath(s) {
-            localStorage.setItem('mapPath', s)
-        },
         save() {
             let that = this
             let image = new Image();
@@ -131,7 +127,8 @@ export default {
                 videoBigImage: this.bigImage,
                 videoMinImage: this.minImage,
                 videoActs: this.acts,
-                videoPreviewImg: this.previewImg
+                videoPreviewImgs: this.previewImgs,
+                moreDetail: this.detail.moreDetail
             })
             ipcRenderer.send('reDetail', detail)
         },

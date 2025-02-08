@@ -45,6 +45,11 @@ const routes = [{
     component: () => import(  '../views/mdView.vue')
   },
   {
+    path: '/codeView',
+    name: 'codeView',
+    component: () => import(  '../views/codeView.vue')
+  },
+  {
     path: '/outDesc',
     name: 'outDesc',
     component: () => import(  '../views/outDesc.vue')

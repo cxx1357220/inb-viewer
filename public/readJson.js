@@ -93,7 +93,7 @@ process.on('message', function (dirPath) {
                 videoBigImage: data.videoBigImage,
                 videoMinImage: data.videoMinImage,
                 videoActs: data.videoActs,
-                videoPreviewImg: data.videoPreviewImg,
+                videoPreviewImgs: data.videoPreviewImgs,
             }
             tags = tags.concat(data.tags || [])
             read(i + 1)

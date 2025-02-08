@@ -40,9 +40,9 @@
                 <el-button v-else class="button-new-tag" size="small" @click="showActInput">+ New Act</el-button>
             </el-form-item>
 
-            <el-form-item v-if="detail.videoPreviewImg && detail.videoPreviewImg.length" label="预览图：">
-                <el-image v-for="url, i in detail.videoPreviewImg" style="width: 100px; height: 100px" :src="url"
-                    :zoom-rate="1.2" :max-scale="7" :min-scale="0.2" :preview-src-list="detail.videoPreviewImg"
+            <el-form-item v-if="detail.videoPreviewImgs && detail.videoPreviewImgs.length" label="预览图：">
+                <el-image v-for="url, i in detail.videoPreviewImgs" style="width: 100px; height: 100px" :src="url"
+                    :zoom-rate="1.2" :max-scale="7" :min-scale="0.2" :preview-src-list="detail.videoPreviewImgs"
                     :initial-index="i" fit="cover" />
             </el-form-item>
         </el-form>

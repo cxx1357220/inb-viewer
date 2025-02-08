@@ -36,6 +36,9 @@
 <p>需要复制去的路径（wallpaper会对本地的订阅他人的文件进行更改和删除，可以复制到别的地方）</p>
 </li>
 <li>
+<p>设置获取更多信息时使用的脚本，可自己编写一新的脚本</p>
+</li>
+<li>
 <p>用<a href="https://github.com/FFmpeg">ffmpeg</a>进行视频刚改的简单配置</p>
 <blockquote>
 <p>size为视频分辨率，vcodec为解码器，fps为帧率</p>
@@ -64,10 +67,10 @@ ai模型下载地址有墙：<a href="https://huggingface.co/ggerganov/whisper.c
 <li>批量复制展示的内容到已选好的复制路径</li>
 <li>批量删除展示的内容，密码665533，直接删除，不经过回收站</li>
 <li>获取展示的视频类型的时长</li>
-<li>播放当前显示的视频，➡前进60s；⬅ 后退60s； ⬆ 上一个视频； ⬇ 下一个视频ctrl+d 删除；</li>
+<li>播放当前显示的视频，➡前进百分之10；⬅ 后退60s； ⬆ 上一个视频； ⬇ 下一个视频；ctrl+d 删除；</li>
 <li>清除已经操作完成的状态</li>
 <li>合并视频，ffmepg -filter_complex 实现视频concat，相同编码下不进行解码还是蛮快的。解码真太慢了，cpu还吃满</li>
-<li>批量获取屏幕信息，根据标题从imbd获取视频相关信息</li>
+<li>批量获取屏幕信息，默认根据标题从imbd获取视频相关信息，可自己编写js脚本</li>
 <li>局域网内服务，局域网内创建一个网站，可在局域网内查看展示的内容，网站密码665533</li>
 <li>局域网内ocr服务，局域网内创建一个网站，可在局域网内对图片进行ocr，ocr来源<a href="https://paddlepaddle.github.io/PaddleOCR/main/index.html">paddleocr</a></li>
 <li>局域网内分享屏幕，局域网内创建一个网站，可查看电脑当前屏幕</li>
@@ -88,7 +91,7 @@ ai模型下载地址有墙：<a href="https://huggingface.co/ggerganov/whisper.c
 <li>删除，确认后直接删除，不经过回收站</li>
 <li>狗头评级</li>
 <li>修改标题，描述，标签</li>
-<li>getDesc，根据标题从imbd获取视频相关信息</li>
+<li>获取更多信息，根据标题从imbd获取视频相关信息</li>
 <li>解压场景pkg</li>
 <li>压缩视频，仅限视频类型</li>
 <li>制作字幕，仅限视频类型</li>

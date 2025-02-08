@@ -99,6 +99,10 @@ async function createWindow(winType = 'main', obj = {}) {
             winKey = obj.path
             obj.winKey = winKey
             break;
+        case 'codeView':
+            winKey = 'codeView'
+            obj.winKey = winKey
+            break;
         case 'outDesc':
             winKey = obj.basePath + 'Desc'
             obj.winKey = winKey
@@ -184,7 +188,12 @@ async function createWindow(winType = 'main', obj = {}) {
                 delete winMap[winKey]
             })
             break;
-
+        case 'codeView':
+            win.webContents.send('codeView', obj)
+            win.on('close', (e) => {
+                delete winMap[winKey]
+            })
+            break;
         default:
             let cutStateMap = {}
             cutData.list.forEach(list => {

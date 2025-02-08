@@ -70,8 +70,8 @@ const reDetail = (event, obj) => {
             data.videoBigImage = obj.videoBigImage
             data.videoMinImage = obj.videoMinImage
             data.videoActs = obj.videoActs
-            data.videoPreviewImg = obj.videoPreviewImg
-            
+            data.videoPreviewImgs = obj.videoPreviewImgs
+            data.moreDetail = obj.moreDetail
             fs.writeFile(obj.jsonPath, JSON.stringify(data), (err) => {
                 if (err) {
                     return false

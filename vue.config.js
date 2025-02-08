@@ -1,6 +1,8 @@
 const {
   defineConfig
 } = require('@vue/cli-service')
+const MonacoWebpackPlugin = require('monaco-editor-webpack-plugin')
+
 const utils = {
   assetsPath: function (_path) {
     const assetsSubDirectory = process.env.NODE_ENV === 'production' ?
@@ -27,8 +29,9 @@ const {
 } = process;
 
 let plugins = [
-  new webpack.DefinePlugin({
-    "process.env.FLUENTFFMPEG_COV": false
+  new MonacoWebpackPlugin({
+    languages: ['javascript', 'typescript', 'css', 'html', 'json'],
+    features: ['!gotoSymbol'],
   })
 ];
 module.exports = defineConfig({
@@ -56,10 +59,10 @@ module.exports = defineConfig({
           "createStartMenuShortcut": true, // 是否创建开始菜单图标
           // "shortcutName": "all-electron", // 快捷方式名称
           "runAfterFinish": true, //是否安装完成后运行
-          "deleteAppDataOnUninstall":true
+          "deleteAppDataOnUninstall": true
         },
 
-        extraFiles: ['shareHtml','watchHtml'],
+        extraFiles: ['shareHtml', 'watchHtml'],
         // extraResources:['imgCache']
         // extraResources: [{
         //   "from": "node_modules/regedit/vbs",
@@ -76,12 +79,30 @@ module.exports = defineConfig({
   },
   configureWebpack: {
     plugins,
+    output: {
+      globalObject: 'self', // 为 Web Worker 配置
+    },
     resolve: {
       fallback: {
         path: require.resolve("path-browserify")
       },
     },
     target: "electron-renderer",
+    // module: {
+    //   rules: [
+    //     {
+    //       test: /\.js$/,
+    //       include: /node_modules\/monaco-editor/,
+    //       use: {
+    //         loader: 'babel-loader',
+    //         options: {
+    //           presets: ['@babel/preset-env'],
+    //         },
+    //       },
+    //     },
+    //     // 其他规则...
+    //   ],
+    // },
     // module:{
     //   rules: [{
     //     test: /\.(woff2?|eot|ttf|otf)(\?.*)?$/,
@@ -95,7 +116,13 @@ module.exports = defineConfig({
     // externals:{
     //   'ffmpeg-static-electron':'commonjs2 ffmpeg-static-electron'
     // }
-  }
+  },
+  chainWebpack: (config) => {
+    config.resolve.alias.set(
+      'monaco-editor',
+      path.resolve(__dirname, 'node_modules/monaco-editor')
+    );
+  },
 })
 // module.exports = {
 //   resolve:{

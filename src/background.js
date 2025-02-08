@@ -50,11 +50,20 @@ fs.mkdirSync(newSessionDataPath, {
 });
 app.setPath('sessionData', newSessionDataPath)
 const imgCachePath = path.join(newSessionDataPath, 'imgCache');
+const getJsCachePath = path.join(newSessionDataPath, 'getJsCache');
 
 fs.mkdirSync(imgCachePath, {
   recursive: true
 });
 
+fs.mkdirSync(getJsCachePath, {
+  recursive: true
+});
+var baseGetDetailPath = path.join(
+    appPath,
+    process.env.NODE_ENV !== 'production' ? '../public' : '',
+    'baseGetDetail.js'
+)
 
 const {
   createWindow,
@@ -105,6 +114,8 @@ app.on('activate', async () => {
     await createWindow()
     setModelList()
     winSend('main', 'imgCachePath', imgCachePath)
+    winSend('main', 'baseGetDetailPath', baseGetDetailPath)
+
   }
 })
 
@@ -116,6 +127,7 @@ app.on('ready', async () => {
   await createWindow()
   setModelList()
   winSend('main', 'imgCachePath', imgCachePath)
+  winSend('main', 'baseGetDetailPath', baseGetDetailPath)
 
 
   // console.log('protocol: ', session.defaultSession.webRequest);
