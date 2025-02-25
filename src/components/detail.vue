@@ -21,19 +21,15 @@
             <el-form-item v-if="detail.videoTitle" label="片名：">
                 {{ detail.videoTitle }}
             </el-form-item>
-            <el-form-item v-if="detail.type == 'video'||(detail.videoTags && detail.videoTags.length)" label="视频类型：">
-                <template v-if="detail.videoTags">
-                    <el-tag v-for="s in detail.videoTags " closable @close="handleTagClose(s)">{{ s }}</el-tag>
-                </template>
+            <el-form-item v-if="detail.type == 'video' || videoTags.length" label="视频类型：">
+                <el-tag v-for="s in videoTags" closable @close="handleTagClose(s)">{{ s }}</el-tag>
                 <el-input class="input-new-tag" v-if="inputTagVisible" v-model="inputTagValue" ref="saveTagInput"
                     size="small" @keyup.enter.native="handleInputTagConfirm" @blur="handleInputTagConfirm">
                 </el-input>
                 <el-button v-else class="button-new-tag" size="small" @click="showTagInput">+ New Tag</el-button>
             </el-form-item>
-            <el-form-item v-if="detail.type == 'video'||(detail.videoActs && detail.videoActs.length)" label="主演：">
-                <template v-if="detail.videoActs">
-                    <el-tag v-for="s in detail.videoActs " closable @close="handleActClose(s)">{{ s }}</el-tag>
-                </template>
+            <el-form-item v-if="detail.type == 'video' || videoActs.length" label="主演：">
+                <el-tag v-for="s in videoActs" closable @close="handleActClose(s)">{{ s }}</el-tag>
                 <el-input class="input-new-tag" v-if="inputActVisible" v-model="inputActValue" ref="saveActInput"
                     size="small" @keyup.enter.native="handleInputActConfirm" @blur="handleInputActConfirm">
                 </el-input>
@@ -65,7 +61,9 @@ export default {
             inputTagVisible: false,
             inputTagValue: '',
             inputActVisible: false,
-            inputActValue: ''
+            inputActValue: '',
+            videoTags: [],
+            videoActs: []
         }
     },
 
@@ -76,6 +74,14 @@ export default {
         },
         value(n) {
             this.showDetailDialog = n
+        },
+        detail: {
+            deep: true,
+            immediate: true,
+            handler(n) {
+                this.videoActs = n?.videoActs || []
+                this.videoTags = n?.videoTags || []
+            }
         }
     },
 
@@ -90,36 +96,31 @@ export default {
     },
     methods: {
         saveDetail() {
-            ipcRenderer.send('reDetail', this.detail)
+            ipcRenderer.send('reDetail', Object.assign(this.detail, { videoActs: this.videoActs, videoTags: this.videoTags }))
             this.showDetailDialog = false;
         },
         handleTagClose(tag) {
-            this.detail?.videoTags.splice(this.detail?.videoTags.indexOf(tag), 1);
+            this.videoTags.splice(this.videoTags.indexOf(tag), 1);
         },
 
         showTagInput() {
             this.inputTagVisible = true;
             this.$nextTick(_ => {
-                console.log('this.$refs.saveTagInput: ', this.$refs);
-
                 this.$refs.saveTagInput.$refs.input.focus();
             });
         },
 
         handleInputTagConfirm() {
-            let inputTagValue = this.inputTagValue;
-            if (!this.detail?.videoTags) {
-                this.detail.videoTags = []
-            }
-            if (inputTagValue) {
-                this.detail?.videoTags.push(inputTagValue);
+            let inputTagValue = this.inputTagValue.trim();
+            if (inputTagValue&&!this.videoTags.includes(inputTagValue)) {
+                this.videoTags.push(inputTagValue);
             }
             this.inputTagVisible = false;
             this.inputTagValue = '';
         },
 
         handleActClose(tag) {
-            this.detail?.videoActs.splice(this.detail?.videoActs.indexOf(tag), 1);
+            this.videoActs.splice(this.videoActs.indexOf(tag), 1);
         },
 
         showActInput() {
@@ -130,13 +131,9 @@ export default {
         },
 
         handleInputActConfirm() {
-            console.log('detail: ', detail);
-            let inputActValue = this.inputActValue;
-            if (!this.detail?.videoActs) {
-                this.detail.videoActs = []
-            }
-            if (inputActValue) {
-                this.detail?.videoActs.push(inputActValue);
+            let inputActValue = this.inputActValue.trim();
+            if (inputActValue&&!this.videoActs.includes(inputActValue)) {
+                this.videoActs.push(inputActValue);
             }
             this.inputActVisible = false;
             this.inputActValue = '';
