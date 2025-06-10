@@ -1,6 +1,6 @@
 {
   "name": "viewer",
-  "version": "0.3.7",
+  "version": "0.3.8",
   "private": true,
   "scripts": {
     "mdToHtml": "node mdToHtml.js",
@@ -40,6 +40,7 @@
     "path-browserify": "^1.0.1",
     "qrcode": "^1.5.1",
     "serve-index": "^1.9.1",
+    "subtitle": "^4.2.2-alpha.0",
     "tree-kill": "^1.2.2",
     "tree-node-cli": "^1.6.0",
     "vditor": "^3.9.7",

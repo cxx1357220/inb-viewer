@@ -81,7 +81,11 @@ const cutData = {
  * @param {boolean} isCode 是否编码
  */
 const cutTime = (event, obj, isCode) => {
-    winSend(obj.winKey, 'cutPercent', {
+    winSend('videoList', 'cutPercent', {
+        filePath: obj.filePath,
+        percent: 'waiting'
+    })
+    winSend(obj.basePath, 'cutPercent', {
         filePath: obj.filePath,
         percent: 'waiting'
     })
@@ -97,7 +101,7 @@ const cutTime = (event, obj, isCode) => {
         basePath = path.dirname(filePath),
         file = path.basename(filePath),
         saveFile = path.join(basePath, 'cut-' + file),
-        options = ['-y', '-threads 24', '-preset ultrafast']
+        options = ['-y', '-threads 4', '-preset ultrafast']
     if (segment_times) {
         let len = segment_times.split(',').length.toString().length
         saveFile = path.join(basePath, 'cut-part-%' + len + 'd-' + file)
@@ -122,7 +126,11 @@ const cutTime = (event, obj, isCode) => {
             duration = times(data.duration)
         })
         .on('progress', function (progress) {
-            winSend(winKey, 'cutPercent', {
+            winSend(obj.basePath, 'cutPercent', {
+                filePath: filePath,
+                percent: (times(progress.timemark) / duration * 100).toFixed(2)
+            })
+            winSend('videoList', 'cutPercent', {
                 filePath: filePath,
                 percent: (times(progress.timemark) / duration * 100).toFixed(2)
             })
@@ -130,20 +138,30 @@ const cutTime = (event, obj, isCode) => {
         .on('end', function () {
             console.log('Processing finished !');
             shell.showItemInFolder(filePath)
-            winSend(winKey, 'cutPercent', {
+            winSend(obj.basePath, 'cutPercent', {
+                filePath: filePath,
+                percent: 'done'
+            })
+            winSend('videoList', 'cutPercent', {
                 filePath: filePath,
                 percent: 'done'
             })
             resolve(filePath)
             cutData.state = false
             if (cutData.list.length) {
+                console.log('cutData.list.length: ', cutData.list.length);
                 cutTime('', ...cutData.list.shift())
             }
         })
         .on('error', function (err) {
             console.log('An error occurred: ' + err.message);
-            winSend(winKey, 'error', err)
-            winSend(winKey, 'cutPercent', {
+            winSend(obj.basePath, 'error', err)
+            winSend(obj.basePath, 'cutPercent', {
+                filePath: filePath,
+                percent: 'error'
+            })
+            winSend('videoList', 'error', err)
+            winSend('videoList', 'cutPercent', {
                 filePath: filePath,
                 percent: 'error'
             })
@@ -159,7 +177,7 @@ const cutTime = (event, obj, isCode) => {
     
 }
 ipcMain.on('cutTime', cutTime)
-ipcMain.handle('cutTime', cutTime)
+// ipcMain.handle('cutTime', cutTime)
 
 
 const getData = {
@@ -421,7 +439,7 @@ const getPtsTime = (event, obj) => {
 
 }
 ipcMain.on('getPtsTime', getPtsTime)
-ipcMain.handle('getPtsTime', getPtsTime)
+// ipcMain.handle('getPtsTime', getPtsTime)
 
 
 

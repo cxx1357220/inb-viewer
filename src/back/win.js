@@ -46,7 +46,9 @@ const setTray = () => {
 let winMap = {} //新窗口对象
 const winSend = (win, key, ...params) => {
     try {
-        winMap[win].webContents.send(key, ...params)
+        if(winMap[win]){
+            winMap[win].webContents.send(key, ...params)
+        }
     } catch (error) {
         // console.log('error: ', error);
     }
@@ -122,8 +124,8 @@ async function createWindow(winType = 'main', obj = {}) {
     }
     // Create the browser window.
     let win = new BrowserWindow({
-        width: winType=='main'?1000:800,
-        height: winType=='main'?750:600,
+        width: winType == 'main' ? 1000 : 800,
+        height: winType == 'main' ? 750 : 600,
         title: (obj.title || winKey) + ' - viewer',
         webPreferences: {
             nodeIntegration: true,
@@ -171,6 +173,18 @@ async function createWindow(winType = 'main', obj = {}) {
             })
             break;
         case 'videoList':
+            const videoPathMap={}
+            obj.list.forEach(o=>{
+                o.winKey='videoList'
+                videoPathMap[o.filePath]=1
+            })
+            let videoListCutStateMap = {}
+            cutData.list.forEach(list => {
+                if (videoPathMap[list[0].filePath]) {
+                    videoListCutStateMap[list[0].filePath] = 'waiting'
+                }
+            })
+            obj.cutStateMap = videoListCutStateMap
             win.webContents.send('videoList', obj)
             win.on('close', (e) => {
                 delete winMap[winKey]

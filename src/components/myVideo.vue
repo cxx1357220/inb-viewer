@@ -2,17 +2,55 @@
     <div class="view">
         <div :class="['video', isAudio && 'audio']">
             <video ref="videoPlay" :src="videoUrl" class="video-js" controls>
-                <track kind="chapter" default label="vtt" v-vtt="url" />
+                <!-- <track kind="chapter" default label="vtt" v-vtt="url" /> -->
+                <!-- <track v-for="o in srtList" :label="o.name" :src="o.path">
+                </track> -->
             </video>
+        </div>
+        <div class="srt-edit" v-show="drawer">
+            <div class="header">
+                <span>{{ srtEditSrc.src }}</span>
+                <i class="el-icon-close" @click="drawer = false"></i>
+            </div>
+            <srtEdit v-if="drawer" :srcObj="srtEditSrc" @upSrt="upSrt" @setTime="setTime" @delSrt="delSrt"></srtEdit>
         </div>
         <div class="other" ref="banner" @mouseleave="showButton = false" @mouseenter="showButton = true">
             <i class="el-icon-setting"></i>
             <div class="banner" v-show="showButton">
                 <p v-if="!isAudio" @click="setPoster">设置封面</p>
                 <p @click="cutTime">剪切视频</p>
-                <p v-if="obj.type=='video'" @click="getCutTime">获取拼接点</p>
+                <p v-if="obj.type == 'video'" @click="getCutTime">获取拼接点</p>
                 <p @click="openPath">打开路径</p>
                 <p @click="inPlayer">mpv内打开</p>
+            </div>
+        </div>
+        <div class="other" ref="srtBanner" v-show="obj.type.toLowerCase() == 'video'"
+            @mouseleave="showSrtButton = false" @mouseenter="getSrt">
+            <i class="el-icon-sugar"></i>
+            <div class="banner banner-vvt" v-show="showSrtButton">
+                <el-collapse v-model="activeNames">
+                    <el-collapse-item title="本地字幕" name="0">
+                        <p v-for="(o, i) in srtList" :class="o.active ? 'active' : ''">
+                            <span @click="setSrt(o)"> {{ o.name }}</span>
+                            <label>
+                                <i @click="editSrt(o)" class="el-icon-edit-outline"></i>
+                                <i @click="delSrt(o.path)" class="el-icon-delete"></i>
+                            </label>
+                        </p>
+                        <label v-show="srtList.length == 0">暂无数据</label>
+                        <div class="new-srt" @click='newSrt'>
+                            <i class="el-icon-circle-plus-outline"></i>
+                        </div>
+                    </el-collapse-item>
+                    <el-collapse-item title="在线字幕" name="1">
+                        <p v-for="(o, i) in onlineSrtList" @click="downSrt(o, i)">
+                            {{ o.name }}
+                            <i
+                                :class="[o.state == 3 ? 'el-icon-loading' : '', o.state == 1 ? 'el-icon-circle-check' : '', o.state == 3 ? 'el-icon-circle-close' : '']"></i>
+                        </p>
+                        <label v-show="onlineSrtList.length == 0">暂无数据</label>
+                    </el-collapse-item>
+                </el-collapse>
             </div>
         </div>
 
@@ -22,7 +60,7 @@
             <button @click="inPlayer">mpv内打开</button>
         </div>
 
-        <el-dialog :title="'剪切: ' + obj.file" :visible.sync="showDialog">
+        <el-dialog :title="'剪切: ' + videoUrl" :visible.sync="showDialog">
             <div class="dialog">
                 <div v-for="obj, i in timeList">
                     <el-input style="width: 100px;" size="mini" v-model="obj.v" autocomplete="off"></el-input>
@@ -42,11 +80,17 @@
 <script>
 const ipcRenderer = require('electron').ipcRenderer;
 const path = require('path');
+const fs = require('fs')
+const request = require("request")
+// const iconv = require('iconv-lite');
+import srtEdit from '@/components/srtEdit.vue';
+// import { parse, stringify } from 'subtitle'
 import videojs from "video.js";
 import 'video.js/dist/video-js.css'
 import 'video.js/dist/video-js.min.css'
 export default {
     name: 'videoP',
+    components: { srtEdit },
     data() {
         return {
             obj: {},
@@ -56,7 +100,13 @@ export default {
             showDialog: false,
             player: {},
             sustainType: ['mpeg4'],
-            showButton: false
+            showButton: false,
+            showSrtButton: false,
+            srtList: [],
+            onlineSrtList: [],
+            activeNames: '',
+            drawer: false,
+            srtEditSrc: ''
         }
     },
     props: ['fobj', 'videoList', 'url', 'idx', 'isplay', 'isAudio'],
@@ -67,6 +117,9 @@ export default {
             handler(n) {
                 // console.log('n: ', n);
                 Object.assign(this.obj, n)
+                this.onlineSrtList.length = 0
+                this.drawer = false
+                this.getLocalSrt()
                 // setTimeout(() => {
                 //     this.player.currentTime(this.player.currentTime()+1200)
                 //     setTimeout(() => {
@@ -138,6 +191,7 @@ export default {
             bigPlayButton: false,
             controlBar: {
                 fullscreenToggle: !that.isAudio,
+                subsCapsButton: false,
                 volumePanel: {
                     inline: false,
                 }
@@ -169,8 +223,19 @@ export default {
                 //     console.log('你点击了图片')
                 // }
             })
+            var srtComponent = videojs.extend(baseComponent, {
+                constructor: function (player, options) {
+                    baseComponent.apply(this, arguments)
+                },
+                createEl: function () {
+                    return that.$refs.srtBanner
+                }
+            })
+            videojs.registerComponent('srtComponent', srtComponent)
             videojs.registerComponent('myComponent', myComponent)
             that.player.getChild('controlBar').addChild('myComponent')
+            that.player.getChild('controlBar').addChild('srtComponent')
+            that.setSrt()
         })
         this.player.on('error', (err) => {
             console.log('err: ', err);
@@ -183,6 +248,189 @@ export default {
         })
     },
     methods: {
+        setTime(n) {
+            this.player.currentTime(n / 1000)
+        },
+        newSrt() {
+            let parse = path.parse(this.url)
+            parse.ext = '.vtt'
+            parse.base = ''
+            parse.name += '_' + new Date().getTime()
+            let url = path.format(parse)
+            fs.writeFileSync(url, 'WEBVTT')
+            this.srtList.push({
+                name: path.parse(url).base,
+                path: url,
+            })
+        },
+        delSrt(s) {
+            this.$confirm('此操作将永久删除该文件, 是否继续?', '提示', {
+                confirmButtonText: '确定',
+                cancelButtonText: '取消',
+                type: 'warning'
+            }).then(() => {
+                fs.rmSync(s)
+                for (let index = 0; index < this.srtList.length; index++) {
+                    const element = this.srtList[index];
+                    if (element.path == s) {
+                        this.srtList.splice(index, 1)
+                        break
+                    }
+                }
+                var tracks = this.player.textTracks();
+                for (let i = 0; i < tracks.length; i++) {
+                    console.log('tracks[i]: ', tracks[i], path.parse(s));
+                    if (tracks[i].mode == 'showing' && path.parse(s).base == tracks[i].label) {
+                        tracks[i].mode = 'disabled';
+                        break
+                    }
+                }
+                this.drawer = false
+            }).catch(() => {
+            });
+
+        },
+        upSrt(s) {
+            let isHave = false
+            for (let i = 0; i < this.srtList.length; i++) {
+                const element = this.srtList[i];
+                if (element.path == s) {
+                    this.setSrt(element)
+                    isHave = true
+                    break
+                }
+            }
+            if (!isHave) {
+                this.srtList.push({
+                    name: path.parse(s).base,
+                    path: s,
+                });
+            }
+        },
+        editSrt(o) {
+            this.srtEditSrc = { src: o.path, from: this.url }
+            this.drawer = true
+        },
+        setSrt(o) {
+            let that = this
+            if (!that.player?.textTracks) {
+                return
+            }
+            if (!o) {
+                for (let i = 0; i < this.srtList.length; i++) {
+                    if (path.parse(this.srtList[i].path).ext == '.vtt') {
+                        o = this.srtList[i]
+                        break
+                    }
+                }
+            }
+            if (!o || path.parse(o.path).ext !== '.vtt') {
+                return
+            }
+            var tracks = that.player.textTracks();
+            console.log('tracks: ', tracks);
+            for (let i = 0; i < tracks.length; i++) {
+                tracks[i].mode = 'disabled';
+            }
+            // var track = that.player.addTextTrack('subtitles', o.path, 'China_No.1');
+            // track.mode = 'showing'; // 设置为显示模式
+            // fs.createReadStream(o.path)
+            //     .pipe(parse())
+            //     .on('data', node => {
+            //         if (node.type == "cue") {
+            //             track.addCue(new VTTCue(node.data.start / 1000, node.data.end / 1000, node.data.text));
+            //         }
+            //     }).on('end', function (err) {
+
+            //     }).on('finish', () => console.log('parser has finished'))
+            that.srtList.forEach((element, idx) => {
+                if (element.path == o.path) {
+                    that.$set(that.srtList[idx], 'active', true)
+                } else {
+                    that.$set(that.srtList[idx], 'active', false)
+                }
+            })
+            const trackEl = that.player.addRemoteTextTrack({ src: 'file://' + o.path + '?time=' + new Date().getTime(), label: o.name }, false);
+            trackEl.track.mode = 'showing';
+
+        },
+        downSrt(o, idx) {
+            if (o.state == 1 || o.state == 2) {
+                return
+            }
+            let that = this
+            this.$set(this.onlineSrtList[idx], 'state', 2)
+            // let name = path.parse(o.name).name + '_' + new Date().getTime() + '.vtt'
+            let name = path.parse(o.name).base
+            let pObj = path.parse(this.url), p = path.join(pObj.dir, name)
+            request(o.url)
+                // .pipe(iconv.decodeStream('gbk'))
+                // .pipe(parse())
+                // .pipe(stringify({ format: 'WebVTT' }))
+                .pipe(fs.createWriteStream(p))
+                .on('close', function (err) {
+                    if (err) {
+                        that.$set(that.onlineSrtList?.[idx], 'state', 3)
+                        console.log(`下载失败: ${err}`);
+                    } else {
+                        that.onlineSrtList[idx].state = 1
+                        that.$set(that.onlineSrtList?.[idx], 'state', 1)
+                        console.log(`文件 ${o.name} 下载完毕`);
+                        that.srtList.push({
+                            name: name,
+                            path: p
+                        })
+                        that.setSrt({
+                            name: name,
+                            path: p
+                        })
+                    }
+                })
+        },
+        getLocalSrt() {
+            this.srtList.length = 0
+            if (this.player.textTracks) {
+                let tracks = this.player.textTracks() || [];
+                for (let i = 0; i < tracks.length; i++) {
+                    tracks[i].mode = 'disabled';
+                }
+            }
+
+            let pObj = path.parse(this.url)
+            console.log('pObj: ', pObj);
+            let files = fs.readdirSync(pObj.dir);
+            files.forEach((val, index) => {
+                let fPath = path.join(pObj.dir, val);
+                let child = path.parse(fPath)
+                if (['.vtt', '.srt'].includes(child.ext)) {
+                    this.srtList.push({
+                        name: val,
+                        path: fPath,
+                    })
+                }
+            })
+            this.setSrt()
+        },
+        getSrt() {
+            this.showSrtButton = true
+            if (this.onlineSrtList.length) {
+                return false
+            }
+            fetch('https://api-shoulei-ssl.xunlei.com/oracle/subtitle?name=' + this.obj.title)
+                .then(response => response.json())
+                .then(async res => {
+                    console.log('res: ', res);
+                    res?.data.forEach(o => {
+                        if (['srt', 'vtt'].includes(o.ext)) {
+                            this.onlineSrtList.push(o);
+                        }
+                    })
+
+                }).catch(err => {
+                    console.log('err: ', err);
+
+                })
+        },
         newTimeInput() {
             this.timeList.push({ v: '' })
         },
@@ -208,9 +456,9 @@ export default {
         cutTime() {
             try {
                 this.player.pause()
-                this.player.exitFullscreen()
+                // this.player.exitFullscreen()
             } catch (error) {
-
+                console.log('error: ', error);
             }
             let time = this.player.currentTime()
             this.timeList.push({ v: Math.floor(time * 10) / 10 })
@@ -244,9 +492,9 @@ export default {
         openPath() {
             ipcRenderer.send('openPath', this.url)
         },
-        forward(s){
-            s =s|| this.player.duration()/10;
-            this.player.currentTime(this.player.currentTime()+s)
+        forward(s) {
+            s = s || this.player.duration() / 10;
+            this.player.currentTime(this.player.currentTime() + s)
         },
     }
 
@@ -255,8 +503,11 @@ export default {
 <style lang="less" scoped>
 .view {
     position: relative;
+    display: flex;
+    flex-direction: row;
 
     .other {
+        position: relative;
 
         .banner {
             // display: none;
@@ -266,7 +517,10 @@ export default {
             position: absolute;
             bottom: 30px;
             right: 0;
-            z-index: 9999;
+            width: max-content;
+            max-width: 100vw;
+            word-break: break-all;
+            z-index: 999;
             flex-direction: column;
             background-color: rgba(43, 51, 63, .7);
             // &:hover {
@@ -274,22 +528,101 @@ export default {
             // }
 
             p {
-                display: block;
+                display: flex;
+                align-items: center;
                 cursor: pointer;
                 color: white;
-                text-align: center;
+                text-align: left;
                 padding: 0.2em 0.5em;
                 line-height: 1.4em;
                 font-size: 1.2em;
+                justify-content: space-between;
+            }
+
+            label {
+                display: block;
+                color: white;
+                text-align: center;
+            }
+
+            p.active>span {
+                color: #67C23A;
+            }
+
+            i {
+                cursor: pointer;
+                flex-shrink: 0;
+            }
+
+            i:hover {
+                color: #409EFF;
             }
 
             p:hover {
                 background-color: rgb(115, 133, 159, 0.5);
                 // color: black;
             }
+
+            .new-srt {
+                cursor: pointer;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                margin: 0 20px;
+                padding: 2px 10px;
+                border-radius: 10px;
+                border: 1px solid #fff;
+                color: #fff;
+            }
+
+            .new-srt:hover {
+                border: 1px solid #409EFF;
+                color: #409EFF;
+            }
+        }
+
+        .banner-vvt {
+            & /deep/ .el-collapse-item__wrap {
+                background-color: unset;
+                color: white;
+            }
+
+            & /deep/ .el-collapse-item__content {
+                max-height: 50vh;
+                overflow: auto;
+            }
+
+            & /deep/.el-collapse-item__header {
+                background-color: unset;
+                color: white;
+                padding-left: 16px;
+            }
         }
 
 
+    }
+
+
+    .srt-edit {
+        display: flex;
+        flex-direction: column;
+        width: 30vw;
+        min-width: 300px;
+        height: 100vh;
+        overflow: auto;
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            word-break: break-all;
+            padding: 10px;
+
+            i {
+                cursor: pointer;
+                padding-left: 20px;
+            }
+        }
     }
 }
 
@@ -312,6 +645,7 @@ export default {
 }
 
 .video {
+    flex: 1;
     overflow: hidden;
     // width: 100vw;
     // height: 100vh;
@@ -327,6 +661,7 @@ export default {
             line-height: 30px;
             width: 40px;
             text-align: center;
+            cursor: pointer;
         }
     }
 }
