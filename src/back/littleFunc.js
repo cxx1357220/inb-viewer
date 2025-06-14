@@ -82,19 +82,14 @@ const outList = (event, list) => {
     let time = new Date().getTime()
     for (const key in fileMap) {
         let base = path.dirname(key)
-        console.log('base: ', base);
-        if (base[base.length - 1] == '\\') {
-            base = base.slice(0, base.length - 1)
-            console.log('base: ', base);
-        }
         try {
-            fs.renameSync(base + "\\list.json", base + "\\list-old-" + time + ".json");
+            fs.renameSync(path.join(base + "list.json"), path.join(base + "list-old-" + time + ".json"));
         } catch (error) {
             console.log('error: ', error);
         }
 
-        fs.writeFileSync(base + "\\list.json", JSON.stringify(fileMap[key]))
-        openPath({}, base + "\\list.json")
+        fs.writeFileSync(path.join(base + "list.json"), JSON.stringify(fileMap[key]))
+        openPath({}, path.join(base + "list.json"))
     }
 }
 ipcMain.on('outList', outList)

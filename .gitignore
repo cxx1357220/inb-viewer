@@ -2,8 +2,9 @@
 /node_modules
 /dist_electron
 /public/mpv/mpv.exe
-# /public/ffmpeg
-/public/whisper-cpp/model
+/public/ffmpeg
+/public/whisper
+/public/whisper-cpp/*
 /install_whisper.md
 /map.json
 /getDetail.js

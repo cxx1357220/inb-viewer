@@ -1,7 +1,10 @@
 import {
     ipcMain,
+    app
 } from 'electron'
 var os = require('os')
+const path = require('path')
+const appPath = app.getAppPath();
 const express = require('express');
 const expressWs = require('express-ws');
 const bodyParser = require('body-parser')
@@ -36,7 +39,12 @@ const startWs = () => {
         });
         return p
     }
-    app.use('/app', express.static('./watchHtml'))
+    const watchHtmlPath = path.join(
+        appPath,
+        process.env.NODE_ENV !== 'production' ? '../public' : '',
+        'watchHtml'
+    )
+    app.use('/app', express.static(watchHtmlPath))
     app.ws('/', function (ws, req) {
         let p = parseParam(req.url)
         console.log('p: ', p.user);

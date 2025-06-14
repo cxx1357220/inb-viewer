@@ -1,6 +1,7 @@
 import {
     BrowserWindow,
     ipcMain,
+    nativeImage,
     dialog,
     Tray,
     Menu,
@@ -16,10 +17,11 @@ import {
 let tray = null // 在外面创建tray变量，防止被自动删除，导致图标自动消失
 
 const setTray = () => {
-
-    tray = new Tray(path.join(appPath,
-        process.env.NODE_ENV !== 'production' ? '../public' : '', 'icon.ico'))
-    // console.log('tray: ', tray);
+    tray = new Tray(nativeImage.createThumbnailFromPath(path.join(appPath,
+        process.env.NODE_ENV !== 'production' ? '../public' : '', 'icon.ico').toPng()))
+    console.log(path.join(appPath,
+        process.env.NODE_ENV !== 'production' ? '../public' : '', 'icon.ico'));
+    console.log('tray: ', tray);
 
     // 自定义托盘图标的内容菜单
     const contextMenu = Menu.buildFromTemplate([{
@@ -38,8 +40,13 @@ const setTray = () => {
     tray.setContextMenu(contextMenu) // 设置图标的内容菜单
     // 点击托盘图标，显示主窗口
     tray.on("click", () => {
-        winMap['main'].show();
-        winMap['main'].setSkipTaskbar(false)
+        try {
+            winMap['main'].show();
+            winMap['main'].setSkipTaskbar(false)
+        } catch (error) {
+            console.log('error: ', error);
+
+        }
     })
 }
 
@@ -117,13 +124,14 @@ async function createWindow(winType = 'main', obj = {}) {
     }
 
     if (winMap[winKey]) {
+        winMap[winKey].show()
         winMap[winKey].focus()
         return false
     }
     // Create the browser window.
     let win = new BrowserWindow({
-        width: winType=='main'?1000:800,
-        height: winType=='main'?750:600,
+        width: winType == 'main' ? 1000 : 800,
+        height: winType == 'main' ? 750 : 600,
         title: (obj.title || winKey) + ' - viewer',
         webPreferences: {
             nodeIntegration: true,
@@ -157,7 +165,11 @@ async function createWindow(winType = 'main', obj = {}) {
     switch (winType) {
         case 'main':
             win.webContents.send('home')
-            setTray()
+            try {
+                setTray()
+            } catch (error) {
+
+            }
             win.on('close', (e) => {
                 e.preventDefault(); // 阻止退出程序
                 win.setSkipTaskbar(true) // 取消任务栏显示
@@ -260,8 +272,12 @@ if (!gotTheLock) {
 } else {
     app.on('second-instance', (event, commandLine, workingDirectory) => {
         // 当运行第二个实例时,将会聚焦到main这个窗口
-        winMap['main'].show();
-        winMap['main'].setSkipTaskbar(false)
+        try {
+            winMap['main'].show();
+            winMap['main'].setSkipTaskbar(false)
+        } catch (error) {
+            console.log('error: ', error);
+        }
     })
 }
 

@@ -1,7 +1,11 @@
 import {
     ipcMain,
+    app
 } from 'electron'
 var os = require('os')
+const path = require('path')
+const appPath = app.getAppPath();
+
 let shareJs = require('./share');
 const express = require('express');
 let {
@@ -39,7 +43,13 @@ const share = (event, boolean, list, map) => {
         }
         console.log('net: ', add);
         shareJs.useArr(list, map)
-        shareJs.use('/app', express.static('./shareHtml'))
+        const shareHtmlPath = path.join(
+            appPath,
+            process.env.NODE_ENV !== 'production' ? '../public' : '',
+            'shareHtml'
+        )
+        console.log('shareHtmlPath: ', shareHtmlPath);
+        shareJs.use('/app', express.static(shareHtmlPath))
         server = shareJs.listen(port, () => {
             console.log(`${add}:${port}/app/#/`)
             winSend('main','shareUrl', `${add}:${port}/app/#/`)

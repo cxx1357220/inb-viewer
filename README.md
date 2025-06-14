@@ -7,8 +7,13 @@
 node -v
 v16.17.1
 
+mac里实在装不了electron-as-wallpaper包，可以先把package.json里的 electron-as-wallpaper删了，再install完之后再加回来。
 ```
 npm install
+```
+move ffmpeg
+```bash
+node moveFfmpeg.js
 ```
 
 help page
@@ -27,6 +32,21 @@ build
 
 ```
 npm run electron:build
+```
+
+> 这个build版本只支持python2.7，如果不是的话，可以创建一个环境，不会conda可以去学一下。。。
+```bash
+conda create --name py27 python=2.7
+conda activate py27
+```
+> 要是 Error: Exit code: ENOENT. spawn /usr/bin/python ENOENT
+看一下当前python路径
+```bash
+which python
+```
+指定路径 
+```bash
+export PYTHON_PATH=/Users/chenxihua/miniconda3/envs/py27/bin/python
 ```
 
 > 要是 process.env.FLUENTFFMPEG_COV 报错，狠心点直接把
@@ -100,3 +120,7 @@ module.exports = process.env.FLUENTFFMPEG_COV ? require('./lib-cov/fluent-ffmpeg
 - 根据名字获取视频信息 
 
 - 播放当前显示的视频，➡前进百分之10；⬅ 后退60s； ⬆ 上一个视频； ⬇ 下一个视频ctrl+d 删除；
+
+- 尝试支持mac
+
+- faster-whisper替换掉whisper-cpp

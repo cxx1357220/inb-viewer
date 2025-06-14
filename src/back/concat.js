@@ -19,15 +19,24 @@ let {
 
 const path = require('path');
 const fs = require('fs');
-
+var os = require('os')
+var platform = os.platform()
+//patch for compatibilit with electron-builder, for smart built process.
+if (platform == "darwin") {
+    platform = "mac";
+} else if (platform == "win32") {
+    platform = "win";
+}
 const ffmpeg = require('fluent-ffmpeg');
 const appPath = app.getAppPath();
 var ffmpegPath = path.join(
     appPath,
     process.env.NODE_ENV !== 'production' ? '../public' : '',
     'ffmpeg',
-    'ffmpeg.exe'
+    platform === 'win' ? 'ffmpeg.exe' : 'ffmpeg'
 )
+
+fs.chmod(ffmpegPath, 0o775, (err) => {})
 ffmpeg.setFfmpegPath(ffmpegPath);
 import {
     throttle,
@@ -49,7 +58,7 @@ const concatData = {
 const concatVideo = (event, obj) => {
     concatData.state = true
     if (obj.unSameType) {
-        let saveFile = obj.savePath + '\\' + obj.name + '.mp4'
+        let saveFile = path.join(obj.savePath , obj.name + '.mp4') 
         let ff = ffmpeg()
             .on('start', function (commandLine) {
                 console.log('Spawned Ffmpeg with command: ' + commandLine);
@@ -112,7 +121,7 @@ const concatVideo = (event, obj) => {
         prev = 0
     let promiseList = obj.files.map((s, i) => {
         return new Promise((resolve, reject) => {
-            let saveFile = obj.savePath + '\\inb-' + i + '.ts'
+            let saveFile = path.join(obj.savePath , 'inb-' + i + '.ts') 
             ffmpeg(s)
                 .outputOption('-c copy')
                 .on('start', function (commandLine) {
@@ -140,8 +149,8 @@ const concatVideo = (event, obj) => {
         })
     })
     Promise.all(promiseList).then(res => {
-        let saveFile = obj.savePath + '\\' + obj.name + '.mp4'
-        let inp = obj.savePath + '\\inb-concat.txt'
+        let saveFile = path.join(obj.savePath , obj.name + '.mp4') 
+        let inp = path.join(obj.savePath , 'inb-concat.txt')
         let txtVal = ''
         res.forEach(s => {
             // 格式离谱，带空格文件夹需要'包裹

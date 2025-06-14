@@ -11,6 +11,10 @@ app.whenReady().then(() => {
         screenshots.startCapture();
         // screenshots.$view.webContents.openDevTools();
     });
+    globalShortcut.register("Command+Control+a", () => {
+        screenshots.startCapture();
+        // screenshots.$view.webContents.openDevTools();
+    });
     globalShortcut.register("esc", () => {
         if (screenshots.$win && screenshots.$win.isFocused()) {
             screenshots.endCapture();

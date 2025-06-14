@@ -5,7 +5,14 @@ const fs = require('fs')
 const stream = require('stream');
 const path = require('path');
 const ffmpeg = require('fluent-ffmpeg');
-
+var os = require('os')
+var platform = os.platform()
+//patch for compatibilit with electron-builder, for smart built process.
+if (platform == "darwin") {
+    platform = "mac";
+} else if (platform == "win32") {
+    platform = "win";
+}
 
 
 const NodeMediaServer = require('node-media-server');
@@ -35,8 +42,10 @@ var ffmpegPath = path.join(
     appPath,
     process.env.NODE_ENV !== 'production' ? '../public' : '',
     'ffmpeg',
-    'ffmpeg.exe'
+    platform === 'win' ? 'ffmpeg.exe' : 'ffmpeg'
 )
+
+fs.chmod(ffmpegPath, 0o775, (err) => {})
 ffmpeg.setFfmpegPath(ffmpegPath);
 
 function outStream() {

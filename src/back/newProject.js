@@ -87,7 +87,7 @@ const newProject = (event, obj) => {
         winSend('main', 'callMap', {
             [path.join(toPath, 'project.json')]: {
                 allSize: "0.00",
-                basePath: toPath + '\\',
+                basePath: toPath,
                 date: dirKey,
                 file: path.basename(obj.filePath),
                 filePath: json.file ? path.join(toPath, json.file) : path.join(toPath, 'project.json'),
@@ -114,104 +114,182 @@ const newProject = (event, obj) => {
         }
         return false
     }
-    
-    
-    let from, to, params = ['/tee', '/r:0'];
+
+
     if (obj.type == 'video') {
         json.file = path.basename(obj.filePath)
-        to = toPath
-        from = path.dirname(obj.filePath)
-        params.unshift(from, to, path.basename(obj.filePath))
-    } else {
-        to = path.join(toPath, path.basename(obj.dirPath))
-        from = obj.dirPath
-        params.unshift(from, to, '/e')
     }
-    console.log(' params: ', params);
     fs.writeFileSync(jsonPath, JSON.stringify(json))
     fs.writeFileSync(path.join(obj.savePath, dirKey, 'preview.jpg'), fs.readFileSync(bgPath))
-    let ls = spawn('robocopy', params)
-    ls.stdout.on('data', (data) => {
-        var str = iconv.decode(data, 'gbk');
-        // console.log('str: ', str);
-        // if (str.indexOf('磁盘空间不足。') != -1) {
-        //     ls.kill()
-        // } else {
-        let d = str.split('%')[0]
-        if (!isNaN(d)) {
-            // console.log('d: ', d);
-            // winSend('main', 'newPercent', {
-            //     jsonPath: jsonPath,
-            //     percent: d
-            // })
-            throttlePercent(jsonPath, d)
-        }
-        // }
-    });
-    ls.stderr.on('data', (err) => {
-        console.log('err: ', err);
-    });
-    ls.on('close', (code) => {
-        console.log(`子进程退出: ${code}`);
-
-        // if (code == null) {
-        //     winSend('main', 'newPercent', {
-        //         jsonPath: jsonPath,
-        //         percent: 'error',
-        //     })
-        //     winSend('main', 'error', '磁盘空间不足。')
-        // } else
-        if (code >= 8) {
-            winSend('main', 'copyPercent', {
-                jsonPath: jsonPath,
-                percent: 'error',
-            })
-            switch (code) {
-                case 8:
-                    winSend('main', 'error', '磁盘空间不足。')
-                    break;
-                case 16:
-                    winSend('main', 'error', '系统找不到指定的路径。')
-                    break;
-                default:
-                    winSend('main', 'error', 'robocopy复制操作期间至少发生了一次失败。')
-                    break;
-            }
+    const isMac = process.platform === 'darwin';
+    winSend('main', 'newPercent', {
+        jsonPath: jsonPath,
+        percent: 0.01
+    })
+    if (isMac) {
+        let params = ['--progress', '-av'];
+        if (obj.type == 'video') {
+            params.push(obj.filePath,toPath)
         } else {
-            winSend('main', 'newPercent', {
-                jsonPath: jsonPath,
-                percent: ''
-            })
+            params.push(obj.dirPath + '/',toPath)
         }
-
-        let size = pathSize(toPath)
-        winSend('main', 'callMap', {
-            [path.join(toPath, 'project.json')]: {
-                allSize: size,
-                basePath: toPath + '\\',
-                date: dirKey,
-                file: path.basename(obj.filePath),
-                filePath: json.file ? path.join(toPath, json.file) : path.join(toPath, 'project.json'),
-                img: path.join(toPath, 'preview.jpg'),
-                jsonPath: path.join(toPath, 'project.json'),
-                openFolderPath: obj.savePath,
-                size: size,
-                star: 0,
-                title: obj.title,
-                type: obj.type,
-                tags: obj.tags || [],
-                description: obj.description || ''
+        let ls = spawn('rsync', params)
+        console.log('rsync ', params.join(' '));
+        ls.stdout.on('data', (data) => {
+            var str = iconv.decode(data, 'gbk');
+            const match = str.match(/\d+%/);
+            if (match) {
+                throttlePercent(obj.jsonPath, match[0].split('%')[0])
             }
-        }, obj.savePath, obj.tags || [])
-        newData.state = false
-        if (newData.list.length) {
-            newProject('', ...newData.list.shift())
+        });
+        ls.stderr.on('data', (err) => {
+            console.log('err: ', err);
+        });
+        ls.on('close', (code) => {
+            console.log(`子进程退出: ${code}`);
+            if (code >= 8) {
+                winSend('main', 'copyPercent', {
+                    jsonPath: jsonPath,
+                    percent: 'error',
+                })
+                switch (code) {
+                    case 8:
+                        winSend('main', 'error', '磁盘空间不足。')
+                        break;
+                    case 16:
+                        winSend('main', 'error', '系统找不到指定的路径。')
+                        break;
+                    default:
+                        winSend('main', 'error', 'robocopy复制操作期间至少发生了一次失败。')
+                        break;
+                }
+            } else {
+                winSend('main', 'newPercent', {
+                    jsonPath: jsonPath,
+                    percent: ''
+                })
+            }
+
+            let size = pathSize(toPath)
+            winSend('main', 'callMap', {
+                [path.join(toPath, 'project.json')]: {
+                    allSize: size,
+                    basePath: toPath,
+                    date: dirKey,
+                    file: path.basename(obj.filePath),
+                    filePath: json.file ? path.join(toPath, json.file) : path.join(toPath, 'project.json'),
+                    img: path.join(toPath, 'preview.jpg'),
+                    jsonPath: path.join(toPath, 'project.json'),
+                    openFolderPath: obj.savePath,
+                    size: size,
+                    star: 0,
+                    title: obj.title,
+                    type: obj.type,
+                    tags: obj.tags || [],
+                    description: obj.description || ''
+                }
+            }, obj.savePath, obj.tags || [])
+            newData.state = false
+            if (newData.list.length) {
+                newProject('', ...newData.list.shift())
+            }
+        });
+    } else {
+        let from, to, params = ['/tee', '/r:0'];
+        if (obj.type == 'video') {
+            to = toPath
+            from = path.dirname(obj.filePath)
+            params.unshift(from, to, path.basename(obj.filePath))
+        } else {
+            to = path.join(toPath, path.basename(obj.dirPath))
+            from = obj.dirPath
+            params.unshift(from, to, '/e')
         }
-    });
+        console.log(' params: ', params);
+        let ls = spawn('robocopy', params)
+        ls.stdout.on('data', (data) => {
+            var str = iconv.decode(data, 'gbk');
+            // console.log('str: ', str);
+            // if (str.indexOf('磁盘空间不足。') != -1) {
+            //     ls.kill()
+            // } else {
+            let d = str.split('%')[0]
+            if (!isNaN(d)) {
+                // console.log('d: ', d);
+                // winSend('main', 'newPercent', {
+                //     jsonPath: jsonPath,
+                //     percent: d
+                // })
+                throttlePercent(jsonPath, d)
+            }
+            // }
+        });
+        ls.stderr.on('data', (err) => {
+            console.log('err: ', err);
+        });
+        ls.on('close', (code) => {
+            console.log(`子进程退出: ${code}`);
+
+            // if (code == null) {
+            //     winSend('main', 'newPercent', {
+            //         jsonPath: jsonPath,
+            //         percent: 'error',
+            //     })
+            //     winSend('main', 'error', '磁盘空间不足。')
+            // } else
+            if (code >= 8) {
+                winSend('main', 'copyPercent', {
+                    jsonPath: jsonPath,
+                    percent: 'error',
+                })
+                switch (code) {
+                    case 8:
+                        winSend('main', 'error', '磁盘空间不足。')
+                        break;
+                    case 16:
+                        winSend('main', 'error', '系统找不到指定的路径。')
+                        break;
+                    default:
+                        winSend('main', 'error', 'robocopy复制操作期间至少发生了一次失败。')
+                        break;
+                }
+            } else {
+                winSend('main', 'newPercent', {
+                    jsonPath: jsonPath,
+                    percent: ''
+                })
+            }
+
+            let size = pathSize(toPath)
+            winSend('main', 'callMap', {
+                [path.join(toPath, 'project.json')]: {
+                    allSize: size,
+                    basePath: toPath,
+                    date: dirKey,
+                    file: path.basename(obj.filePath),
+                    filePath: json.file ? path.join(toPath, json.file) : path.join(toPath, 'project.json'),
+                    img: path.join(toPath, 'preview.jpg'),
+                    jsonPath: path.join(toPath, 'project.json'),
+                    openFolderPath: obj.savePath,
+                    size: size,
+                    star: 0,
+                    title: obj.title,
+                    type: obj.type,
+                    tags: obj.tags || [],
+                    description: obj.description || ''
+                }
+            }, obj.savePath, obj.tags || [])
+            newData.state = false
+            if (newData.list.length) {
+                newProject('', ...newData.list.shift())
+            }
+        });
+    }
+
     winSend('main', 'callMap', {
         [path.join(toPath, 'project.json')]: {
             allSize: "0.00",
-            basePath: toPath + '\\',
+            basePath: toPath,
             date: dirKey,
             file: path.basename(obj.filePath),
             filePath: json.file ? path.join(toPath, json.file) : path.join(toPath, 'project.json'),
@@ -228,38 +306,6 @@ const newProject = (event, obj) => {
         }
     }, obj.savePath, obj.tags || [])
 
-
-    // 临时-同盘内video
-    // fs.rename(obj.filePath, path.join(toPath, path.basename(obj.filePath)), (err) => {
-    //     if (err) throw err;
-    //     winSend('main', 'newPercent', {
-    //         jsonPath: jsonPath,
-    //         percent: ''
-    //     })
-    //     let size =  pathSize(toPath)
-    //     winSend('main', 'callMap', {
-    //         [path.join(toPath, 'project.json')]: {
-    //             allSize: size,
-    //             basePath: toPath + '\\',
-    //             date: dirKey,
-    //             file: path.basename(obj.filePath),
-    //             filePath: json.file ? path.join(toPath, json.file) : path.join(toPath, 'project.json'),
-    //             img: path.join(toPath, 'preview.jpg'),
-    //             jsonPath: path.join(toPath, 'project.json'),
-    //             openFolderPath: obj.savePath,
-    //             size: size,
-    //             star: 0,
-    //             title: obj.title,
-    //             type: obj.type,
-    //             tags: obj.tags || [],
-    //             description: obj.description || ''
-    //         }
-    //     }, obj.savePath, obj.tags || [])
-    //     newData.state = false
-    //     if (newData.list.length) {
-    //         newProject('', ...newData.list.shift())
-    //     }
-    // })
 
 }
 ipcMain.on('newProject', newProject)

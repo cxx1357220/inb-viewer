@@ -45,9 +45,17 @@ const newSessionDataPath = path.join(appPath,
   '..',
   '..',
   'viewer-sessionData');
-fs.mkdirSync(newSessionDataPath, {
-  recursive: true
-});
+
+// 修改: 添加目录存在性检查和错误处理
+try {
+  if (!fs.existsSync(newSessionDataPath)) {
+    fs.mkdirSync(newSessionDataPath, { recursive: true });
+  }
+} catch (err) {
+  console.error('Failed to create directory:', newSessionDataPath, err);
+  process.exit(1);
+}
+
 app.setPath('sessionData', newSessionDataPath)
 const imgCachePath = path.join(newSessionDataPath, 'imgCache');
 const getJsCachePath = path.join(newSessionDataPath, 'getJsCache');
@@ -60,9 +68,9 @@ fs.mkdirSync(getJsCachePath, {
   recursive: true
 });
 var baseGetDetailPath = path.join(
-    appPath,
-    process.env.NODE_ENV !== 'production' ? '../public' : '',
-    'baseGetDetail.js'
+  appPath,
+  process.env.NODE_ENV !== 'production' ? '../public' : '',
+  'baseGetDetail.js'
 )
 
 const {
@@ -81,7 +89,11 @@ require('./back/ocrServe')
 // require('./back/repkg')
 require('./back/re')
 require('./back/littleFunc')
-require('./back/hasWallpaper')
+if (platform == 'win') {
+  require('./back/wallpaperWin')
+} else {
+  require('./back/wallpaperMac')
+}
 
 // const {
 //   outStream
@@ -110,13 +122,13 @@ app.on('activate', async () => {
   console.log('activate: ');
   // On macOS it's common to re-create a window in the app when the
   // dock icon is clicked and there are no other windows open.
-  if (BrowserWindow.getAllWindows().length === 0) {
+  // if (BrowserWindow.getAllWindows().length === 0) {
     await createWindow()
     setModelList()
     winSend('main', 'imgCachePath', imgCachePath)
     winSend('main', 'baseGetDetailPath', baseGetDetailPath)
 
-  }
+  // }
 })
 
 // This method will be called when Electron has finished

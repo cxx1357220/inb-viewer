@@ -79,8 +79,8 @@
           </el-input>
           <el-button size="mini" plain icon="el-icon-setting" @click="setMoreApi">获取更多信息设置</el-button>
           <el-button size="mini" plain icon="el-icon-setting" @click="compressDrawer = true">压缩视频设置</el-button>
-          <el-button size="mini" plain icon="el-icon-setting" @click="whisperDrawer = true">解析字幕设置</el-button>
-          <el-input size="mini" v-model="wallpaperPath" style="width: 280px;margin-right: 10px;"
+          <el-button v-show="modelList.length" size="mini" plain icon="el-icon-setting" @click="whisperDrawer = true">解析字幕设置</el-button>
+          <el-input v-if="platform=='win32'" size="mini" v-model="wallpaperPath" style="width: 280px;margin-right: 10px;"
             placeholder="wallpaper路径"><el-button size="mini" slot="prepend" @click="setPath('file', ['wallpaperPath'])"
               icon="el-icon-folder">选择wallpaper路径</el-button>
           </el-input>
@@ -89,17 +89,17 @@
           <span slot="label">功能：</span>
           <el-button size="mini" @click="outList">输出数据列表</el-button>
           <el-button size="mini" @click="compressList">批量压缩视频</el-button>
-          <el-button size="mini" @click="repkgList">批量解压pkg</el-button>
+          <el-button v-if="platform=='win32'"  size="mini" @click="repkgList">批量解压pkg</el-button>
           <el-button size="mini" @click="xcopyList">批量复制</el-button>
           <el-button size="mini" @click="rmList">批量删除</el-button>
-          <el-button size="mini" @click="outTitle">输出title</el-button>
+          <!-- <el-button size="mini" @click="outTitle">输出title</el-button> -->
           <el-button size="mini" :loading="loadingDuration" @click="getInfo">获取视频时长<span v-show="loadingDuration">({{
             rateDuration }})</span></el-button>
 
           <el-button size="mini" @click="openVideoList">播放当前列表</el-button>
 
           <el-button size="mini" @click="clearState">清除已操作状态</el-button>
-          <el-button size="mini" @click="dataCount">数据统计</el-button>
+          <!-- <el-button size="mini" @click="dataCount">数据统计</el-button> -->
           <el-button size="mini" @click="showConcat = true">合并视频</el-button>
           <el-button size="mini" :loading="loadingDetail" @click="allout">批量获取详细信息<span v-show="loadingDetail">({{
             rateDetail }})</span></el-button>
@@ -135,9 +135,9 @@
           </div>
           <p v-for="s in waitCopyMap"><i class="el-icon-coffee-cup"></i>{{ s }}</p>
         </div>
-        <div v-for="obj, i in showList" :key="obj.jsonPath" v-loading="newStateMap[obj.jsonPath]"
+        <div v-for="obj in showList" :key="obj.jsonPath" v-loading="newStateMap[obj.jsonPath]"
           :element-loading-text="newStateMap[obj.jsonPath]" element-loading-spinner="el-icon-loading">
-          <block :obj="obj" @reDetail="reDetail" @runWallpaper="runWallpaper" @copyDir="copyDir" @repkg="repkg"
+          <block :obj="obj" @reDetail="reDetail" :hasWhisperModel="!!modelList.length" @runWallpaper="runWallpaper" @copyDir="copyDir" @repkg="repkg"
             @whisper="whisper" @compress="compress" @changeObj="changeObj" @cacheImg="cacheImg"></block>
         </div>
 
@@ -152,7 +152,7 @@
       <el-form label-width="140px" :model="whisperSet">
         <el-form-item label="字幕文件类型：">
           <el-checkbox-group v-model="whisperSet.type" :min="1">
-            <el-checkbox v-for="o in whisperOutTypeList" :label="o.label" name="type">{{ o.name }}</el-checkbox>
+            <el-checkbox v-for="o in whisperOutTypeList" :key="o.label" :label="o.name" name="type">{{ o.name }}</el-checkbox>
           </el-checkbox-group>
         </el-form-item>
         <el-form-item label="解析ai模型：">
@@ -160,18 +160,18 @@
             <el-option v-for="item in modelList" :label="item.name" :value="item.path"></el-option>
           </el-select>
         </el-form-item>
-        <el-form-item label="翻译：">
+        <!-- <el-form-item label="翻译：">
           <el-switch v-model="whisperSet.translate"></el-switch>
-        </el-form-item>
+        </el-form-item> -->
         <el-form-item label="解析语言：">
           <el-select size="mini" style="width:130px" clearable filterable v-model="whisperSet.language" placeholder="">
             <el-option v-for="o in languageList" :key="o.value" :value="o.value" :label="o.label"></el-option>
           </el-select>
         </el-form-item>
-        <el-form-item v-if="Object.keys(downModelMap).length" label="ai模型下载：">
+        <!-- <el-form-item v-if="Object.keys(downModelMap).length" label="ai模型下载：">
           <el-button v-for="(v, k) in downModelMap" size="mini" round @click="downModel(k, v)">
             {{ downPercentMap[k] ? downPercentMap[k] : k }}</el-button>
-        </el-form-item>
+        </el-form-item> -->
 
       </el-form>
     </el-drawer>
@@ -260,6 +260,8 @@ window.fs = require('fs')
 window.nodePath = require('path')
 const ipcRenderer = require('electron').ipcRenderer;
 const md5 = require('md5');
+const os = require('os')
+
 import block from '@/components/block.vue';
 import concatVideo from '@/components/concatVideo.vue';
 import watchMe from '@/components/watchMe.vue';
@@ -274,6 +276,7 @@ export default {
     return {
       password: '665533',
       loading: false,
+      platform:'',
       allDataMap: {},
       filterVal: '',
       showList: [],
@@ -293,7 +296,7 @@ export default {
       compressTypeList: config.compressTypeList,
       openFolderPathMap: {},
       whisperDrawer: false,
-      whisperSet: { type: ['-ovtt'], model: '' },
+      whisperSet: { type: ['vtt'], model: '' },
       whisperOutTypeList: config.whisperOutTypeList,
       modelList: [],
       downModelMap: config.downModelMap,
@@ -384,6 +387,9 @@ export default {
     }
   },
   created() {
+    if(os.platform()=='win32'){
+      this.platform = 'win32'
+    }
     localStorage.getItem('imgCachePath') && (this.imgCachePath = localStorage.getItem('imgCachePath'))
     this.copyVal = localStorage.getItem('copyVal') || ''
     this.wallpaperPath = localStorage.getItem('wallpaperPath') || ''
@@ -429,7 +435,7 @@ export default {
       this.$set(this.newStateMap, obj.jsonPath, obj.percent)
     })
     ipcRenderer.on('modelList', (e, ls) => {
-      // console.log('ls: ', ls);
+      console.log('modelList: ', ls);
       ls.forEach(obj => {
         delete this.downModelMap[obj.name]
       })
@@ -555,9 +561,11 @@ export default {
       Object.keys(obj).forEach(k => {
         Object.assign(this.allDataMap[k], obj[k])
       })
-      this.showList.length = 0
-      this.showList.splice(0, 0)
-      this.filterList(this.filterVal)
+      this.showList.forEach((o, i) => {
+        if (obj[o.jsonPath]) {
+          this.$set(this.showList[i], 'videoDuration', obj[o.jsonPath].videoDuration)
+        }
+      })
       this.loadingDuration = false
       this.rateDuration = ''
       localStorage.setItem('allDataMap', JSON.stringify(this.allDataMap))
@@ -677,7 +685,7 @@ export default {
       this.showList.forEach(obj => {
         starToSize[obj['star'] || 0] += Number(obj.size)
         starToNum[obj['star'] || 0]++
-        let newstr = (obj.title.toLowerCase().match(/^[0-9a-zA-Z\-]+/) || 'null').toString().split('-')[0];
+        let newstr = (obj.title || 'null');
         newRetSize[newstr] = (newRetSize[newstr] || 0) + Number(obj.size)
         newRetNum[newstr] = (newRetNum[newstr] || 0) + 1
       })
@@ -975,7 +983,8 @@ export default {
     },
     whisper(obj) {
       this.$store.commit('setWhisperStateMap', [obj.jsonPath, 'waiting'])
-      ipcRenderer.send('whisperCpp', obj, this.whisperSet)
+      // ipcRenderer.send('whisperCpp', obj, this.whisperSet)
+      ipcRenderer.send('fasterWhisper', obj, this.whisperSet)
     },
     searchTags(q, cb) {
       var r = this.tags;

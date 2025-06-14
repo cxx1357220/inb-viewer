@@ -1,7 +1,7 @@
 <template>
     <div class="view">
         <div :class="['video', isAudio && 'audio']">
-            <video ref="videoPlay" :src="videoUrl" class="video-js" controls>
+            <video ref="videoPlay" :src="'file://'+videoUrl" class="video-js" controls>
                 <track kind="chapter" default label="vtt" v-vtt="url" />
             </video>
         </div>
@@ -90,7 +90,8 @@ export default {
             bind(el, binding) {
                 try {
                     let o = path.parse(binding.value)
-                    el.src = o.dir + '/' + o.name + '.vtt'
+                    el.src = 'file://'+path.join(o.dir  , o.name + '.vtt')
+                    console.log('el.src : ', el.src );
                     // el.innerHTML = new Date(binding.value.date).toISOString().split('T')[0];
                 } catch (error) {
                     console.log(binding.value);
@@ -99,7 +100,8 @@ export default {
             update(el, binding) {
                 try {
                     let o = path.parse(binding.value)
-                    el.src = o.dir + '/' + o.name + '.vtt'
+                    el.src = 'file://'+path.join(o.dir  , o.name + '.vtt')
+                    console.log('el.src : ', el.src );
                 } catch (error) {
                     console.log(binding.value);
                 }
@@ -125,7 +127,7 @@ export default {
             // poster:that.obj.img.toString(),
             sources: [
                 {
-                    src: this.videoUrl,
+                    src: 'file://'+this.videoUrl,
                 }
             ],
             preload: 'metadata',

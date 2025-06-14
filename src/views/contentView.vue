@@ -10,7 +10,7 @@
                             <button @click="imgSetPoster(s)">设置封面</button>
                             <button @click="openPath(s)">打开路径</button>
                         </div>
-                        <el-image :src="s" lazy :preview-src-list="imgs">
+                        <el-image :src="'file://'+s" lazy :preview-src-list="imgs">
                         </el-image>
                     </div>
                     <div v-for="( s, i) in audios" :key="s" class="audio" v-loading="cutStateMap[s]"
@@ -28,7 +28,7 @@
                 </div>
             </el-tab-pane>
             <el-tab-pane label="html" v-if="haveHtml" name="html">
-                <iframe :src="obj.filePath" frameborder="0"></iframe>
+                <iframe :src="'file://'+obj.filePath" frameborder="0"></iframe>
             </el-tab-pane>
 
             <el-tab-pane label="markdown" name="md">
@@ -104,20 +104,19 @@ export default {
             let ls = fs.readdirSync(p) || []
             for (const o of ls) {
                 console.log('o: ', o);
-                var stat = fs.statSync(p + o);
+                var stat = fs.statSync(path.join(p, o));
                 if (stat.isDirectory()) {
-                    read(p + o + "\\")
+                    read(path.join(p , o))
                 } else {
                     let ext = path.extname(o).toLowerCase()
-                    if (imgExtList.indexOf(ext) != -1 && (p + o) != this.obj.img.split('?rand=')[0]) {
-                        imgs.push(p + o)
+                    if (imgExtList.indexOf(ext) != -1 && (path.join(p, o)) != this.obj.img.split('?rand=')[0]) {
+                        imgs.push(path.join(p, o))
                     } else if (videoExtList.indexOf(ext) != -1) {
-                        videos.push(p + o)
+                        videos.push(path.join(p, o))
                     } else if (audioExtList.indexOf(ext) != -1) {
-                        audios.push(p + o)
-                        // videos.push(p + o)
+                        audios.push(path.join(p, o))
                     } else if (mdExt == ext) {
-                        mdList.push({ path: p + o, name: o })
+                        mdList.push({ path: path.join(p, o), name: o })
                     }
                 }
             }

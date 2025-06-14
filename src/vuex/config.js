@@ -32,9 +32,9 @@ const config = {
         'ggml-tiny.bin': 'https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.bin'
     },
     whisperOutTypeList: [{
-        label: '-ocsv',
-        name: 'csv'
-    },{
+    //     label: '-ocsv',
+    //     name: 'csv'
+    // },{
         label: '-ovtt',
         name: 'vtt'
     },{
@@ -42,10 +42,10 @@ const config = {
         name: 'srt'
     },{
         label: '-otxt',
-        name: 'text'
-    },{
-        label: '-owts',
-        name: 'words'
+        name: 'txt'
+    // },{
+    //     label: '-owts',
+    //     name: 'words'
     }],
     languageList: [{
             "label": "Arabic",

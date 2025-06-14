@@ -11,13 +11,16 @@ const getDetail = async (obj) => {
                 script.onload = function () {
                     callback(); // 调用回调函数来执行方法
                 };
+                script.onerror = function (error) {
+                    console.error('Script load error:', error);
+                };
 
                 script.src = url; // 设置脚本的URL路径
                 document.head.appendChild(script); // 将脚本添加到文档的头部
             }
 
             // 调用loadScript函数来加载脚本并执行方法
-            let jsPath = localStorage.getItem('useGetJsPath') || localStorage.getItem('baseGetDetailPath')
+            let jsPath ='file://' + (localStorage.getItem('useGetJsPath') || localStorage.getItem('baseGetDetailPath'))
             loadScript(jsPath, function () {
                 console.log('jsPath: ', jsPath);
                 try {

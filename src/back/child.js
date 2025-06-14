@@ -8,7 +8,6 @@ const path = require('path');
 const ffmpeg = require('fluent-ffmpeg');
 const appPath = app.getAppPath();
 var os = require('os')
-var arch = os.arch()
 var platform = os.platform()
 if (platform == "darwin") {
     platform = "mac";
@@ -18,29 +17,17 @@ if (platform == "darwin") {
 const {
     exec
 } = require('child_process');
-// var ffmpegPath = path.join(
-//     appPath,
-//     process.env.NODE_ENV !== 'production' ? '../public' : '',
-//     'ffmpeg',
-//     platform,
-//     arch,
-//     platform === 'win' ? 'ffmpeg.exe' : 'ffmpeg'
-// )
 var ffmpegPath = path.join(
     appPath,
     process.env.NODE_ENV !== 'production' ? '../public' : '',
     'ffmpeg',
-    'ffmpeg.exe'
+    platform === 'win' ? 'ffmpeg.exe' : 'ffmpeg'
 )
+
+
+fs.chmod(ffmpegPath, 0o775, (err) => { })
 ffmpeg.setFfmpegPath(ffmpegPath);
 
-var ffprobePath = path.join(
-    appPath,
-    process.env.NODE_ENV !== 'production' ? '../public' : '',
-    'ffmpeg',
-    'ffprobe.exe'
-)
-ffmpeg.setFfprobePath(ffprobePath);
 
 let {
     winMap,
@@ -111,52 +98,52 @@ const cutTime = (event, obj, isCode) => {
     }
     return new Promise((resolve, reject) => {
         ffmpeg(filePath)
-        // .inputOptions(['-ss ' + start, '-to ' + obj.duration, '-accurate_seek'])
-        // .outputOptions(['-y', '-c copy', '-avoid_negative_ts 1'])
-        .outputOptions(options)
-        .on('start', function (commandLine) {
-            cutData.state = true
-            console.log('Spawned Ffmpeg with command: ' + commandLine);
-        })
-        .on('codecData', function (data) {
-            duration = times(data.duration)
-        })
-        .on('progress', function (progress) {
-            winSend(winKey, 'cutPercent', {
-                filePath: filePath,
-                percent: (times(progress.timemark) / duration * 100).toFixed(2)
+            // .inputOptions(['-ss ' + start, '-to ' + obj.duration, '-accurate_seek'])
+            // .outputOptions(['-y', '-c copy', '-avoid_negative_ts 1'])
+            .outputOptions(options)
+            .on('start', function (commandLine) {
+                cutData.state = true
+                console.log('Spawned Ffmpeg with command: ' + commandLine);
             })
-        })
-        .on('end', function () {
-            console.log('Processing finished !');
-            shell.showItemInFolder(filePath)
-            winSend(winKey, 'cutPercent', {
-                filePath: filePath,
-                percent: 'done'
+            .on('codecData', function (data) {
+                duration = times(data.duration)
             })
-            resolve(filePath)
-            cutData.state = false
-            if (cutData.list.length) {
-                cutTime('', ...cutData.list.shift())
-            }
-        })
-        .on('error', function (err) {
-            console.log('An error occurred: ' + err.message);
-            winSend(winKey, 'error', err)
-            winSend(winKey, 'cutPercent', {
-                filePath: filePath,
-                percent: 'error'
+            .on('progress', function (progress) {
+                winSend(winKey, 'cutPercent', {
+                    filePath: filePath,
+                    percent: (times(progress.timemark) / duration * 100).toFixed(2)
+                })
             })
-            reject(filePath)
-            cutData.state = false
-            if (cutData.list.length) {
-                cutTime('', ...cutData.list.shift())
-            }
-        })
-        // .save(obj.basePath + 'del-part-' + obj.file)
-        .save(saveFile)
+            .on('end', function () {
+                console.log('Processing finished !');
+                shell.showItemInFolder(filePath)
+                winSend(winKey, 'cutPercent', {
+                    filePath: filePath,
+                    percent: 'done'
+                })
+                resolve(filePath)
+                cutData.state = false
+                if (cutData.list.length) {
+                    cutTime('', ...cutData.list.shift())
+                }
+            })
+            .on('error', function (err) {
+                console.log('An error occurred: ' + err.message);
+                winSend(winKey, 'error', err)
+                winSend(winKey, 'cutPercent', {
+                    filePath: filePath,
+                    percent: 'error'
+                })
+                reject(filePath)
+                cutData.state = false
+                if (cutData.list.length) {
+                    cutTime('', ...cutData.list.shift())
+                }
+            })
+            // .save(obj.basePath + 'del-part-' + obj.file)
+            .save(saveFile)
     })
-    
+
 }
 ipcMain.on('cutTime', cutTime)
 ipcMain.handle('cutTime', cutTime)
@@ -166,6 +153,16 @@ const getData = {
     state: false
 }
 /**
+ * 时间转成秒数
+ * @param {string} durationStr 
+ * @returns {number} 秒数
+ */
+function durationToSeconds(durationStr) {
+    const [hms, ms] = durationStr.split('.');
+    const [h, m, s] = hms.split(':').map(Number);
+    return h * 3600 + m * 60 + s + Number(ms) / 100;
+}
+/**
  * 获取视频时长
  * @param {*} event 
  * @param {Array} list 视频数据数组
@@ -173,9 +170,6 @@ const getData = {
  */
 const getListInfo = (event, list) => {
     let callBack = {},
-        //     out = {},
-        //     outTime = {},
-        //     outlist = [],
         i = 0,
         len = list.length;
     if (!len) {
@@ -194,31 +188,28 @@ const getListInfo = (event, list) => {
                 console.log("callBack", callBack);
                 getData.state = false
                 winSend('main', 'videoDuration', callBack)
-                // fs.writeFileSync('./outTime.json', JSON.stringify(outTime))
-                // fs.writeFileSync('./aaaaa.json', JSON.stringify(out))
-                // fs.writeFileSync('./zzzzz.json', JSON.stringify(outlist))
             }
         }
-        ffmpeg.ffprobe(list[i].v, function (err, metadata) {
-            if (err) {
-                console.log('err: ', err);
-                next()
-            } else {
+        ffmpeg(list[i].v).output('-').outputFormat('null').on('error',(r)=>{
+            console.log('r: ', r);
+        }).on('stderr', (stderr) => {
+            const durationMatch = stderr.match(/Duration:\s(\d{2}:\d{2}:\d{2}\.\d{2})/);
+            let duration = durationMatch ? durationMatch[1] : null;
+            if (duration) {
+                duration = durationToSeconds(duration)
                 callBack[list[i].j] = {
-                    'videoDuration': metadata.format.duration
+                    'videoDuration': duration
                 }
                 let stats = fs.statSync(list[i].j)
                 fs.readFile(list[i].j, 'utf-8', (err, call) => {
                     if (err) {
-                        next()
                         return false
                     }
                     let data = JSON.parse(call)
-                    data['inb-duration'] = metadata.format.duration
+                    data['inb-duration'] = duration
                     fs.writeFile(list[i].j, JSON.stringify(data), (err) => {
                         if (err) {
                             console.log('write-err: ', err);
-                            next()
                             return false
                         }
                         fs.utimes(
@@ -226,45 +217,19 @@ const getListInfo = (event, list) => {
                             new Date(stats.atime),
                             new Date(stats.mtime),
                             function (err) {
-                                next()
                                 err && (console.log('err: ', err));
                             }
                         );
                     })
                 })
-                // metadata.streams.forEach(obj => {
-                //     if (obj.codec_type == 'video') {
-                //         out[list[i]] = obj.codec_name
-                //     }
-                // })
-                // outTime[list[i]] = metadata.format.duration
-                // outlist.push(metadata)
             }
-
-
-        });
+        }).on('end',()=>{
+            next()
+        }).run()
     }
     info(i)
 
 }
-
-// const getInfo = (event, obj) => {
-//     let winKey = obj.winKey
-//     ffmpeg.ffprobe(obj.filePath, function (err, metadata) {
-//         console.log('metadata: ', metadata);
-//         if (err) {
-//             console.log('err: ', err);
-//         } else {
-//             metadata.streams.forEach(obj => {
-//                 if (obj.codec_type == 'video') {
-//                     winSend(winKey, 'codecName', obj.codec_name)
-//                 }
-//             })
-
-//         }
-//     });
-// }
-// ipcMain.on('getInfo', getInfo)
 ipcMain.on('getListInfo', getListInfo)
 
 
@@ -297,125 +262,111 @@ const getPtsTime = (event, obj) => {
 
     const start = new Promise((resolve, reject) => {
         // let s = `${ffmpegPath} -i "${obj.filePath}" -t 00:07:00 -vf "select=\'gt(scene\,0.4)\',showinfo" -vsync vfr -f null -`
-        let s = `${ffmpegPath} -i "${obj.filePath}" -t 00:07:00 -vf "select='eq(pict_type,PICT_TYPE_I)',showinfo" -vsync vfr -f null -`
-        console.log('s: ', s);
-        console.time('s')
-        exec(s, (error, stdout, stderr) => {
-            if (error) {
-                console.error(`exec error: ${error}`);
-                resolve()
-                return;
-            }
-
-            // 输出 ffmpeg 执行的结果
-            // console.log(`stdout: ${stdout}`);
-            // console.log(`stderr: ${stderr}`);
-            // console.log('stderr: ', stderr.split('\n'));
-            let list = stderr.split('\n')
-            const regex = /pts_time:(\d+\.\d+)/;
-            let lastDuration_time, isSEI, isNext, lastPts_time,lastRange
-            for (let i = list.length - 1; i >= 0; i--) {
-                const match = list[i].match(regex);
+        // let s = `${ffmpegPath} -i "${obj.filePath}" -t 00:07:00 -vf "select='eq(pict_type,PICT_TYPE_I)',showinfo" -vsync vfr -f null -`
+        // console.log('s: ', s);
+        // console.time('s')
+        // ffmpeg(obj.filePath).inputOptions(['-t 00:07:00', `-vf "select='eq(pict_type,PICT_TYPE_I)',showinfo"`, '-vsync vfr']).output('-').outputFormat('null').on('start', function (commandLine) {
+        const regex = /pts_time:(\d+\.\d+)/;
+        let lastDuration_time, isSEI, isNext, lastPts_time, lastRange
+        ffmpeg(obj.filePath).inputOptions(['-t 00:07:00'])
+            .videoFilters("select='eq(pict_type,PICT_TYPE_I)',showinfo")
+            .outputOptions(['-vsync vfr', '-f null'])
+            .output('-')
+            .on('start', function (commandLine) {
+                console.log('Spawned Ffmpeg with command: ' + commandLine);
+            }).on('error', (error) => {
+                console.log('error: ', error);
+            }).on('stderr', (stderr) => {
+                const match = stderr.match(regex);
                 if (match) {
                     let pts_time = Number(match[1])
-                    let match2 = list[i].match(/duration_time:(\d+\.\d+)/)
+                    let match2 = stderr.match(/duration_time:(\d+\.\d+)/)
                     let duration_time
-                    if(match2){
-                        duration_time = Number(match2[1]||0)
+                    if (match2) {
+                        duration_time = Number(match2[1] || 0)
                     }
                     if (lastDuration_time && (lastDuration_time != duration_time)) {
-                        // winSend(obj.winKey, 'ptsTime', [{ v: lastPts_time }])
                         resolve({ v: lastPts_time })
-                        break
                     }
-                    if(lastRange&&lastPts_time&&Math.abs(lastPts_time-pts_time-lastRange>1)){
-                        console.log(lastPts_time,pts_time,lastRange, lastPts_time-pts_time-lastRange);
+                    if (lastRange && lastPts_time && Math.abs(lastPts_time - pts_time - lastRange > 1)) {
+                        console.log(lastPts_time, pts_time, lastRange, lastPts_time - pts_time - lastRange);
                         resolve({ v: lastPts_time })
-                        break
                     }
-                    if(lastPts_time){
+                    if (lastPts_time) {
                         lastRange = lastPts_time - pts_time
                     }
                     lastDuration_time = duration_time
                     if (isSEI || isNext) {
                         // winSend(obj.winKey, 'ptsTime', [{ v: pts_time }])
                         resolve({ v: pts_time })
-                        break
                     }
                     lastPts_time = pts_time
-                } else if (list[i].includes('SEI')) {
+                } else if (stderr.includes('SEI')) {
                     isSEI = true
-                } else if (s.includes('config out time_base')) {
+                } else if (stderr.includes('config out time_base')) {
                     isNext = true
                 }
-            }
-            resolve()
-            console.timeEnd('s')
 
-        });
-    })
-    const end = new Promise(resolve => {
-        let alltime = `${ffprobePath} -i "${obj.filePath}" -show_entries format=duration -v quiet -of csv="p=0"`
-        console.time('e')
-        exec(alltime, (error, stdout, stderr) => {
-            if (error) {
-                console.error(`exec error: ${error}`);
+
+            }).on('end', (str) => {
                 resolve()
+            }).run();
+    })
+    const end = new Promise((resolve, reject) => {
+        console.log(888, obj.filePath);
+
+        // console.time('e')
+        ffmpeg(obj.filePath).output('-').outputFormat('null').on('error', error => {
+            console.log('error: ', error);
+            resolve()
+        }).on('stderr', (stderr) => {
+            const durationMatch = stderr.toString().match(/Duration:\s(\d{2}:\d{2}:\d{2}\.\d{2})/);
+            let duration = durationMatch ? durationMatch[1] : null;
+            if (!duration) {
                 return;
             }
-
-            // 输出 ffmpeg 执行的结果
-            // console.log(`stdout: ${stdout}`);
-            let ssTime = stdout - 420
+            duration = durationToSeconds(duration)
+            let ssTime = duration - 420
+            console.log('ssTime: ', ssTime);
             // let ss = `${ffmpegPath} -ss ${ssTime} -i "${obj.filePath}"  -vf "select=\'gt(scene\,0.4)\',showinfo" -vsync vfr -f null -`
-            let ss = `${ffmpegPath} -ss ${ssTime} -i "${obj.filePath}"  -vf "select='eq(pict_type,PICT_TYPE_I)',showinfo" -vsync vfr -f null -`
-            console.log('ss: ', ss);
-            exec(ss, (error, stdout, stderr) => {
-                if (error) {
-                    console.error(`exec error: ${error}`);
-                    return;
-                }
-
-                // 输出 ffmpeg 执行的结果
-                // console.log(`stdout: ${stdout}`);
-                // console.log(`stderr: ${stderr}`);
-                // console.log('stderr: ', stderr.split('\n'));
-                let list = stderr.split('\n')
-                let pts_time,lastPts_time,lastRange;
-                const regex = /pts_time:(\d+\.\d+)/;
-                for (let i = 0; i < list.length; i++) {
-                    const match = list[i].match(regex);
-                    if (match) {
-                        pts_time = Number(ssTime) + Number(match[1])
-                        if(lastRange&&lastPts_time&&Math.abs(pts_time-lastPts_time-lastRange)>1){
-                            resolve({ v: lastPts_time })
-                            break
-                        }
-                        if(lastPts_time){
-                            lastRange = pts_time - lastPts_time
-                        }
-                        lastPts_time = pts_time
+            // let ss = `${ffmpegPath} -ss ${ssTime} -i "${obj.filePath}"  -vf "select='eq(pict_type,PICT_TYPE_I)',showinfo" -vsync vfr -f null -`
+            let pts_time, lastPts_time, lastRange;
+            const regex = /pts_time:(\d+\.\d+)/;
+            ffmpeg(obj.filePath).inputOptions(['-ss ' + ssTime]).videoFilters("select='eq(pict_type,PICT_TYPE_I)',showinfo").outputOptions(['-vsync vfr', '-f null']).output('-').on('start', function (commandLine) {
+                console.log('Spawned Ffmpeg end with command: ' + commandLine);
+            }).on('stderr', (stderr) => {
+                // console.log('stderr: ', stderr);
+                const match = stderr.match(regex);
+                if (match) {
+                    pts_time = Number(ssTime) + Number(match[1])
+                    if (lastRange && lastPts_time && Math.abs(pts_time - lastPts_time - lastRange) > 1) {
+                        resolve({ v: lastPts_time })
                     }
-                    if (list[i].includes('SEI')) {
-                        // winSend(obj.winKey, 'ptsTime', [{ v: pts_time }])
-                        resolve({ v: pts_time })
-                        break
+                    if (lastPts_time) {
+                        lastRange = pts_time - lastPts_time
                     }
+                    lastPts_time = pts_time
                 }
+                if (stderr.includes('SEI')) {
+                    resolve({ v: pts_time })
+                }
+            }).on('end', () => {
                 resolve()
-                console.timeEnd('e')
 
-            });
-        });
+            }).run()
+
+        }).on('end', () => {
+            console.log('end: ', 1);
+        }).run();
     })
-    console.time('a')
-    return Promise.all([start,end]).then(res=>{
+    return Promise.all([start,end]).then(res => {
         console.log('res: ', res);
-        let list = res.filter(o=>o)
-        if(list.length){
+
+        let list = res.filter(o => o)
+        if (list.length) {
             winSend(obj.winKey, 'ptsTime', list)
         }
-        console.timeEnd('a')
+        // console.timeEnd('a')
         return res
     })
 

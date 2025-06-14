@@ -65,7 +65,7 @@ process.on('message', function (dirPath) {
                 console.log('list[i].path: ', list[i].path);
                 console.log('error: ', error);
             }
-            let basePath = list[i].basePath + '\\'
+            let basePath = list[i].basePath
             if (data.file == 'scene.json') {
                 data.file = 'scene.pkg'
             }
@@ -76,9 +76,9 @@ process.on('message', function (dirPath) {
                 basePath: basePath,
                 title: data.title,
                 file: data.file,
-                filePath: basePath + (data.file || 'project.json'),
+                filePath: join(basePath ,(data.file || 'project.json')),
                 size: (sizePathMap[basePath + (data.file || 'project.json')] || 0).toFixed(2),
-                img: basePath + data.preview,
+                img: join(basePath , data.preview),
                 star: data['inb-star'] || 0,
                 visits: data['inb-visits'] || 0,
                 videoDuration: data['inb-duration'] || 0,

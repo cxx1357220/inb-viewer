@@ -37,24 +37,24 @@
           <el-button size="mini" @click="compress">压缩视频</el-button>
         </stateButton>
       </section>
-      <section v-if="obj.type == 'video'">
+      <section v-show="hasWhisperModel" v-if="obj.type == 'video'">
         <stateButton :path="obj.jsonPath" map="whisperStateMap">
           <el-button size="mini" @click="whisper">制作字幕</el-button>
         </stateButton>
       </section>
-      <section v-if="obj.type == 'scene'">
+      <section v-show="platform=='win32'" v-if="obj.type == 'scene'">
         <stateButton :path="obj.jsonPath" map="repkgStateMap">
           <el-button size="mini" @click="repkg">解压pkg</el-button>
         </stateButton>
       </section>
-      <section v-if="obj.type == 'scene' || obj.type == 'video' || obj.type == 'web'">
+      <section v-show="platform=='win32'" v-if="obj.type == 'scene' || obj.type == 'video' || obj.type == 'web'">
         <el-button :type="runningObj == (obj.jsonPath + '-A') ? 'success' : ''" size="mini"
           @click="runWallpaper">Wallpaper
           Engine</el-button>
       </section>
       <section v-if="obj.type == 'video' || obj.type == 'web'">
         <el-button :type="runningObj == (obj.jsonPath + '-B') ? 'success' : ''" size="mini"
-          @click="electronWallpaper">electron
+          @click="electronWallpaper">
           wallpaper</el-button>
       </section>
       <section>
@@ -72,24 +72,27 @@ window.fs = require('fs')
 window.nodePath = require('path')
 const ipcRenderer = require('electron').ipcRenderer;
 const md5 = require('md5');
+const os = require('os');
+
 export default {
   name: 'state',
   data() {
     return {
+      platform:''
     }
   },
   components: { stateButton },
 
-  props: ['obj', 'map'],
+  props: ['obj', 'map', 'hasWhisperModel'],
   directives: {
     urlCache: {
       bind(el, binding) {
         try {
           let cache = localStorage.getItem(binding.value.split('?')[0])
           if (cache) {
-            el.src = cache + '?cache=true&rand=' + Math.random();
+            el.src ='file://'+ cache + '?cache=true&rand=' + Math.random();
           } else {
-            el.src = binding.value
+            el.src ='file://'+ binding.value
           }
 
         } catch (error) {
@@ -99,9 +102,9 @@ export default {
       update(el, binding) {
         let cache = localStorage.getItem(binding.value.split('?')[0])
         if (cache) {
-          el.src = cache + '?cache=true&rand=' + Math.random();
+          el.src ='file://'+ cache + '?cache=true&rand=' + Math.random();
         } else {
-          el.src = binding.value
+          el.src ='file://'+binding.value
         }
       },
     },
@@ -181,6 +184,9 @@ export default {
   created() {
   },
   mounted() {
+    if(os.platform()=='win32'){
+      this.platform = 'win32'
+    }
   },
   methods: {
     open(obj) {

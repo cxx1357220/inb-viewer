@@ -1,7 +1,7 @@
 <template>
     <div class="view">
-        <video v-if="obj.type == 'video'" ref="video" :src="obj.filePath" loop />
-        <iframe v-else :src="obj.filePath" frameborder="0"></iframe>
+        <video v-if="obj.type == 'video'" ref="video" :src="'file://'+obj.filePath" loop />
+        <iframe v-else :src="'file://'+obj.filePath" frameborder="0"></iframe>
     </div>
 </template>
 
@@ -27,6 +27,7 @@ export default {
 </script>
 <style lang="less" scoped>
 .view {
+    background: #000;
     width: 100vw;
     height: 100vh !important;
     overflow: hidden;

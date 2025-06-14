@@ -8,6 +8,7 @@ const ffmpeg = require('fluent-ffmpeg');
 const appPath = app.getAppPath();
 var os = require('os')
 var arch = os.arch()
+const fs = require('fs')
 const {
     exec,
 } = require('child_process');
@@ -20,20 +21,15 @@ if (platform == "darwin") {
 let {
     winSend
 } = require('./win')
-// var ffmpegPath = path.join(
-//     appPath,
-//     process.env.NODE_ENV !== 'production' ? '../public' : '',
-//     'ffmpeg',
-//     platform,
-//     arch,
-//     platform === 'win' ? 'ffmpeg.exe' : 'ffmpeg'
-// )
+
 var ffmpegPath = path.join(
     appPath,
     process.env.NODE_ENV !== 'production' ? '../public' : '',
     'ffmpeg',
-    'ffmpeg.exe'
+    platform === 'win' ? 'ffmpeg.exe' : 'ffmpeg'
 )
+
+fs.chmod(ffmpegPath, 0o775, (err) => {})
 ffmpeg.setFfmpegPath(ffmpegPath);
 import {
     times
@@ -98,7 +94,7 @@ const compress = (event, obj, set) => {
             if (compressData.list.length) {
                 compress('', ...compressData.list.shift())
             }
-        }).save(obj.basePath + newName)
+        }).save(path.join(obj.basePath , newName))
 }
 /**
  * 压缩数组内大文件视频
@@ -147,7 +143,7 @@ var mpvPath = path.join(
     appPath,
     process.env.NODE_ENV !== 'production' ? '../public' : '',
     'mpv',
-    'mpv.exe'
+    platform === 'win' ? 'mpv.exe' : 'mpv'
 )
 /**
  * mpv内打开视频

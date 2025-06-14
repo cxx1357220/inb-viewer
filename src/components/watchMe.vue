@@ -217,13 +217,16 @@ export default {
         watchWin() {
             // 为了同时捕获整个桌面的音视频，传递给 navigator.mediaDevices.getUserMedia 的约束条件需包括 chromeMediaSource: 'desktop'，audio 和 视频，但不应该包括 chromeMediaSourceId 约束。
             const constraints = {
-                audio: {
+                video: {
                     mandatory: {
                         chromeMediaSource: 'desktop',
                         chromeMediaSourceId: this.checked
                     }
-                },
-                video: {
+                }
+            }
+            // mac 涉及音频需要特殊插件，先不做
+            if(process.platform=='win32'){
+                constraints['audio'] = {
                     mandatory: {
                         chromeMediaSource: 'desktop',
                         chromeMediaSourceId: this.checked

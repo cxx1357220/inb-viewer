@@ -75,7 +75,7 @@
                 var stat = fs.statSync(p + o);
                 // console.log('stat: ', stat);
                 if (stat.isDirectory()) {
-                    read(p + o + "\\")
+                    read(path.join(p , o ))
                 } else {
                     let ext = path.extname(o).toLowerCase()
                     if (imgExtList.indexOf(ext) != -1 && (p + o) !== params.img) {
@@ -232,7 +232,7 @@
         map = JSON.parse(JSON.stringify(m))
         list = JSON.parse(JSON.stringify(l))
         list.forEach(obj => {
-            let key = '\\' + m[obj.openFolderPath]
+            let key = '/' + m[obj.openFolderPath]
             obj.newimg = obj.img.replace(obj.openFolderPath, key)
             obj.newPath = obj.filePath.replace(obj.openFolderPath, key)
             obj.newBasePath = obj.basePath.replace(obj.openFolderPath, key)

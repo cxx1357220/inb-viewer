@@ -11,17 +11,23 @@ const appPath = app.getAppPath();
 let {
     winSend
 } = require('./win')
-var whisperModelPath = path.join(
+var whisperCppModelPath = path.join(
     appPath,
     process.env.NODE_ENV !== 'production' ? '../public' : '',
     'whisper-cpp',
     'model'
 )
+var fasterWhisperModelPath = path.join(
+    appPath,
+    process.env.NODE_ENV !== 'production' ? '../public' : '',
+    'whisper',
+    'model'
+)
 /**
  * 读取可用model列表
  */
-const setModelList = () => {
-    fs.readdir(whisperModelPath, (err, back) => {
+const setCppModelList = () => {
+    fs.readdir(whisperCppModelPath, (err, back) => {
         if (err) {
             console.log('err: ', err);
             return false
@@ -31,9 +37,29 @@ const setModelList = () => {
             if (path.extname(s) == '.bin') {
                 ls.push({
                     name: s,
-                    path: whisperModelPath + '\\' + s
+                    path: path.join(whisperCppModelPath, s)
                 })
             }
+        })
+        winSend('main', 'modelList', ls)
+        console.log('ls: ', ls);
+    })
+}
+/**
+ * 读取可用model列表
+ */
+const setFasterModelList = () => {
+    fs.readdir(fasterWhisperModelPath, (err, back) => {
+        if (err) {
+            console.log('err: ', err);
+            return false
+        }
+        let ls = []
+        back.forEach(s => {
+            ls.push({
+                name: s,
+                path: path.join(fasterWhisperModelPath, s)
+            })
         })
         winSend('main', 'modelList', ls)
         console.log('ls: ', ls);
@@ -47,8 +73,7 @@ const setModelList = () => {
  * @param {string} url 下载路径
  */
 const downModel = (event, name, url) => {
-    console.log('curl -L ' + url + ' -o ' + whisperModelPath + '\\' + name);
-    let ls = spawn('curl', ['-L', url, '-o', whisperModelPath + '\\' + name])
+    let ls = spawn('curl', ['-L', url, '-o', path.join(whisperModelPath, name)])
     winSend('main', 'downPercent', {
         name: name,
         percent: '0%'
@@ -82,5 +107,5 @@ const downModel = (event, name, url) => {
 
 ipcMain.on('downModel', downModel)
 export {
-    setModelList
+    setFasterModelList as setModelList
 }

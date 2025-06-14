@@ -8,7 +8,7 @@ const {
     exec
 } = require('child_process');
 const kill = require('tree-kill');
-
+const fs = require('fs');
 const appPath = app.getAppPath();
 var os = require('os')
 var platform = os.platform()
@@ -22,8 +22,11 @@ var ocrPath = path.join(
     appPath,
     process.env.NODE_ENV !== 'production' ? '../public' : '',
     'ocr',
-    'ocr.exe'
-)
+    platform == "mac"?'ocr':'ocr.exe'
+);
+fs.chmod(ocrPath, 0o775, (err) => {})
+console.log('ocrPath: ', ocrPath);
+
 let {
     winSend
 } = require('./win')
@@ -32,10 +35,10 @@ let serve;
 const startOcr = () => {
     serve = exec(ocrPath)
     serve.stdout.on('data', (data) => {
-        // console.log('data: ', data.toString());
+        console.log('data: ', data.toString());
     });
     serve.stderr.on('data', (err) => {
-        // console.log('err: ', err);
+        console.log('err data: ', err);
     });
     serve.on('close', (code) => {
         console.log('close: ', code);
@@ -43,7 +46,7 @@ const startOcr = () => {
     serve.on('exit', (code) => {
         console.log('exit: ', code);
     });
-    
+
     let ifaces = os.networkInterfaces()
     let add = '',
         port = 5000
@@ -66,17 +69,17 @@ const startOcr = () => {
 const closeOcr = () => {
     // serve.kill('SIGTERM');
     // serve.kill('SIGKILL')
-    if(serve&&serve.pid){
+    if (serve && serve.pid) {
         kill(serve.pid, 'SIGKILL', (err) => {
             if (err) {
                 console.error('无法终止进程:', err);
             } else {
                 console.log('进程已终止');
-                serve=''
+                serve = ''
             }
         });
     }
-    
+
 }
 app.on('before-quit', (event, commandLine, workingDirectory) => {
     console.log('before-quit');
