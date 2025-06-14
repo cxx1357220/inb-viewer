@@ -55,8 +55,8 @@ export default {
 <style lang="less" scoped>
 
 .view /deep/ video {
-    width: 100vw;
-    height: 100vh !important;
+    // width: 100vw;
+    // height: 100vh !important;
     overflow: hidden;
 
 }

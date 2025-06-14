@@ -1,6 +1,8 @@
 <template>
     <div class="view">
-        <myVideo ref="myVideo" :fobj="obj" :url="obj.filePath" :isplay="1" />
+        <div v-loading="cutStateMap[obj.filePath]" :element-loading-text="cutStateMap[obj.filePath]">
+            <myVideo v-if="showVideo" ref="myVideo" :fobj="obj" :url="obj.filePath" :isplay="1" />
+        </div>
         <div class="title-list" :style="hideStyle">
             <span>{{ idx + 1 }}/{{ list.length }}</span>
             <ul>
@@ -21,10 +23,12 @@ export default {
     data() {
         return {
             obj: {},
+            cutStateMap: {},
             sustainType: ['mpeg4'],
             list: [],
             idx: 0,
             hideStyle: {},
+            showVideo: true,
             titleList: []
         }
     },
@@ -43,9 +47,20 @@ export default {
         }
     },
     created() {
+        window.setIdx = (i)=>{
+            this.idx = i
+        }
         let params = this.$route.params;
         console.log('this.obj : ', params);
         this.list = params.list
+        this.cutStateMap = JSON.parse(JSON.stringify(params.cutStateMap))
+        ipcRenderer.on('cutPercent', (e, obj) => {
+            if (obj.percent == 'done') {
+                this.$delete(this.cutStateMap, obj.filePath)
+            } else {
+                this.$set(this.cutStateMap, obj.filePath, obj.percent)
+            }
+        })
         this.obj = this.list[this.idx]
         console.log('this.obj: ', this.obj);
         document.addEventListener('keydown', (e) => {
@@ -71,14 +86,22 @@ export default {
             if (e.keyCode === 38) {
                 if (this.list[this.idx - 1]) {
                     this.idx = this.idx - 1
+                    this.showVideo = false
                     this.obj = this.list[this.idx]
+                    this.$nextTick(() => {
+                        this.showVideo = true
+                    })
                     document.title = this.obj.title
                 }
             }
             if (e.keyCode === 40) {
                 if (this.list[this.idx + 1]) {
                     this.idx = this.idx + 1
+                    this.showVideo = false
                     this.obj = this.list[this.idx]
+                    this.$nextTick(() => {
+                        this.showVideo = true
+                    })
                     document.title = this.obj.title
                 }
             }
@@ -111,8 +134,8 @@ export default {
 }
 
 .view /deep/ video {
-    width: 100vw;
-    height: 100vh !important;
+    // width: 100vw;
+    // height: 100vh !important;
     overflow: hidden;
 
 }
@@ -125,10 +148,12 @@ export default {
 @keyframes hide {
     from {
         opacity: 1;
+        z-index: 999;
     }
 
     to {
         opacity: 0;
+        z-index: -1;
     }
 }
 </style>

@@ -68,7 +68,11 @@ const cutData = {
  * @param {boolean} isCode 是否编码
  */
 const cutTime = (event, obj, isCode) => {
-    winSend(obj.winKey, 'cutPercent', {
+    winSend('videoList', 'cutPercent', {
+        filePath: obj.filePath,
+        percent: 'waiting'
+    })
+    winSend(obj.basePath, 'cutPercent', {
         filePath: obj.filePath,
         percent: 'waiting'
     })
@@ -84,7 +88,7 @@ const cutTime = (event, obj, isCode) => {
         basePath = path.dirname(filePath),
         file = path.basename(filePath),
         saveFile = path.join(basePath, 'cut-' + file),
-        options = ['-y', '-threads 24', '-preset ultrafast']
+        options = ['-y', '-threads 4', '-preset ultrafast']
     if (segment_times) {
         let len = segment_times.split(',').length.toString().length
         saveFile = path.join(basePath, 'cut-part-%' + len + 'd-' + file)
@@ -98,9 +102,7 @@ const cutTime = (event, obj, isCode) => {
     }
     return new Promise((resolve, reject) => {
         ffmpeg(filePath)
-            // .inputOptions(['-ss ' + start, '-to ' + obj.duration, '-accurate_seek'])
-            // .outputOptions(['-y', '-c copy', '-avoid_negative_ts 1'])
-            .outputOptions(options)
+                    .outputOptions(options)
             .on('start', function (commandLine) {
                 cutData.state = true
                 console.log('Spawned Ffmpeg with command: ' + commandLine);
@@ -146,7 +148,7 @@ const cutTime = (event, obj, isCode) => {
 
 }
 ipcMain.on('cutTime', cutTime)
-ipcMain.handle('cutTime', cutTime)
+// ipcMain.handle('cutTime', cutTime)
 
 
 const getData = {
@@ -372,7 +374,7 @@ const getPtsTime = (event, obj) => {
 
 }
 ipcMain.on('getPtsTime', getPtsTime)
-ipcMain.handle('getPtsTime', getPtsTime)
+// ipcMain.handle('getPtsTime', getPtsTime)
 
 
 

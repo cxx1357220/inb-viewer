@@ -124,3 +124,8 @@ module.exports = process.env.FLUENTFFMPEG_COV ? require('./lib-cov/fluent-ffmpeg
 - 尝试支持mac
 
 - faster-whisper替换掉whisper-cpp
+
+- video类型可从网上下载srt/vtt，并可编辑
+
+
+
