@@ -17,11 +17,9 @@ import {
 let tray = null // 在外面创建tray变量，防止被自动删除，导致图标自动消失
 
 const setTray = () => {
-    tray = new Tray(nativeImage.createThumbnailFromPath(path.join(appPath,
-        process.env.NODE_ENV !== 'production' ? '../public' : '', 'icon.ico').toPng()))
-    console.log(path.join(appPath,
-        process.env.NODE_ENV !== 'production' ? '../public' : '', 'icon.ico'));
-    console.log('tray: ', tray);
+    tray = new Tray(path.join(appPath,
+        process.env.NODE_ENV !== 'production' ? '../public' : '', 'icon.ico'))
+
 
     // 自定义托盘图标的内容菜单
     const contextMenu = Menu.buildFromTemplate([{
@@ -53,7 +51,7 @@ const setTray = () => {
 let winMap = {} //新窗口对象
 const winSend = (win, key, ...params) => {
     try {
-        if(winMap[win]){
+        if (winMap[win]) {
             winMap[win].webContents.send(key, ...params)
         }
     } catch (error) {
@@ -185,10 +183,10 @@ async function createWindow(winType = 'main', obj = {}) {
             })
             break;
         case 'videoList':
-            const videoPathMap={}
-            obj.list.forEach(o=>{
-                o.winKey='videoList'
-                videoPathMap[o.filePath]=1
+            const videoPathMap = {}
+            obj.list.forEach(o => {
+                o.winKey = 'videoList'
+                videoPathMap[o.filePath] = 1
             })
             let videoListCutStateMap = {}
             cutData.list.forEach(list => {

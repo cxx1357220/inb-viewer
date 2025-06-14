@@ -8,7 +8,10 @@ node -v
 v16.17.1
 
 mac里实在装不了electron-as-wallpaper包，可以先把package.json里的 electron-as-wallpaper删了，再install完之后再加回来。
-```
+```bash
+# export FFMPEG_BINARIES_URL=https://cdn.npmmirror.com/binaries/ffmpeg-static
+# echo FFMPEG_BINARIES_URL=https://cdn.npmmirror.com/binaries/ffmpeg-static
+
 npm install
 ```
 move ffmpeg
