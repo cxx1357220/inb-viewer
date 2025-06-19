@@ -1,35 +1,23 @@
 import {
-    app,
     ipcMain,
     dialog,
 } from 'electron'
-const path = require('path');
 const {
     fork
 } = require('child_process');
-const appPath = app.getAppPath();
-var os = require('os')
-var platform = os.platform()
-if (platform == "darwin") {
-    platform = "mac";
-} else if (platform == "win32") {
-    platform = "win";
-}
 let {
     winSend
 } = require('./win')
-var readPath = path.join(
-    appPath,
-    process.env.NODE_ENV !== 'production' ? '../public' : '',
-    'readJson.js'
-)
+const {
+    readPath
+} = require('./config')
 /**
  * (main)读取文件数组
  * @param {*} event 
  * @param {string} folderPath 读取的路径
  * @returns 
  */
-const readJSON = (event, folderPath) => {
+const readDirJson = (event, folderPath) => {
     const forked = fork(readPath);
     forked.on('message', function (obj) {
         winSend('main', 'callMap', obj.map, obj.dirPath, obj.tags)
@@ -67,4 +55,4 @@ const readJSON = (event, folderPath) => {
             });
     }
 }
-ipcMain.on('readJSON', readJSON)
+ipcMain.on('readDirJson', readDirJson)

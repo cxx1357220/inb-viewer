@@ -1,71 +1,67 @@
 import {
     ipcMain,
-    app
 } from 'electron'
 var os = require('os')
-const path = require('path')
-const appPath = app.getAppPath();
-
-let shareJs = require('./share');
+const shareJs = require('./share');
 const express = require('express');
-let {
-   winSend
+const { shareHtmlPath } = require('./config')
+const {
+    winSend
 } = require('./win')
-let server = {
-    close: () => {}
-};
-/**
- * share服务
- * @param {*} event 
- * @param {boolean} boolean 是否开启
- * @param {Array} list share的列表
- * @param {object} map 对应的路径修改map
- */
-const share = (event, boolean, list, map) => {
-    // console.log('list: ', list);
-    // console.log('boolean: ', boolean);
-    const port = 3000
-    if (boolean) {
-        let ifaces = os.networkInterfaces()
-        let add = ''
-        for (let dev in ifaces) {
-            let iface = ifaces[dev]
-            for (let i = 0; i < iface.length; i++) {
-                let {
-                    family,
-                    address,
-                    internal
-                } = iface[i]
-                if (family === 'IPv4' && address !== '127.0.0.1' && !internal) {
-                    add = address
+class ShareServer {
+    constructor() {
+        this.server = {
+            close: () => { }
+        };
+        ipcMain.on('share', this.share.bind(this))
+        ipcMain.on('reServeList', this.reServeList.bind(this))
+    }
+    /**
+     * share服务
+     * @param {*} event 
+     * @param {boolean} boolean 是否开启
+     * @param {Array} list share的列表
+     * @param {object} map 对应的路径修改map
+     */
+    share(event, boolean, list, map) {
+        let that = this
+        const port = 3000
+        if (boolean) {
+            let ifaces = os.networkInterfaces()
+            let add = ''
+            for (let dev in ifaces) {
+                let iface = ifaces[dev]
+                for (let i = 0; i < iface.length; i++) {
+                    let {
+                        family,
+                        address,
+                        internal
+                    } = iface[i]
+                    if (family === 'IPv4' && address !== '127.0.0.1' && !internal) {
+                        add = address
+                    }
                 }
             }
+            console.log('net: ', add);
+            shareJs.useArr(list, map)
+            shareJs.use('/app', express.static(shareHtmlPath))
+            that.server = shareJs.listen(port, () => {
+                console.log(`${add}:${port}/app/#/`)
+                winSend('main', 'shareUrl', `${add}:${port}/app/#/`)
+            })
+        } else {
+            that.server.close()
         }
-        console.log('net: ', add);
+    }
+    /**
+     * 刷新share服务的数组
+     * @param {*} event 
+     * @param {Array} list share的列表
+     * @param {object} map 对应的路径修改map
+     */
+    reServeList(event, list, map) {
         shareJs.useArr(list, map)
-        const shareHtmlPath = path.join(
-            appPath,
-            process.env.NODE_ENV !== 'production' ? '../public' : '',
-            'shareHtml'
-        )
-        console.log('shareHtmlPath: ', shareHtmlPath);
-        shareJs.use('/app', express.static(shareHtmlPath))
-        server = shareJs.listen(port, () => {
-            console.log(`${add}:${port}/app/#/`)
-            winSend('main','shareUrl', `${add}:${port}/app/#/`)
-        })
-    } else {
-        server.close()
     }
 }
-/**
- * 刷新share服务的数组
- * @param {*} event 
- * @param {Array} list share的列表
- * @param {object} map 对应的路径修改map
- */
-const reServeList = (event, list, map) => {
-    shareJs.useArr(list, map)
-}
-ipcMain.on('share', share)
-ipcMain.on('reServeList', reServeList)
+new ShareServer()
+

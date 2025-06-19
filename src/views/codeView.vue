@@ -8,22 +8,18 @@
                     :type="usePath == baseGetDetailPath ? 'success' : ''" round>use</el-button>
             </el-tab-pane>
 
-            <el-tab-pane v-for="(path, key) in editTabs" :key="key" :label="key" :name="key" closable>
+            <el-tab-pane v-for="(jsPath, key) in editTabs" :key="key" :label="key" :name="key" closable>
                 <div :ref="'codeEditor-' + key" :id="'codeEditor-' + key"></div>
-                <el-button @click="save(key, path)" size="mini" round>save</el-button>
-                <el-button @click="use(key, path)" size="mini" :type="usePath == path ? 'success' : ''"
+                <el-button @click="save(key, jsPath)" size="mini" round>save</el-button>
+                <el-button @click="use(key, jsPath)" size="mini" :type="usePath == jsPath ? 'success' : ''"
                     round>use</el-button>
             </el-tab-pane>
         </el-tabs>
     </div>
 </template>
 <script>
-const { shell } = require('electron');
-
-const ipcRenderer = require('electron').ipcRenderer;
 const fs = require('fs');
-const nodePath = require('path')
-const md5 = require('md5');
+const path = require('path')
 import * as monaco from 'monaco-editor';
 import 'monaco-editor/min/vs/editor/editor.main.css';  // 引入 Monaco 编辑器的样式
 
@@ -41,13 +37,15 @@ export default {
     },
     components: {},
     created() {
-        this.jsCachePath = nodePath.join(localStorage.getItem('imgCachePath'), '..', 'getJsCache')
-        this.baseGetDetailPath = localStorage.getItem('baseGetDetailPath')
+        const baseConfig = JSON.parse(localStorage.getItem('baseConfig')||'{}') 
+        console.log('baseConfig: ', baseConfig);
+        this.jsCachePath = baseConfig.getJsCachePath
+        this.baseGetDetailPath = baseConfig.baseGetDetailPath
         this.usePath = localStorage.getItem('useGetJsPath') || this.baseGetDetailPath
         let fileList = fs.readdirSync(this.jsCachePath)
         fileList.forEach(s => {
-            s = nodePath.join(this.jsCachePath, s)
-            let name = nodePath.parse(s).name
+            s = path.join(this.jsCachePath, s)
+            let name = path.parse(s).name
             fs.readFile(s, 'utf8', (err, data) => {
                 if (err) {
                     this.$message({
@@ -142,7 +140,7 @@ var getDetailFunc = (function () { //别改这一行
                 value = value.trim()
                 if (value) {
                     let name = this.singleName(value)
-                    this.$set(this.editTabs, name, nodePath.join(this.jsCachePath, name + '.js'))
+                    this.$set(this.editTabs, name, path.join(this.jsCachePath, name + '.js'))
                     this.activeName = name
                     setTimeout(() => {
                         this.$nextTick(_ => {
@@ -160,9 +158,9 @@ var getDetailFunc = (function () { //别改这一行
             }).catch((e) => {
             });
         },
-        save(name, path) {
+        save(name, jsPath) {
             let value = this.editMap['codeEditor-' + name].getValue()
-            fs.writeFile(path, value, (err) => {
+            fs.writeFile(jsPath, value, (err) => {
                 this.newLoading = false
                 if (err) {
                     this.$message({
@@ -177,9 +175,9 @@ var getDetailFunc = (function () { //别改这一行
                 }
             })
         },
-        use(name, path) {
-            localStorage.setItem('useGetJsPath', path)
-            this.usePath = path
+        use(name, jsPath) {
+            localStorage.setItem('useGetJsPath', jsPath)
+            this.usePath = jsPath
             this.$message({
                 type: '',
                 message: 'use this code'

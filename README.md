@@ -25,6 +25,8 @@ help page
 npm run mdToHtml
 ```
 
+whisper 和 ocr需要从inb-whisper/inb-ocr项目编译好再move过来
+
 serve
 
 ```

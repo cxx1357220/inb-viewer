@@ -1,5 +1,4 @@
 import {
-    app,
     ipcMain,
 } from 'electron'
 const fs = require('fs');
@@ -7,26 +6,19 @@ const path = require('path');
 const {
     spawn,
 } = require('child_process');
-const appPath = app.getAppPath();
 let {
+    winMap,
     winSend
 } = require('./win')
-var whisperCppModelPath = path.join(
-    appPath,
-    process.env.NODE_ENV !== 'production' ? '../public' : '',
-    'whisper-cpp',
-    'model'
-)
-var fasterWhisperModelPath = path.join(
-    appPath,
-    process.env.NODE_ENV !== 'production' ? '../public' : '',
-    'whisper',
-    'model'
-)
+let {
+    fasterWhisperModelPath,
+    whisperCppModelPath,
+} = require('./config')
+
 /**
- * 读取可用model列表
+ * cpp读取可用model列表
  */
-const setCppModelList = () => {
+const getCppModelList = () => {
     fs.readdir(whisperCppModelPath, (err, back) => {
         if (err) {
             console.log('err: ', err);
@@ -48,7 +40,7 @@ const setCppModelList = () => {
 /**
  * 读取可用model列表
  */
-const setFasterModelList = () => {
+const getFasterModelList = () => {
     fs.readdir(fasterWhisperModelPath, (err, back) => {
         if (err) {
             console.log('err: ', err);
@@ -56,10 +48,13 @@ const setFasterModelList = () => {
         }
         let ls = []
         back.forEach(s => {
-            ls.push({
-                name: s,
-                path: path.join(fasterWhisperModelPath, s)
-            })
+            if (fs.existsSync(path.join(fasterWhisperModelPath, s, 'model.bin'))) {
+                ls.push({
+                    name: s,
+                    path: path.join(fasterWhisperModelPath, s)
+                })
+            }
+
         })
         winSend('main', 'modelList', ls)
         console.log('ls: ', ls);
@@ -67,13 +62,13 @@ const setFasterModelList = () => {
 }
 
 /**
- * 下载whisper - model
+ * 下载whisper cpp - model
  * @param {*} event 
  * @param {string} name model名
  * @param {string} url 下载路径
  */
-const downModel = (event, name, url) => {
-    let ls = spawn('curl', ['-L', url, '-o', path.join(whisperModelPath, name)])
+const downCppModel = (event, name, url) => {
+    let ls = spawn('curl', ['-L', url, '-o', path.join(whisperCppModelPath, name)])
     winSend('main', 'downPercent', {
         name: name,
         percent: '0%'
@@ -100,12 +95,76 @@ const downModel = (event, name, url) => {
             name: name,
             percent: 'done'
         })
-        setModelList()
-
+        getCppModelList()
     });
 }
+/**
+ * 下载faster-whisper model
+ * @param {*} event 
+ * @param {string} name model名
+ * @param {Array} urlList
+ */
+const downFasterModel = (event, name, urlList) => {
+    const mainWindow = winMap['main']
+    const basePath = path.join(fasterWhisperModelPath, name)
+    fs.mkdirSync(basePath, {
+        recursive: true
+    })
+    winSend('main', 'downPercent', {
+        name: name,
+        percent: '0'
+    })
+    let idx = 0
+    const downFile = (url) => {
+        if (!url) {
+            winSend('main', 'downPercent', {
+                name: name,
+                percent: "done"
+            })
+            getFasterModelList()
+            return
+        }
 
-ipcMain.on('downModel', downModel)
+        mainWindow.webContents.session.once('will-download', (event, item) => {
+            const fileName = path.basename(url).split('?')[0]
+            const filePath = path.join(basePath, fileName)
+            item.setSavePath(filePath);
+            console.log('filePath: ', filePath, fileName, url);
+            item.on('updated', (event, state) => {
+                if (state === 'interrupted') {
+                    console.log('Download is interrupted but can be resumed');
+                } else if (state === 'progressing') {
+                    winSend('main', 'downPercent', {
+                        name: name,
+                        percent: ((item.getReceivedBytes() || 0) / (item.getTotalBytes() || 1) * 100).toFixed(2) + "%"
+                    })
+                }
+            })
+            item.once('done', (event, state) => {
+                if (state === 'completed') {
+                    console.log('Download successfully')
+                    idx++
+                    downFile(urlList[idx])
+                } else {
+                    console.log(`Download failed: ${state}`)
+                    winSend('main', 'downPercent', {
+                        name: name,
+                        percent: "error"
+                    })
+                }
+
+            })
+            //...
+        })
+        mainWindow.webContents.downloadURL(url);
+    }
+    downFile(urlList[idx])
+    // for (let i = 0; i < urlList.length; i++) {
+    //     downFile(urlList[i])
+    // }
+}
+
+ipcMain.on('downModel', downFasterModel)
 export {
-    setFasterModelList as setModelList
+    getFasterModelList as getModelList
 }

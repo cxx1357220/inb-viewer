@@ -81,14 +81,14 @@ export default {
             if (this.ws) {
                 this.watchWin()
             } else {
-                ipcRenderer.send('startWs', this.watchState)
+                ipcRenderer.send('startWatchServe', this.watchState)
             }
 
         },
         closeWatch() {
             this.watchState = false
             this.dialogVisible = false
-            ipcRenderer.send('closeWs', this.watchState)
+            ipcRenderer.send('closeWatchServe', this.watchState)
             try {
                 this.stream?.getTracks()
                     .forEach(track => track.stop())

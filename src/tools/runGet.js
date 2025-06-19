@@ -20,7 +20,7 @@ const getDetail = async (obj) => {
             }
 
             // 调用loadScript函数来加载脚本并执行方法
-            let jsPath ='file://' + (localStorage.getItem('useGetJsPath') || localStorage.getItem('baseGetDetailPath'))
+            let jsPath ='file://' + (localStorage.getItem('useGetJsPath') || JSON.parse(localStorage.getItem('baseConfig')||'{}').baseGetDetailPath)
             loadScript(jsPath, function () {
                 console.log('jsPath: ', jsPath);
                 try {

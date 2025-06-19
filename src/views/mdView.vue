@@ -7,10 +7,8 @@
 <script>
 const { shell } = require('electron');
 
-const ipcRenderer = require('electron').ipcRenderer;
 const fs = require('fs');
-const nodePath = require('path')
-const md5 = require('md5');
+const path = require('path')
 import Vditor from 'vditor'
 import "vditor/dist/index.css"
 
@@ -74,7 +72,7 @@ export default {
                 upload: {
                     accept: 'image/*',
                     handler(files) {
-                        let to = nodePath.join(nodePath.dirname(that.obj.path), files[0].name)
+                        let to = path.join(path.dirname(that.obj.path), files[0].name)
                         fs.copyFile(decodeURIComponent(encodeURIComponent(files[0].path)), decodeURIComponent(to), (err) => {
                             if (err) {
                                 console.log('err: ', err);
@@ -140,7 +138,7 @@ export default {
             }
             result.forEach(obj => {
                 if (obj.url.indexOf('http') !== 0) {
-                    str = str.replace(obj.url, 'file:///' + nodePath.join(nodePath.dirname(this.obj.path), nodePath.basename(obj.url)))
+                    str = str.replace(obj.url, 'file:///' + path.join(path.dirname(this.obj.path), path.basename(obj.url)))
                 }
             })
             return str

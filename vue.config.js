@@ -1,6 +1,7 @@
 const {
   defineConfig
 } = require('@vue/cli-service')
+const { watch } = require('fs')
 const MonacoWebpackPlugin = require('monaco-editor-webpack-plugin')
 
 const utils = {
@@ -34,7 +35,63 @@ let plugins = [
     features: ['!gotoSymbol'],
   })
 ];
+
+const configureWebpack = {
+  plugins,
+  output: {
+    globalObject: 'self', // 为 Web Worker 配置
+  },
+  resolve: {
+    fallback: {
+      path: require.resolve("path-browserify")
+    },
+  },
+  watch: false,
+  watchOptions: {
+    ignored: /public/
+  },
+  target: "electron-renderer",
+  // module: {
+  //   rules: [
+  //     {
+  //       test: /\.js$/,
+  //       include: /node_modules\/monaco-editor/,
+  //       use: {
+  //         loader: 'babel-loader',
+  //         options: {
+  //           presets: ['@babel/preset-env'],
+  //         },
+  //       },
+  //     },
+  //     // 其他规则...
+  //   ],
+  // },
+  // module:{
+  //   rules: [{
+  //     test: /\.(woff2?|eot|ttf|otf)(\?.*)?$/,
+  //     loader: 'url-loader',
+  //     options: {
+  //       name: './fonts/[name].[hash:7].[ext]'
+  //     }
+  //   }]
+  // }
+
+  // externals:{
+  //   'ffmpeg-static-electron':'commonjs2 ffmpeg-static-electron'
+  // }
+}
+// if (process.platform === 'win32') {
+//   configureWebpack['ProvidePlugin'] = {
+//     electronAsWallpaper: require.resolve("electron-as-wallpaper"),
+//   }
+// }
 module.exports = defineConfig({
+  productionSourceMap:false,
+  devServer: {
+    client: {
+      overlay: false
+    }
+  },
   transpileDependencies: true,
   css: {
     extract: false
@@ -47,6 +104,9 @@ module.exports = defineConfig({
   pluginOptions: {
     electronBuilder: {
       builderOptions: {
+        mac: {
+          "icon": "./icon.png"
+        },
         asar: false,
         "nsis": {
           "oneClick": false, // 是否一键安装
@@ -77,46 +137,7 @@ module.exports = defineConfig({
       // }],
     }
   },
-  configureWebpack: {
-    plugins,
-    output: {
-      globalObject: 'self', // 为 Web Worker 配置
-    },
-    resolve: {
-      fallback: {
-        path: require.resolve("path-browserify")
-      },
-    },
-    target: "electron-renderer",
-    // module: {
-    //   rules: [
-    //     {
-    //       test: /\.js$/,
-    //       include: /node_modules\/monaco-editor/,
-    //       use: {
-    //         loader: 'babel-loader',
-    //         options: {
-    //           presets: ['@babel/preset-env'],
-    //         },
-    //       },
-    //     },
-    //     // 其他规则...
-    //   ],
-    // },
-    // module:{
-    //   rules: [{
-    //     test: /\.(woff2?|eot|ttf|otf)(\?.*)?$/,
-    //     loader: 'url-loader',
-    //     options: {
-    //       name: './fonts/[name].[hash:7].[ext]'
-    //     }
-    //   }]
-    // }
-
-    // externals:{
-    //   'ffmpeg-static-electron':'commonjs2 ffmpeg-static-electron'
-    // }
-  },
+  configureWebpack,
   chainWebpack: (config) => {
     config.resolve.alias.set(
       'monaco-editor',

@@ -1,6 +1,6 @@
 <template>
     <div class="view">
-        <div v-loading="cutStateMap[obj.filePath]" :element-loading-text="cutStateMap[obj.filePath]">
+        <div class="video-loading" v-loading="cutStateMap[obj.filePath]||!showVideo" :element-loading-text="cutStateMap[obj.filePath]||'加载中...'">
             <myVideo v-if="showVideo" ref="myVideo" :fobj="obj" :url="obj.filePath" :isplay="1" />
         </div>
         <div class="title-list" :style="hideStyle">
@@ -15,8 +15,7 @@
 <script>
 const ipcRenderer = require('electron').ipcRenderer;
 import myVideo from '@/components/myVideo.vue';
-const { shell } = require('electron');
-const fs = require('fs');
+import { debounce } from '../back/utils'
 
 export default {
     name: 'videoPre',
@@ -89,7 +88,8 @@ export default {
                     this.showVideo = false
                     this.obj = this.list[this.idx]
                     this.$nextTick(() => {
-                        this.showVideo = true
+
+                        this.debounceShowVideo()
                     })
                     document.title = this.obj.title
                 }
@@ -100,7 +100,7 @@ export default {
                     this.showVideo = false
                     this.obj = this.list[this.idx]
                     this.$nextTick(() => {
-                        this.showVideo = true
+                        this.debounceShowVideo()
                     })
                     document.title = this.obj.title
                 }
@@ -110,6 +110,9 @@ export default {
     mounted() {
     },
     methods: {
+        debounceShowVideo: debounce(function () {
+            this.showVideo = true
+        }, 300)
     }
 
 }
@@ -117,7 +120,9 @@ export default {
 <style lang="less" scoped>
 .view {
     position: relative;
-
+    .video-loading { 
+        min-height: 100vh;
+    }
     .title-list {
         position: absolute;
         top: 10px;

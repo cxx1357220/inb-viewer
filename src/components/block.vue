@@ -33,21 +33,21 @@
       <span v-date="obj"></span>
 
       <section v-if="obj.type == 'video'">
-        <stateButton :path="obj.jsonPath" map="compressStateMap">
+        <stateButton v-show="baseConfig.hasFfmpeg" :path="obj.jsonPath" map="compressStateMap">
           <el-button size="mini" @click="compress">压缩视频</el-button>
         </stateButton>
       </section>
-      <section v-show="hasWhisperModel" v-if="obj.type == 'video'">
+      <section v-show="baseConfig.hasFasterWhisper" v-if="obj.type == 'video'">
         <stateButton :path="obj.jsonPath" map="whisperStateMap">
           <el-button size="mini" @click="whisper">制作字幕</el-button>
         </stateButton>
       </section>
-      <section v-show="platform=='win32'" v-if="obj.type == 'scene'">
+      <section v-show="baseConfig.hasRePKG" v-if="obj.type == 'scene'">
         <stateButton :path="obj.jsonPath" map="repkgStateMap">
           <el-button size="mini" @click="repkg">解压pkg</el-button>
         </stateButton>
       </section>
-      <section v-show="platform=='win32'" v-if="obj.type == 'scene' || obj.type == 'video' || obj.type == 'web'">
+      <section v-show="baseConfig.platform=='win32'" v-if="obj.type == 'scene' || obj.type == 'video' || obj.type == 'web'">
         <el-button :type="runningObj == (obj.jsonPath + '-A') ? 'success' : ''" size="mini"
           @click="runWallpaper">Wallpaper
           Engine</el-button>
@@ -68,17 +68,14 @@
 
 <script>
 import stateButton from '@/components/stateButton.vue';
-window.fs = require('fs')
-window.nodePath = require('path')
+const fs = require('fs')
 const ipcRenderer = require('electron').ipcRenderer;
-const md5 = require('md5');
-const os = require('os');
 
 export default {
   name: 'state',
   data() {
     return {
-      platform:''
+      baseConfig:{}
     }
   },
   components: { stateButton },
@@ -182,11 +179,10 @@ export default {
   },
 
   created() {
+    this.baseConfig = JSON.parse(localStorage.getItem('baseConfig'))||{}
+    console.log('this.baseConfig: ', this.baseConfig);
   },
   mounted() {
-    if(os.platform()=='win32'){
-      this.platform = 'win32'
-    }
   },
   methods: {
     open(obj) {

@@ -2,34 +2,9 @@
 import {
   app,
   protocol,
-  BrowserWindow,
-  Menu
 } from 'electron'
-const fs = require('fs');
-const path = require('path');
-const appPath = app.getAppPath();
-
-var os = require('os')
-var platform = os.platform()
-//patch for compatibilit with electron-builder, for smart built process.
-if (platform == "darwin") {
-  platform = "mac";
-} else if (platform == "win32") {
-  platform = "win";
-}
-//adding browser, for use case when module is bundled using browserify. and added to html using src.
-if (platform !== 'linux' && platform !== 'mac' && platform !== 'win' && platform !== "browser") {
-  console.error('Unsupported platform.', platform);
-  process.exit(1)
-}
-var arch = os.arch()
-if (platform === 'mac' && (arch !== 'x64' && arch !== 'arm64')) {
-  console.error('Unsupported architecture.')
-  process.exit(1)
-}
 const isDevelopment = process.env.NODE_ENV !== 'production'
 if (!isDevelopment) {
-  Menu.setApplicationMenu(null)
   require('./back/log')
 }
 // Scheme must be registered before the app is ready
@@ -40,46 +15,13 @@ protocol.registerSchemesAsPrivileged([{
     standard: true
   }
 }])
-const newSessionDataPath = path.join(appPath,
-  process.env.NODE_ENV == 'production' ? '..' : '',
-  '..',
-  '..',
-  'viewer-sessionData');
 
-// 修改: 添加目录存在性检查和错误处理
-try {
-  if (!fs.existsSync(newSessionDataPath)) {
-    fs.mkdirSync(newSessionDataPath, { recursive: true });
-  }
-} catch (err) {
-  console.error('Failed to create directory:', newSessionDataPath, err);
-  process.exit(1);
-}
-
-app.setPath('sessionData', newSessionDataPath)
-const imgCachePath = path.join(newSessionDataPath, 'imgCache');
-const getJsCachePath = path.join(newSessionDataPath, 'getJsCache');
-
-fs.mkdirSync(imgCachePath, {
-  recursive: true
-});
-
-fs.mkdirSync(getJsCachePath, {
-  recursive: true
-});
-var baseGetDetailPath = path.join(
-  appPath,
-  process.env.NODE_ENV !== 'production' ? '../public' : '',
-  'baseGetDetail.js'
-)
+require('./back/config')
 
 const {
   createWindow,
-  winSend
 } = require('./back/win')
-const {
-  setModelList
-} = require('./back/model')
+
 require('./back/read')
 require('./back/serve')
 
@@ -89,7 +31,7 @@ require('./back/ocrServe')
 // require('./back/repkg')
 require('./back/re')
 require('./back/littleFunc')
-if (platform == 'win') {
+if (process.platform == 'win32') {
   require('./back/wallpaperWin')
 } else {
   require('./back/wallpaperMac')
@@ -123,10 +65,7 @@ app.on('activate', async () => {
   // On macOS it's common to re-create a window in the app when the
   // dock icon is clicked and there are no other windows open.
   // if (BrowserWindow.getAllWindows().length === 0) {
-    await createWindow()
-    setModelList()
-    winSend('main', 'imgCachePath', imgCachePath)
-    winSend('main', 'baseGetDetailPath', baseGetDetailPath)
+  await createWindow()
 
   // }
 })
@@ -137,9 +76,6 @@ app.on('activate', async () => {
 app.on('ready', async () => {
   console.log('ready: ', app.getPath('sessionData'));
   await createWindow()
-  setModelList()
-  winSend('main', 'imgCachePath', imgCachePath)
-  winSend('main', 'baseGetDetailPath', baseGetDetailPath)
 
 
   // console.log('protocol: ', session.defaultSession.webRequest);

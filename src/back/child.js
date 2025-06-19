@@ -1,36 +1,25 @@
 import {
-    app,
     ipcMain,
     shell,
 } from 'electron'
 const fs = require('fs');
 const path = require('path');
-const ffmpeg = require('fluent-ffmpeg');
-const appPath = app.getAppPath();
-var os = require('os')
-var platform = os.platform()
-if (platform == "darwin") {
-    platform = "mac";
-} else if (platform == "win32") {
-    platform = "win";
-}
 const {
-    exec
+    exec,
 } = require('child_process');
-var ffmpegPath = path.join(
-    appPath,
-    process.env.NODE_ENV !== 'production' ? '../public' : '',
-    'ffmpeg',
-    platform === 'win' ? 'ffmpeg.exe' : 'ffmpeg'
-)
+import {
+    times,
+    durationToSeconds
+} from './utils'
 
-
-fs.chmod(ffmpegPath, 0o775, (err) => { })
-ffmpeg.setFfmpegPath(ffmpegPath);
-
+const {
+    hasFfmpeg,
+    ffmpeg,
+    hasMpv,
+    mpvPath
+} = require('./config')
 
 let {
-    winMap,
     winSend
 } = require('./win')
 
@@ -38,7 +27,7 @@ let {
  * 设置帧为预览图文件
  * @param {*} event 
  * @param {object} obj 块数据
- * @param {string} data 图片信息
+ * @param {string} data 图片base64信息
  */
 const setPoster = (event, obj, data) => {
     let base = new Buffer.from(data.replace(/^data:image\/\w+;base64,/, ''), "base64")
@@ -52,189 +41,6 @@ const setPoster = (event, obj, data) => {
     })
 }
 ipcMain.on('setPoster', setPoster)
-
-import {
-    times
-} from './utils'
-// 状态
-const cutData = {
-    state: false,
-    list: []
-}
-/**
- * 剪视频
- * @param {*} event 
- * @param {Object} obj 视频信息
- * @param {boolean} isCode 是否编码
- */
-const cutTime = (event, obj, isCode) => {
-    winSend('videoList', 'cutPercent', {
-        filePath: obj.filePath,
-        percent: 'waiting'
-    })
-    winSend(obj.basePath, 'cutPercent', {
-        filePath: obj.filePath,
-        percent: 'waiting'
-    })
-    if (cutData.state) {
-        cutData.list.push([obj, isCode])
-        return false
-    }
-    // console.log('obj: ', obj);
-    let duration = 1,
-        segment_times = obj.currentTime,
-        winKey = obj.winKey,
-        filePath = obj.filePath,
-        basePath = path.dirname(filePath),
-        file = path.basename(filePath),
-        saveFile = path.join(basePath, 'cut-' + file),
-        options = ['-y', '-threads 4', '-preset ultrafast']
-    if (segment_times) {
-        let len = segment_times.split(',').length.toString().length
-        saveFile = path.join(basePath, 'cut-part-%' + len + 'd-' + file)
-        options.push('-f segment', '-force_key_frames ' + segment_times, '-segment_times ' + segment_times, '-reset_timestamps 1', '-segment_time_delta 0.05', '-map 0')
-    }
-    if (isCode) {
-        saveFile += '.mp4'
-        // options.push('-vcodec libx264')
-    } else {
-        options.push('-c copy')
-    }
-    return new Promise((resolve, reject) => {
-        ffmpeg(filePath)
-                    .outputOptions(options)
-            .on('start', function (commandLine) {
-                cutData.state = true
-                console.log('Spawned Ffmpeg with command: ' + commandLine);
-            })
-            .on('codecData', function (data) {
-                duration = times(data.duration)
-            })
-            .on('progress', function (progress) {
-                winSend(winKey, 'cutPercent', {
-                    filePath: filePath,
-                    percent: (times(progress.timemark) / duration * 100).toFixed(2)
-                })
-            })
-            .on('end', function () {
-                console.log('Processing finished !');
-                shell.showItemInFolder(filePath)
-                winSend(winKey, 'cutPercent', {
-                    filePath: filePath,
-                    percent: 'done'
-                })
-                resolve(filePath)
-                cutData.state = false
-                if (cutData.list.length) {
-                    cutTime('', ...cutData.list.shift())
-                }
-            })
-            .on('error', function (err) {
-                console.log('An error occurred: ' + err.message);
-                winSend(winKey, 'error', err)
-                winSend(winKey, 'cutPercent', {
-                    filePath: filePath,
-                    percent: 'error'
-                })
-                reject(filePath)
-                cutData.state = false
-                if (cutData.list.length) {
-                    cutTime('', ...cutData.list.shift())
-                }
-            })
-            // .save(obj.basePath + 'del-part-' + obj.file)
-            .save(saveFile)
-    })
-
-}
-ipcMain.on('cutTime', cutTime)
-// ipcMain.handle('cutTime', cutTime)
-
-
-const getData = {
-    state: false
-}
-/**
- * 时间转成秒数
- * @param {string} durationStr 
- * @returns {number} 秒数
- */
-function durationToSeconds(durationStr) {
-    const [hms, ms] = durationStr.split('.');
-    const [h, m, s] = hms.split(':').map(Number);
-    return h * 3600 + m * 60 + s + Number(ms) / 100;
-}
-/**
- * 获取视频时长
- * @param {*} event 
- * @param {Array} list 视频数据数组
- * @returns 
- */
-const getListInfo = (event, list) => {
-    let callBack = {},
-        i = 0,
-        len = list.length;
-    if (!len) {
-        return false
-    }
-    getData.state = true
-
-    const info = (i) => {
-        const next = () => {
-            if (i < len - 1) {
-                console.log(i + '/' + (len - 1));
-                winSend('main', 'rateDuration', i + 1 + '/' + len)
-                i++
-                info(i)
-            } else {
-                console.log("callBack", callBack);
-                getData.state = false
-                winSend('main', 'videoDuration', callBack)
-            }
-        }
-        ffmpeg(list[i].v).output('-').outputFormat('null').on('error',(r)=>{
-            console.log('r: ', r);
-        }).on('stderr', (stderr) => {
-            const durationMatch = stderr.match(/Duration:\s(\d{2}:\d{2}:\d{2}\.\d{2})/);
-            let duration = durationMatch ? durationMatch[1] : null;
-            if (duration) {
-                duration = durationToSeconds(duration)
-                callBack[list[i].j] = {
-                    'videoDuration': duration
-                }
-                let stats = fs.statSync(list[i].j)
-                fs.readFile(list[i].j, 'utf-8', (err, call) => {
-                    if (err) {
-                        return false
-                    }
-                    let data = JSON.parse(call)
-                    data['inb-duration'] = duration
-                    fs.writeFile(list[i].j, JSON.stringify(data), (err) => {
-                        if (err) {
-                            console.log('write-err: ', err);
-                            return false
-                        }
-                        fs.utimes(
-                            list[i].j,
-                            new Date(stats.atime),
-                            new Date(stats.mtime),
-                            function (err) {
-                                err && (console.log('err: ', err));
-                            }
-                        );
-                    })
-                })
-            }
-        }).on('end',()=>{
-            next()
-        }).run()
-    }
-    info(i)
-
-}
-ipcMain.on('getListInfo', getListInfo)
-
-
 
 /**
  * 设置图片文件为预览图文件
@@ -254,6 +60,224 @@ const imgSetPoster = (event, obj, s) => {
 ipcMain.on('imgSetPoster', imgSetPoster)
 
 
+
+/**
+ * mpv内打开视频
+ * @param {*} e 
+ * @param {Array} p 视频路径列表
+ * @param {Number} i 当前视频在列表中index
+ */
+const mpv = (e, p, i = 0) => {
+    let str = mpvPath
+    str += ' --playlist-start=' + i
+    str += ' --player-operation-mode=pseudo-gui'
+    str += ' --keep-open --autofit=70% --auto-window-resize=no --idle=once '
+    str += ' --script-opts=playlistmanager-loadfiles_on_start=no '
+    // str += ' --playlist=' + p.join(' ')
+    str += p.map(s => '"' + s + '"').join(' ')
+    exec(str, (
+        err, stdout, stderr) => {
+        if (err) {
+            console.error(err);
+        }
+        if (stderr) {
+            console.error(stderr);
+        }
+
+    });
+}
+if (hasMpv) {
+    ipcMain.on('inPlayer', mpv)
+}
+/**
+ * 剪媒体
+ * @returns {object} state:string, list:array
+ */
+class CutMedia {
+    constructor() {
+        this.state = false //状态
+        this.list = [] //队列
+        if (hasFfmpeg) {
+            ipcMain.on('cutByTime', this.cutByTime.bind(this))
+        }
+    }
+    /**
+     * 按时间剪媒体
+     * @param {*} event 
+     * @param {Object} obj 视频信息
+     * @param {boolean} isCode 是否编码
+     */
+    cutByTime(event, obj, isCode) {
+        let that = this
+        winSend('videoList', 'cutPercent', {
+            filePath: obj.filePath,
+            percent: 'waiting'
+        })
+        winSend(obj.basePath, 'cutPercent', {
+            filePath: obj.filePath,
+            percent: 'waiting'
+        })
+        if (this.state) {
+            this.list.push([obj, isCode])
+            return false
+        }
+        // console.log('obj: ', obj);
+        let duration = 1,
+            segment_times = obj.currentTime,
+            winKey = obj.winKey,
+            filePath = obj.filePath,
+            basePath = path.dirname(filePath),
+            file = path.basename(filePath),
+            saveFile = path.join(basePath, 'cut-' + file),
+            options = ['-y', '-threads 4', '-preset ultrafast']
+        if (segment_times) {
+            let len = segment_times.split(',').length.toString().length
+            saveFile = path.join(basePath, 'cut-part-%' + len + 'd-' + file)
+            options.push('-f segment', '-force_key_frames ' + segment_times, '-segment_times ' + segment_times, '-reset_timestamps 1', '-segment_time_delta 0.05', '-map 0')
+        }
+        if (isCode) {
+            saveFile += '.mp4'
+            // options.push('-vcodec libx264')
+        } else {
+            options.push('-c copy')
+        }
+        
+        return new Promise((resolve, reject) => {
+            ffmpeg(filePath)
+                .outputOptions(options)
+                .on('start', function (commandLine) {
+                    that.state = true
+                    console.log('Spawned Ffmpeg with command: ' + commandLine);
+                })
+                .on('codecData', function (data) {
+                    duration = times(data.duration)
+                })
+                .on('progress', function (progress) {
+                    winSend(winKey, 'cutPercent', {
+                        filePath: filePath,
+                        percent: (times(progress.timemark) / duration * 100).toFixed(2)
+                    })
+                })
+                .on('end', function () {
+                    console.log('Processing finished !');
+                    shell.showItemInFolder(filePath)
+                    winSend(winKey, 'cutPercent', {
+                        filePath: filePath,
+                        percent: 'done'
+                    })
+                    resolve(filePath)
+                    that.state = false
+                    if (that.list.length) {
+                        that.cutByTime('', ...that.list.shift())
+                    }
+                })
+                .on('error', function (err) {
+                    console.log('An error occurred: ' + err.message);
+                    winSend(winKey, 'error', err)
+                    winSend(winKey, 'cutPercent', {
+                        filePath: filePath,
+                        percent: 'error'
+                    })
+                    reject(filePath)
+                    that.state = false
+                    if (that.list.length) {
+                        that.cutByTime('', ...that.list.shift())
+                    }
+                })
+                // .save(obj.basePath + 'del-part-' + obj.file)
+                .save(saveFile)
+        })
+    }
+}
+const cutData = new CutMedia()
+
+
+class GetMediaDuration {
+    constructor() {
+        this.state = false
+        if (hasFfmpeg) {
+            ipcMain.on('batchGetMediaDuration', this.batchGetMediaDuration)
+        }
+    }
+    /**
+     * 获取视频时长
+     * @param {*} event 
+     * @param {Array} list 视频数据数组
+     * @returns 
+     */
+    batchGetMediaDuration(event, list) {
+        let callBack = {},
+            i = 0,
+            len = list.length;
+        if (!len) {
+            return false
+        }
+        this.state = true
+
+        const info = (i) => {
+            const next = () => {
+                if (i < len - 1) {
+                    console.log(i + '/' + (len - 1));
+                    winSend('main', 'rateDuration', i + 1 + '/' + len)
+                    i++
+                    info(i)
+                } else {
+                    console.log("callBack", callBack);
+                    this.state = false
+                    winSend('main', 'videoDuration', callBack)
+                }
+            }
+            ffmpeg(list[i].v).output('-').outputFormat('null').on('error', (r) => {
+                console.log('r: ', r);
+            }).on('stderr', (stderr) => {
+                const durationMatch = stderr.match(/Duration:\s(\d{2}:\d{2}:\d{2}\.\d{2})/);
+                let duration = durationMatch ? durationMatch[1] : null;
+                if (duration) {
+                    duration = durationToSeconds(duration)
+                    callBack[list[i].j] = {
+                        'videoDuration': duration
+                    }
+                    let stats = fs.statSync(list[i].j)
+                    fs.readFile(list[i].j, 'utf-8', (err, call) => {
+                        if (err) {
+                            return false
+                        }
+                        let data = JSON.parse(call)
+                        data['inb-duration'] = duration
+                        fs.writeFile(list[i].j, JSON.stringify(data), (err) => {
+                            if (err) {
+                                console.log('write-err: ', err);
+                                return false
+                            }
+                            fs.utimes(
+                                list[i].j,
+                                new Date(stats.atime),
+                                new Date(stats.mtime),
+                                function (err) {
+                                    err && (console.log('err: ', err));
+                                }
+                            );
+                        })
+                    })
+                }
+            }).on('end', () => {
+                next()
+            }).run()
+        }
+        info(i)
+    }
+}
+const getData = new GetMediaDuration()
+
+
+
+
+
+
+
+
+
+
 /**
  * 获取前后几分钟带sei信息的时间戳
  * @param {*} event 
@@ -263,11 +287,8 @@ ipcMain.on('imgSetPoster', imgSetPoster)
 const getPtsTime = (event, obj) => {
 
     const start = new Promise((resolve, reject) => {
-        // let s = `${ffmpegPath} -i "${obj.filePath}" -t 00:07:00 -vf "select=\'gt(scene\,0.4)\',showinfo" -vsync vfr -f null -`
-        // let s = `${ffmpegPath} -i "${obj.filePath}" -t 00:07:00 -vf "select='eq(pict_type,PICT_TYPE_I)',showinfo" -vsync vfr -f null -`
-        // console.log('s: ', s);
-        // console.time('s')
-        // ffmpeg(obj.filePath).inputOptions(['-t 00:07:00', `-vf "select='eq(pict_type,PICT_TYPE_I)',showinfo"`, '-vsync vfr']).output('-').outputFormat('null').on('start', function (commandLine) {
+        // `ffmpeg -i "${obj.filePath}" -t 00:07:00 -vf "select=\'gt(scene\,0.4)\',showinfo" -vsync vfr -f null -`
+        // `ffmpeg -i "${obj.filePath}" -t 00:07:00 -vf "select='eq(pict_type,PICT_TYPE_I)',showinfo" -vsync vfr -f null -`
         const regex = /pts_time:(\d+\.\d+)/;
         let lastDuration_time, isSEI, isNext, lastPts_time, lastRange
         ffmpeg(obj.filePath).inputOptions(['-t 00:07:00'])
@@ -299,7 +320,6 @@ const getPtsTime = (event, obj) => {
                     }
                     lastDuration_time = duration_time
                     if (isSEI || isNext) {
-                        // winSend(obj.winKey, 'ptsTime', [{ v: pts_time }])
                         resolve({ v: pts_time })
                     }
                     lastPts_time = pts_time
@@ -315,9 +335,6 @@ const getPtsTime = (event, obj) => {
             }).run();
     })
     const end = new Promise((resolve, reject) => {
-        console.log(888, obj.filePath);
-
-        // console.time('e')
         ffmpeg(obj.filePath).output('-').outputFormat('null').on('error', error => {
             console.log('error: ', error);
             resolve()
@@ -330,8 +347,8 @@ const getPtsTime = (event, obj) => {
             duration = durationToSeconds(duration)
             let ssTime = duration - 420
             console.log('ssTime: ', ssTime);
-            // let ss = `${ffmpegPath} -ss ${ssTime} -i "${obj.filePath}"  -vf "select=\'gt(scene\,0.4)\',showinfo" -vsync vfr -f null -`
-            // let ss = `${ffmpegPath} -ss ${ssTime} -i "${obj.filePath}"  -vf "select='eq(pict_type,PICT_TYPE_I)',showinfo" -vsync vfr -f null -`
+            // ffmpeg -ss ${ssTime} -i "${obj.filePath}"  -vf "select=\'gt(scene\,0.4)\',showinfo" -vsync vfr -f null -`
+            // ffmpeg -ss ${ssTime} -i "${obj.filePath}"  -vf "select='eq(pict_type,PICT_TYPE_I)',showinfo" -vsync vfr -f null -`
             let pts_time, lastPts_time, lastRange;
             const regex = /pts_time:(\d+\.\d+)/;
             ffmpeg(obj.filePath).inputOptions(['-ss ' + ssTime]).videoFilters("select='eq(pict_type,PICT_TYPE_I)',showinfo").outputOptions(['-vsync vfr', '-f null']).output('-').on('start', function (commandLine) {
@@ -361,20 +378,21 @@ const getPtsTime = (event, obj) => {
             console.log('end: ', 1);
         }).run();
     })
-    return Promise.all([start,end]).then(res => {
+    return Promise.all([start, end]).then(res => {
         console.log('res: ', res);
 
         let list = res.filter(o => o)
         if (list.length) {
             winSend(obj.winKey, 'ptsTime', list)
         }
-        // console.timeEnd('a')
         return res
     })
 
 }
-ipcMain.on('getPtsTime', getPtsTime)
-// ipcMain.handle('getPtsTime', getPtsTime)
+
+if (hasFfmpeg) {
+    ipcMain.on('getPtsTime', getPtsTime)
+}
 
 
 

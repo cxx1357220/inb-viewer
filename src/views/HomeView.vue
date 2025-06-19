@@ -78,9 +78,9 @@
               @click="setPath('dir', ['copyVal'])" icon="el-icon-folder">选择复制路径</el-button>
           </el-input>
           <el-button size="mini" plain icon="el-icon-setting" @click="setMoreApi">获取更多信息设置</el-button>
-          <el-button size="mini" plain icon="el-icon-setting" @click="compressDrawer = true">压缩视频设置</el-button>
-          <el-button v-show="modelList.length" size="mini" plain icon="el-icon-setting" @click="whisperDrawer = true">解析字幕设置</el-button>
-          <el-input v-if="platform=='win32'" size="mini" v-model="wallpaperPath" style="width: 280px;margin-right: 10px;"
+          <el-button v-if="baseConfig.hasFfmpeg" size="mini" plain icon="el-icon-setting" @click="compressDrawer = true">压缩视频设置</el-button>
+          <el-button v-show="baseConfig.hasFasterWhisper" size="mini" plain icon="el-icon-setting" @click="whisperDrawer = true">解析字幕设置</el-button>
+          <el-input v-if="baseConfig.platform=='win32'" size="mini" v-model="wallpaperPath" style="width: 280px;margin-right: 10px;"
             placeholder="wallpaper路径"><el-button size="mini" slot="prepend" @click="setPath('file', ['wallpaperPath'])"
               icon="el-icon-folder">选择wallpaper路径</el-button>
           </el-input>
@@ -88,19 +88,19 @@
         <el-form-item>
           <span slot="label">功能：</span>
           <el-button size="mini" @click="outList">输出数据列表</el-button>
-          <el-button size="mini" @click="compressList">批量压缩视频</el-button>
-          <el-button v-if="platform=='win32'"  size="mini" @click="repkgList">批量解压pkg</el-button>
-          <el-button size="mini" @click="xcopyList">批量复制</el-button>
+          <el-button v-if="baseConfig.hasFfmpeg" size="mini" @click="batchCompressMedia">批量压缩视频</el-button>
+          <el-button v-if="baseConfig.hasRePKG"  size="mini" @click="repkgList">批量解压pkg</el-button>
+          <el-button size="mini" @click="copyList">批量复制</el-button>
           <el-button size="mini" @click="rmList">批量删除</el-button>
           <!-- <el-button size="mini" @click="outTitle">输出title</el-button> -->
-          <el-button size="mini" :loading="loadingDuration" @click="getInfo">获取视频时长<span v-show="loadingDuration">({{
+          <el-button v-if="baseConfig.hasFfmpeg"  size="mini" :loading="loadingDuration" @click="getInfo">获取视频时长<span v-show="loadingDuration">({{
             rateDuration }})</span></el-button>
 
           <el-button size="mini" @click="openVideoList">播放当前列表</el-button>
 
           <el-button size="mini" @click="clearState">清除已操作状态</el-button>
           <!-- <el-button size="mini" @click="dataCount">数据统计</el-button> -->
-          <el-button size="mini" @click="showConcat = true">合并视频</el-button>
+          <el-button v-if="baseConfig.hasFfmpeg" size="mini" @click="showConcat = true">合并视频</el-button>
           <el-button size="mini" :loading="loadingDetail" @click="allout">批量获取详细信息<span v-show="loadingDetail">({{
             rateDetail }})</span></el-button>
           <el-popover trigger="hover" :popper-class="!serverState ? 'visibility-pop' : ''" placement="bottom">
@@ -111,7 +111,7 @@
             <el-button class="button" slot="reference" size="mini" :type="serverState ? 'success' : ''"
               @click="server">局域网内服务</el-button>
           </el-popover>
-          <ocrServe></ocrServe>
+          <ocrServe v-if="baseConfig.hasOcr"></ocrServe>
           <watchMe></watchMe>
         </el-form-item>
 
@@ -168,10 +168,10 @@
             <el-option v-for="o in languageList" :key="o.value" :value="o.value" :label="o.label"></el-option>
           </el-select>
         </el-form-item>
-        <!-- <el-form-item v-if="Object.keys(downModelMap).length" label="ai模型下载：">
+        <el-form-item v-if="Object.keys(downModelMap).length" label="ai模型下载：">
           <el-button v-for="(v, k) in downModelMap" size="mini" round @click="downModel(k, v)">
             {{ downPercentMap[k] ? downPercentMap[k] : k }}</el-button>
-        </el-form-item> -->
+        </el-form-item>
 
       </el-form>
     </el-drawer>
@@ -257,10 +257,9 @@
 
 import getDetail from '../tools/runGet';
 window.fs = require('fs')
-window.nodePath = require('path')
+window.path = require('path')
 const ipcRenderer = require('electron').ipcRenderer;
 const md5 = require('md5');
-const os = require('os')
 
 import block from '@/components/block.vue';
 import concatVideo from '@/components/concatVideo.vue';
@@ -276,7 +275,7 @@ export default {
     return {
       password: '665533',
       loading: false,
-      platform:'',
+      baseConfig: {},
       allDataMap: {},
       filterVal: '',
       showList: [],
@@ -360,11 +359,11 @@ export default {
 
   },
   watch: {
-    filterVal(n) {
-      // if (n == '665533') {
-      //   // ipcRenderer.send('openTool')
-      // }
-    },
+    // filterVal(n) {
+    //   if (n == '665533') {
+    //     // ipcRenderer.send('openTool')
+    //   }
+    // },
     copyVal(n) {
       localStorage.setItem('copyVal', n || "")
     },
@@ -387,10 +386,13 @@ export default {
     }
   },
   created() {
-    if(os.platform()=='win32'){
-      this.platform = 'win32'
-    }
-    localStorage.getItem('imgCachePath') && (this.imgCachePath = localStorage.getItem('imgCachePath'))
+    this.baseConfig = localStorage.getItem('baseConfig') ? JSON.parse(localStorage.getItem('baseConfig')) : {}
+    this.imgCachePath  = this.baseConfig.imgCachePath
+    ipcRenderer.on('baseConfig', (e, obj) => {
+      localStorage.setItem('baseConfig',JSON.stringify(obj))
+      this.baseConfig = obj
+      this.imgCachePath  = this.baseConfig.imgCachePath
+    })
     this.copyVal = localStorage.getItem('copyVal') || ''
     this.wallpaperPath = localStorage.getItem('wallpaperPath') || ''
     if (!this.wallpaperPath) {
@@ -434,13 +436,19 @@ export default {
     ipcRenderer.on('newPercent', (e, obj) => {
       this.$set(this.newStateMap, obj.jsonPath, obj.percent)
     })
-    ipcRenderer.on('modelList', (e, ls) => {
-      console.log('modelList: ', ls);
+    const setModelList = (ls) => {
       ls.forEach(obj => {
+        console.log('del obj: ', obj);
         delete this.downModelMap[obj.name]
       })
       this.modelList = ls
       this.whisperSet.model = ls[0]?.path
+    }
+    setModelList(localStorage.getItem('modelList') ? JSON.parse(localStorage.getItem('modelList')) : [])
+    ipcRenderer.on('modelList', (e, ls) => {
+      console.log('modelList: ', ls);
+      localStorage.setItem('modelList', JSON.stringify(ls))
+      setModelList(ls)
     })
     ipcRenderer.on('downPercent', (e, obj) => {
       if (obj.code) {
@@ -524,7 +532,7 @@ export default {
     })
     ipcRenderer.on('refreshImg', (e, obj) => {
       const souceUrl = obj.img.split('?')[0]
-      let to = nodePath.join(this.imgCachePath, md5(souceUrl))
+      let to = path.join(this.imgCachePath, md5(souceUrl))
       fs.copyFile(decodeURIComponent(encodeURIComponent(souceUrl)), decodeURIComponent(to), (err) => {
         if (err) {
           console.log('err: ', err);
@@ -548,14 +556,6 @@ export default {
     })
     ipcRenderer.on('wallpaperPath', (e, str) => {
       this.wallpaperPath = str
-    })
-    ipcRenderer.on('imgCachePath', (e, string) => {
-      console.log('string: ', string);
-      this.imgCachePath = string
-      localStorage.setItem('imgCachePath', string)
-    })
-    ipcRenderer.on('baseGetDetailPath', (e, string) => {
-      localStorage.setItem('baseGetDetailPath', string)
     })
     ipcRenderer.on('videoDuration', (e, obj) => {
       Object.keys(obj).forEach(k => {
@@ -604,7 +604,7 @@ export default {
     },
     inputFile() {
       this.loading = true
-      ipcRenderer.send('readJSON')
+      ipcRenderer.send('readDirJson')
     },
     allout() {
       if (this.loadingDetail) {
@@ -663,7 +663,7 @@ export default {
     cacheImg(url) {
       const souceUrl = url.split('?')[0]
       if (url.indexOf('?cache=true') == -1 && !localStorage.getItem(souceUrl)) {
-        let to = nodePath.join(this.imgCachePath, md5(souceUrl))
+        let to = path.join(this.imgCachePath, md5(souceUrl))
         fs.copyFile(decodeURIComponent(souceUrl), decodeURIComponent(to), (err) => {
           if (err) {
             console.log('err: ', err);
@@ -710,10 +710,11 @@ export default {
       }
       this.filterFolder = ''
       localStorage.clear()
-      let dir = nodePath.join(this.imgCachePath)
+      localStorage.setItem('baseConfig', JSON.stringify(this.baseConfig))
+      let dir = path.join(this.imgCachePath)
       let files = fs.readdirSync(dir)
       for (var i = 0; i < files.length; i++) {
-        let newPath = nodePath.join(dir, files[i]);
+        let newPath = path.join(dir, files[i]);
         fs.unlinkSync(newPath);
       }
 
@@ -858,9 +859,9 @@ export default {
         return false
       }
       this.$store.commit('setCompressStateMap', [obj.jsonPath, 'waiting'])
-      ipcRenderer.send('compress', obj, this.compressSet)
+      ipcRenderer.send('compressMedia', obj, this.compressSet)
     },
-    compressList() {
+    batchCompressMedia() {
       if (!this.compressSet.type && !this.compressSet.vcodec && !this.compressSet.size && !this.compressSet.fps) {
         this.compressDrawer = true
         this.$message({
@@ -882,7 +883,7 @@ export default {
           }
         })
         console.log('filter: ', filter);
-        ipcRenderer.send('compressList', filter, this.compressSet)
+        ipcRenderer.send('batchCompressMedia', filter, this.compressSet)
       }).catch(() => {
       });
     },
@@ -901,7 +902,7 @@ export default {
       this.$store.commit('setCopyStateMap', [obj.jsonPath, 'waiting'])
       ipcRenderer.send('copyDir', obj, this.copyVal)
     },
-    xcopyList() {
+    copyList() {
       if (!this.copyVal) {
         this.$message({
           type: 'warning',
@@ -913,7 +914,7 @@ export default {
       list.forEach(obj => {
         this.$store.commit('setCopyStateMap', [obj.jsonPath, 'waiting'])
       })
-      ipcRenderer.send('xcopyList', list, this.copyVal)
+      ipcRenderer.send('copyList', list, this.copyVal)
     },
     rmList() {
       this.$prompt('', '批量删除', {
@@ -958,7 +959,7 @@ export default {
             if ((i + 1) == arr.length) {
               a[b] = s
               if (b == 'filePath' && this.projectVal.title == '') {
-                this.$set(this.projectVal, 'title', nodePath.basename(s))
+                this.$set(this.projectVal, 'title', path.basename(s))
               }
             }
             return a[b]
@@ -982,6 +983,14 @@ export default {
       console.log('out: ', out);
     },
     whisper(obj) {
+      if(!this.whisperSet.model){
+        this.$message({
+          type: 'warning',
+          message: '未选择model'
+        });
+        this.whisperDrawer = true
+        return false
+      }
       this.$store.commit('setWhisperStateMap', [obj.jsonPath, 'waiting'])
       // ipcRenderer.send('whisperCpp', obj, this.whisperSet)
       ipcRenderer.send('fasterWhisper', obj, this.whisperSet)
@@ -1063,7 +1072,7 @@ export default {
         return false
       }
       this.rateDuration = '0/' + list.length
-      ipcRenderer.send('getListInfo', list)
+      ipcRenderer.send('batchGetMediaDuration', list)
     },
     openVideoList() {
       let list = this.showList.filter(o => o.type == 'video')
@@ -1080,7 +1089,7 @@ export default {
             delete this.allDataMap[key];
           }
         }
-        ipcRenderer.send('readJSON', this.filterFolder)
+        ipcRenderer.send('readDirJson', this.filterFolder)
       }
     },
     clearFolderRead() {
@@ -1109,8 +1118,8 @@ export default {
         }
       }
     },
-    runWallpaper(path) {
-      if (path + '-A' == this.$store.state.runningWallpaper) {
+    runWallpaper(jsonPath) {
+      if (jsonPath + '-A' == this.$store.state.runningWallpaper) {
         ipcRenderer.send('closeWallpaper')
         this.$store.commit('setRunningWallpaper', '')
       } else {
@@ -1121,8 +1130,8 @@ export default {
           });
           return false
         }
-        ipcRenderer.send('runWallpaper', path, this.wallpaperPath)
-        this.$store.commit('setRunningWallpaper', path + '-A')
+        ipcRenderer.send('runWallpaper', jsonPath, this.wallpaperPath)
+        this.$store.commit('setRunningWallpaper', jsonPath + '-A')
       }
 
     },

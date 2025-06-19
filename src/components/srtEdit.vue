@@ -69,21 +69,11 @@
 </template>
 
 <script>
-import { parseSync, stringifySync, formatTimestamp, parse, stringify, map } from 'subtitle'
+import { stringifySync, formatTimestamp, parse} from 'subtitle'
 const path = require('path')
 const fs = require('fs')
 const iconv = require('iconv-lite');
-function debounce(func, wait) {
-    let timeout;
-    return function () {
-        const context = this;
-        const args = arguments;
-        clearTimeout(timeout);
-        timeout = setTimeout(() => {
-            func.apply(context, args);
-        }, wait);
-    };
-}
+import { debounce } from '../back/utils'
 export default {
     name: 'srtEdit',
     props: ['srcObj'],

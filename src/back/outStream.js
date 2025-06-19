@@ -1,54 +1,30 @@
-// const { BrowserWindow, desktopCapturer } = require('electron')
 // 利用NodeMediaServer推流rtmp
-const http = require('http')
-const fs = require('fs')
-const stream = require('stream');
-const path = require('path');
-const ffmpeg = require('fluent-ffmpeg');
-var os = require('os')
-var platform = os.platform()
-//patch for compatibilit with electron-builder, for smart built process.
-if (platform == "darwin") {
-    platform = "mac";
-} else if (platform == "win32") {
-    platform = "win";
-}
-
-
+const { hasFfmpeg,ffmpeg} = require('./config')
 const NodeMediaServer = require('node-media-server');
 
-const config = {
-    rtmp: {
-        port: 1935,
-        chunk_size: 1000,
-        gop_cache: true,
-        ping: 30,
-        ping_timeout: 60
-    },
-    http: {
-        port: 8000,
-        allow_origin: '*'
-    }
-};
 
-var nms = new NodeMediaServer(config)
 
-import {
-    app
-} from 'electron'
-const appPath = app.getAppPath();
 
-var ffmpegPath = path.join(
-    appPath,
-    process.env.NODE_ENV !== 'production' ? '../public' : '',
-    'ffmpeg',
-    platform === 'win' ? 'ffmpeg.exe' : 'ffmpeg'
-)
-
-fs.chmod(ffmpegPath, 0o775, (err) => {})
-ffmpeg.setFfmpegPath(ffmpegPath);
 
 function outStream() {
+    if(!hasFfmpeg){
+        return
+    }
+    const config = {
+        rtmp: {
+            port: 1935,
+            chunk_size: 1000,
+            gop_cache: true,
+            ping: 30,
+            ping_timeout: 60
+        },
+        http: {
+            port: 8000,
+            allow_origin: '*'
+        }
+    };
+    const nms = new NodeMediaServer(config)
+
     nms.run();
 
     let instance = ffmpeg()
@@ -75,13 +51,13 @@ function outStream() {
             //ffmpeg收到停止信号并安全退出时的回调
             console.log('Processing finished !');
         })
-        nms.on('preConnect',(a)=>{
-            console.log(a);
-        })
-        setTimeout(() => {
-            instance.run()
+    nms.on('preConnect', (a) => {
+        console.log(a);
+    })
+    setTimeout(() => {
+        instance.run()
 
-        }, 5000);
+    }, 5000);
 }
 
 export {

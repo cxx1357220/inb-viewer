@@ -63,6 +63,7 @@ const ipcRenderer = require('electron').ipcRenderer;
 const path = require('path');
 const fs = require('fs');
 import axios from 'axios';
+import { throttle } from '../back/utils.js';
 
 import myVideo from '@/components/myVideo.vue';
 export default {
@@ -153,9 +154,9 @@ export default {
         openPath(s) {
             ipcRenderer.send('openPath', s)
         },
-        open(obj) {
+        open: throttle(function (obj) {
             ipcRenderer.send('open', obj, 'mdView')
-        },
+        },300),
         delPath(s) {
             fs.unlink(s, (err) => {
                 if (err) {

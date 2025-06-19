@@ -37,10 +37,10 @@
         let name = newName + (i ? ('(' + i + ').md') : '.md')
         let s = path.join(basePath, name)
         console.log('s: ', s, i);
-        if(fs.existsSync(s)){
+        if (fs.existsSync(s)) {
             return singleName(basePath, newName, i + 1)
 
-        }else{
+        } else {
             return {
                 name,
                 path: s
@@ -72,23 +72,23 @@
             let ls = fs.readdirSync(p) || []
             for (const o of ls) {
                 // console.log('o: ', o);
-                var stat = fs.statSync(p + o);
+                var stat = fs.statSync(path.join(p, o));
                 // console.log('stat: ', stat);
                 if (stat.isDirectory()) {
-                    read(path.join(p , o ))
+                    read(path.join(p, o))
                 } else {
                     let ext = path.extname(o).toLowerCase()
-                    if (imgExtList.indexOf(ext) != -1 && (p + o) !== params.img) {
-                        imgs.push((p + o).replace(basePath, params.newBasePath))
+                    if (imgExtList.indexOf(ext) != -1 && (path.join(p, o)) !== params.img) {
+                        imgs.push((path.join(p, o)).replace(basePath, params.newBasePath))
                     }
                     if (videoExtList.indexOf(ext) != -1) {
-                        videos.push((p + o).replace(basePath, params.newBasePath))
+                        videos.push((path.join(p, o)).replace(basePath, params.newBasePath))
                     }
                     if (audioExtList.indexOf(ext) != -1) {
-                        audios.push((p + o).replace(basePath, params.newBasePath))
+                        audios.push((path.join(p, o)).replace(basePath, params.newBasePath))
                     }
                     if (ext == '.md') {
-                        markdowns.push((p + o).replace(basePath, params.newBasePath))
+                        markdowns.push((path.join(p, o)).replace(basePath, params.newBasePath))
                     }
                 }
             }
@@ -210,9 +210,9 @@
         console.log('params: ', params);
         let uploadDir = decodeURIComponent(req.headers.basepath)
         console.log('req: ', req.body);
-        let obj = singleName(uploadDir,params.name)
+        let obj = singleName(uploadDir, params.name)
         console.log('obj: ', obj);
-        fs.writeFile(obj.path,'', (err) => {
+        fs.writeFile(obj.path, '', (err) => {
             if (err) {
                 res.send({
                     code: err
@@ -220,11 +220,11 @@
             } else {
                 res.send({
                     code: 200,
-                    name:obj.name
+                    name: obj.name
                 })
             }
         })
-        
+
     })
 
     app.useArr = (l, m) => {

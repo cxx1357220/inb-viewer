@@ -7,8 +7,8 @@ import {
 const fs = require('fs');
 const path = require('path');
 let {
-    winMap,
-    winSend
+    winSend,
+    winMap
 } = require('./win')
 /**
  * 文件管理器内打开文件夹
@@ -52,6 +52,18 @@ const rmPath = (event, obj) => {
                     }, (err) => {
                         if (err) {
                             console.log('rmdir err: ', err);
+                            setTimeout(() => {
+                                fs.rmdir(obj.basePath, {
+                                    recursive: true
+                                }, (err) => {
+                                    if (err) {
+                                        console.log('timeout rmdir err: ', err);
+
+                                    } else {
+                                        winSend('main', 'rmPath', obj)
+                                    }
+                                })
+                            }, 5000);
                         } else {
                             winSend('main', 'rmPath', obj)
                         }

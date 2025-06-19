@@ -1,80 +1,79 @@
 import {
-    app,
     ipcMain,
 } from 'electron'
-const path = require('path');
 const {
     exec,
 } = require('child_process');
-const appPath = app.getAppPath();
-const RePKGPath = path.join(
-    appPath,
-    process.env.NODE_ENV !== 'production' ? '../public' : '',
-    'RePKG.exe'
-)
 let {
     winSend
 } = require('./win')
-const repkgData = {
-    state: false,
-    list: []
-}
 
-/**
- * 解压PKG
- * @param {*} event 
- * @param {Object} obj 块信息
- */
-const repkg = (event, obj) => {
-    if (repkgData.state) {
-        repkgData.list.push([obj])
-        return false
+const { rePKGPath, platform, hasRePKG } = require('./config')
+class Repkg {
+    constructor() {
+        this.state = false;
+        this.list = [];
+        if (platform === 'win32' && hasRePKG) {
+            ipcMain.on('repkg', this.repkg.bind(this))
+            ipcMain.on('repkgList', this.repkgList.bind(this))
+        }
     }
-    repkgData.state = true
-    // winSend('main','repkgPercent', {
-    //     jsonPath: obj.jsonPath,
-    //     percent: '12'
-    // })
-    winSend('main', 'repkgPercent', {
-        jsonPath: obj.jsonPath,
-        percent: '12'
-    })
-    console.log(RePKGPath + ' extract ' + obj.filePath + ' -o ' + obj.basePath + 'pkgOutput');
-    exec(RePKGPath + ' extract ' + obj.filePath + ' -o ' + obj.basePath + 'pkgOutput', (
-        err, stdout, stderr) => {
-        if (err) {
-            console.error(err);
+    /**
+     * 解压PKG
+     * @param {*} event 
+     * @param {Object} obj 块信息
+     */
+    repkg(event, obj) {
+        let that = this
+        if (that.state) {
+            that.list.push([obj])
+            return false
         }
-        if (stderr) {
-            console.error(stderr);
-        }
-        console.log(`WW${stdout}`);
-        repkgData.state = false
+        that.state = true
         winSend('main', 'repkgPercent', {
             jsonPath: obj.jsonPath,
-            percent: 'done'
+            percent: '12'
         })
-        if (repkgData.list.length) {
-            repkg('', ...repkgData.list.shift())
-        }
-    });
+        console.log(rePKGPath + ' extract ' + obj.filePath + ' -o ' + obj.basePath + 'pkgOutput');
+        exec(rePKGPath + ' extract ' + obj.filePath + ' -o ' + obj.basePath + 'pkgOutput', (
+            err, stdout, stderr) => {
+            if (err) {
+                console.error(err);
+            }
+            if (stderr) {
+                console.error(stderr);
+            }
+            console.log(`WW${stdout}`);
+            that.state = false
+            winSend('main', 'repkgPercent', {
+                jsonPath: obj.jsonPath,
+                percent: 'done'
+            })
+            if (that.list.length) {
+                repkg('', ...that.list.shift())
+            }
+        });
 
-}
-ipcMain.on('repkg', repkg)
-/**
- * 解压PKGlist
- * @param {*} event 
- * @param {Array} list [obj] 块信息数组
- */
-const repkgList = (event, list) => {
-    let ls = list.map(obj => [obj])
-    repkgData.list.push(...ls)
-    if (!repkgData.state) {
-        repkg('', ...repkgData.list.shift())
+    }
+
+
+    /**
+     * 解压PKGlist
+     * @param {*} event 
+     * @param {Array} list [obj] 块信息数组
+     */
+    repkgList(event, list) {
+        let ls = list.map(obj => [obj])
+        this.list.push(...ls)
+        if (!this.state) {
+            repkg('', ...this.list.shift())
+        }
     }
 }
-ipcMain.on('repkgList', repkgList)
 
+
+
+const repkgData = new Repkg()
 export {
     repkgData
 }

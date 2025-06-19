@@ -29,7 +29,40 @@ const times = (t) => {
   return Number(l[0] * 3600) + Number(l[1] * 60) + Number(l[2])
 }
 
+/**
+ * 时间转成秒数
+ * @param {string} durationStr 
+ * @returns {number} 秒数
+ */
+function durationToSeconds(durationStr) {
+    const [hms, ms] = durationStr.split('.');
+    const [h, m, s] = hms.split(':').map(Number);
+    return h * 3600 + m * 60 + s + Number(ms) / 100;
+}
+
+
+
+/**
+ * 防抖
+ * @param {Function} func 
+ * @param {Number} wait 
+ * @returns 
+ */
+function debounce(func, wait) {
+    let timeout;
+    return function () {
+        const context = this;
+        const args = arguments;
+        clearTimeout(timeout);
+        timeout = setTimeout(() => {
+            func.apply(context, args);
+        }, wait);
+    };
+}
+
 export {
   throttle,
-  times
+  times,
+  durationToSeconds,
+  debounce
 }

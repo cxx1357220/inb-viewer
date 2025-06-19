@@ -18,10 +18,10 @@
             <i class="el-icon-setting"></i>
             <div class="banner" v-show="showButton">
                 <p v-if="!isAudio" @click="setPoster">设置封面</p>
-                <p @click="cutTime">剪切视频</p>
-                <p v-if="obj.type == 'video'" @click="getCutTime">获取拼接点</p>
+                <p v-if="baseConfig.hasFfmpeg" @click="cutByTime">剪切视频</p>
+                <p v-if="baseConfig.hasFfmpeg&&obj.type == 'video'" @click="getCutTime">获取拼接点</p>
                 <p @click="openPath">打开路径</p>
-                <p @click="inPlayer">mpv内打开</p>
+                <p v-if="baseConfig.hasMpv" @click="inPlayer">mpv内打开</p>
             </div>
         </div>
         <div class="other" ref="srtBanner" v-show="obj.type.toLowerCase() == 'video'"
@@ -55,9 +55,9 @@
         </div>
 
         <div class="err-banner" v-show="isERR">
-            <button @click="cutTime">剪切视频</button>
+            <button v-if="baseConfig.hasFfmpeg" @click="cutByTime">剪切视频</button>
             <button @click="openPath">打开路径</button>
-            <button @click="inPlayer">mpv内打开</button>
+            <button v-if="baseConfig.hasMpv" @click="inPlayer">mpv内打开</button>
         </div>
 
         <el-dialog :title="'剪切: ' + videoUrl" :visible.sync="showDialog">
@@ -93,6 +93,7 @@ export default {
     components: { srtEdit },
     data() {
         return {
+            baseConfig:{},
             obj: {},
             isERR: false,
             checked: false,
@@ -162,7 +163,7 @@ export default {
         },
     },
     created() {
-
+        this.baseConfig = JSON.parse(localStorage.getItem('baseConfig'))
         ipcRenderer.on('ptsTime', (e, arr) => {
             console.log('arr: ', arr);
             this.timeList.push(...arr)
@@ -455,7 +456,7 @@ export default {
             ipcRenderer.send('getPtsTime', this.obj)
 
         },
-        cutTime() {
+        cutByTime() {
             try {
                 this.player.pause()
                 // this.player.exitFullscreen()
@@ -475,12 +476,12 @@ export default {
                 console.log('l: ', l);
                 this.obj.currentTime = l.join(',')
                 this.obj.filePath = this.url
-                ipcRenderer.send('cutTime', this.obj, this.checked)
+                ipcRenderer.send('cutByTime', this.obj, this.checked)
             } else {
                 this.obj.currentTime = ''
                 this.showDialog = false
                 this.obj.filePath = this.url
-                ipcRenderer.send('cutTime', this.obj, this.checked)
+                ipcRenderer.send('cutByTime', this.obj, this.checked)
                 // this.$message({
                 //     type: 'warning',
                 //     message: 'no set time'
@@ -498,7 +499,10 @@ export default {
             s = s || this.player.duration() / 10;
             this.player.currentTime(this.player.currentTime() + s)
         },
-    }
+    },
+    destroyed() {
+        this.player.dispose()
+    },
 
 }
 </script>

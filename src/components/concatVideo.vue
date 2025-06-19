@@ -11,16 +11,11 @@
                         <el-input size="mini" v-model="file.p" style="vertical-align: baseline;"
                             :class="file.p ? '' : 'warning'" placeholder="文件路径"><el-button size="mini" slot="prepend"
                                 @click="setPaths(file)" icon="el-icon-folder">选择文件路径</el-button>
-
-
                             <el-button slot="append" size="mini" @click="del(i)">移除</el-button>
-
                         </el-input>
                     </div>
                 </transition-group>
-
                 <el-button size="mini" @click="add">添加</el-button>
-
             </el-form-item>
             <el-form-item label="保存路径：">
                 <el-input size="mini" v-model="savePath" style="vertical-align: baseline;"
@@ -60,8 +55,6 @@
 
 <script>
 const ipcRenderer = require('electron').ipcRenderer;
-
-
 const path = require('path')
 export default {
     name: 'concat',
@@ -168,7 +161,7 @@ export default {
                 properties: ['openFile', 'multiSelections'],
                 filters: [{
                     name: 'Movies',
-                    extensions: ['mkv', 'avi', 'mp4', 'webm', 'ts']
+                    extensions: ['mkv', 'avi', 'mp4', 'webm', 'ts','mov']
                 }]
             }).then(obj => {
                 console.log('obj: ', obj);

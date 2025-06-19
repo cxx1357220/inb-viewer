@@ -83,7 +83,6 @@ export default {
 }
 </script>
 
-</script>
 <style lang="less">
 #app {
   background-color: #EEEEEB;
