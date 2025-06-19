@@ -25,9 +25,9 @@ class WallpaperWin {
     constructor() {
         this.win = null;
         this.wallpaperPath = null;
-        ipcMain.on('runWallpaper', this.runWallpaper)
-        ipcMain.on('wallpaperPath', this.getWallpaperPath)
-        ipcMain.on('closeWallpaper', this.closeWallpaper)
+        ipcMain.on('runWallpaper', this.runWallpaper.bind(this))
+        ipcMain.on('wallpaperPath', this.getWallpaperPath.bind(this))
+        ipcMain.on('closeWallpaper', this.closeWallpaper.bind(this))
     }
 
     /**
@@ -95,8 +95,8 @@ var wallpaperWin = new WallpaperWin()
 class ElectronAsWallpaperWin {
     constructor() {
         this.win = ''
-        ipcMain.on('newPaper', this.newPaper)
-        ipcMain.on('closePaper', this.closePaper)
+        ipcMain.on('newPaper', this.newPaper.bind(this))
+        ipcMain.on('closePaper', this.closePaper.bind(this))
     }
 
     /**

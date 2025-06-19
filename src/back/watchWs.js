@@ -14,8 +14,8 @@ const {
 class WatchServer {
     constructor() {
         this.serve = null
-        ipcMain.on('startWatchServe', this.startWs)
-        ipcMain.on('closeWatchServe', this.closeWs)
+        ipcMain.on('startWatchServe', this.startWs.bind(this))
+        ipcMain.on('closeWatchServe', this.closeWs.bind(this))
     }
     /**
      * 打开watch，并返回网址，让前端rtc开始推流,

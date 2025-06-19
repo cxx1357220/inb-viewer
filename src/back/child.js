@@ -196,7 +196,7 @@ class GetMediaDuration {
     constructor() {
         this.state = false
         if (hasFfmpeg) {
-            ipcMain.on('batchGetMediaDuration', this.batchGetMediaDuration)
+            ipcMain.on('batchGetMediaDuration', this.batchGetMediaDuration.bind(this))
         }
     }
     /**

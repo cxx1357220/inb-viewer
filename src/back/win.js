@@ -18,9 +18,13 @@ let tray = null // 在外面创建tray变量，防止被自动删除，导致图
  * 创建托盘图标
  */
 const setTray = () => {
-    let icon = nativeImage.createFromPath(config.iconPath)
-    icon = icon.resize({ width: 16, height: 16, quality: 'best' })
-    tray = new Tray(icon)
+    if (config.platform == 'win32') {
+        tray = new Tray(config.iconPath)
+    } else {
+        let icon = nativeImage.createFromPath(config.iconPath)
+        icon = icon.resize({ width: 16, height: 16, quality: 'best' })
+        tray = new Tray(icon)
+    }
     // 自定义托盘图标的内容菜单
     const contextMenu = Menu.buildFromTemplate([{
         label: '帮助',
@@ -38,7 +42,6 @@ const setTray = () => {
     tray.setContextMenu(contextMenu) // 设置图标的内容菜单
     // 点击托盘图标，显示主窗口
     tray.on("click", () => {
-        console.log('click: ', 777);
         try {
             winMap['main'].show();
             winMap['main'].setSkipTaskbar(false)
@@ -50,19 +53,23 @@ const setTray = () => {
 }
 
 app.whenReady().then(() => {
-    app.dock.setIcon(config.iconPath)
     setTray()
-    const template = [
-        {
-            label: 'inb-viewer', // macOS自动显示应用名
-            submenu: [{ role: 'quit' }]
-        },
-        { role: 'editMenu' }, // 修复复制粘贴的核心项
-    ]
+    if (config.platform == 'win32') {
+        Menu.setApplicationMenu(null)
+    } else {
+        app.dock.setIcon(config.iconPath)
+        const template = [
+            {
+                label: 'inb-viewer', // macOS自动显示应用名
+                submenu: [{ role: 'quit' }]
+            },
+            { role: 'editMenu' }, // 修复复制粘贴的核心项
+        ]
 
-    // 设置应用菜单
-    const menu = Menu.buildFromTemplate(template)
-    Menu.setApplicationMenu(menu)
+        // 设置应用菜单
+        const menu = Menu.buildFromTemplate(template)
+        Menu.setApplicationMenu(menu)
+    }
 })
 
 let winMap = {} //新窗口对象
