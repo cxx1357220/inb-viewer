@@ -4,10 +4,11 @@ import HomeView from '../views/HomeView.vue'
 
 Vue.use(VueRouter)
 
-const routes = [{
+const routes = [
+  {
     path: '/',
     name: 'init',
-    component: () => import(  '../views/init.vue')
+    component: () => import('../views/init.vue')
   },
   {
     path: '/home',
@@ -17,42 +18,47 @@ const routes = [{
   {
     path: '/video',
     name: 'video',
-    component: () => import(  '../views/VideoView.vue')
+    component: () => import('../views/VideoView.vue')
   },
   {
     path: '/videoList',
     name: 'videoList',
-    component: () => import(  '../views/videoList.vue')
+    component: () => import('../views/videoList.vue')
   },
   {
     path: '/content',
     name: 'content',
-    component: () => import(  '../views/contentView.vue')
+    component: () => import('../views/contentView.vue')
   },
   {
     path: '/help',
     name: 'help',
-    component: () => import(  '../views/help.vue')
+    component: () => import('../views/help.vue')
   },
   {
     path: '/wallpaper',
     name: 'wallpaper',
-    component: () => import(  '../views/wallpaper.vue')
+    component: () => import('../views/wallpaper.vue')
   },
   {
     path: '/mdView',
     name: 'mdView',
-    component: () => import(  '../views/mdView.vue')
+    component: () => import('../views/mdView.vue')
   },
   {
     path: '/codeView',
     name: 'codeView',
-    component: () => import(  '../views/codeView.vue')
+    component: () => import('../views/codeView.vue')
   },
   {
     path: '/outDesc',
     name: 'outDesc',
-    component: () => import(  '../views/outDesc.vue')
+    component: () => import('../views/outDesc.vue')
+  },
+  {
+    path: '/notification',
+    name: 'notification',
+    component: () => import('../views/notification.vue')
   }
 ]
 

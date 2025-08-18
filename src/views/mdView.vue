@@ -57,6 +57,7 @@ export default {
                 toolbarConfig: {
                     pin: true,
                 },
+                cdn: location.origin+'/vditor',
                 preview: {
                     actions: []
                 },

@@ -30,6 +30,7 @@
     "fluent-ffmpeg": "^2.1.2",
     "flv.js": "^1.6.2",
     "iconv-lite": "^0.6.3",
+    "jsqr": "^1.4.0",
     "markdown-it": "^13.0.1",
     "md5": "^2.3.0",
     "monaco-editor": "^0.52.2",
