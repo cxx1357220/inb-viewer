@@ -227,12 +227,14 @@ class GetMediaDuration {
                     winSend('main', 'videoDuration', callBack)
                 }
             }
-            ffmpeg(list[i].v).output('-').outputFormat('null').on('error', (r) => {
+            let command = ffmpeg(list[i].v).output('-').outputFormat('null').on('error', (r) => {
                 console.log('r: ', r);
+                next()
             }).on('stderr', (stderr) => {
                 const durationMatch = stderr.match(/Duration:\s(\d{2}:\d{2}:\d{2}\.\d{2})/);
                 let duration = durationMatch ? durationMatch[1] : null;
                 if (duration) {
+                    command.kill();
                     duration = durationToSeconds(duration)
                     callBack[list[i].j] = {
                         'videoDuration': duration

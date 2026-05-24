@@ -103,9 +103,9 @@ class NewProject {
                     waitKey: obj.waitKey
                 }
             }, obj.savePath, obj.tags || [])
-            winSend('main', 'copyPercent', {
+            winSend('main', 'newPercent', {
                 jsonPath: jsonPath,
-                percent: 'error',
+                percent: '',
             })
             winSend('main', 'error', '系统找不到指定的保存路径。')
             that.state = false
@@ -147,9 +147,9 @@ class NewProject {
             ls.on('close', (code) => {
                 console.log(`子进程退出: ${code}`);
                 if (code >= 8) {
-                    winSend('main', 'copyPercent', {
+                    winSend('main', 'newPercent', {
                         jsonPath: jsonPath,
-                        percent: 'error',
+                        percent: '',
                     })
                     switch (code) {
                         case 8:
@@ -220,9 +220,9 @@ class NewProject {
             ls.on('close', (code) => {
                 console.log(`子进程退出: ${code}`);
                 if (code >= 8) {
-                    winSend('main', 'copyPercent', {
+                    winSend('main', 'newPercent', {
                         jsonPath: jsonPath,
-                        percent: 'error',
+                        percent: '',
                     })
                     switch (code) {
                         case 8:
