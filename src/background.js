@@ -43,8 +43,7 @@ if (process.platform == 'win32') {
 //  outStream()
 
 require('./back/watchWs')
-require('./back/screenshots')
-
+// require('./back/screenshots')
 // require('./back/copy')
 // require('./back/compress')
 // require('./back/child')

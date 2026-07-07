@@ -37,9 +37,14 @@
           <el-button size="mini" @click="compress">压缩视频</el-button>
         </stateButton>
       </section>
-      <section v-show="baseConfig.hasFasterWhisper" v-if="obj.type == 'video'">
+      <!-- <section v-show="baseConfig.hasFasterWhisper" v-if="obj.type == 'video'">
         <stateButton :path="obj.jsonPath" map="whisperStateMap">
           <el-button size="mini" @click="whisper">制作字幕</el-button>
+        </stateButton>
+      </section> -->
+      <section v-show="baseConfig.hasSenseVoice" v-if="obj.type == 'video'">
+        <stateButton :path="obj.jsonPath" map="asrStateMap">
+          <el-button size="mini" @click="asr">制作字幕</el-button>
         </stateButton>
       </section>
       <section v-show="baseConfig.hasRePKG" v-if="obj.type == 'scene'">
@@ -75,12 +80,11 @@ export default {
   name: 'state',
   data() {
     return {
-      baseConfig:{}
     }
   },
   components: { stateButton },
 
-  props: ['obj', 'map', 'hasWhisperModel'],
+  props: ['obj', 'baseConfig'],
   directives: {
     urlCache: {
       bind(el, binding) {
@@ -179,8 +183,6 @@ export default {
   },
 
   created() {
-    this.baseConfig = JSON.parse(localStorage.getItem('baseConfig'))||{}
-    console.log('this.baseConfig: ', this.baseConfig);
   },
   mounted() {
   },
@@ -234,6 +236,9 @@ export default {
     },
     whisper() {
       this.$emit('whisper', this.obj)
+    },
+    asr() {
+      this.$emit('asr', this.obj)
     },
     compress() {
       this.$emit('compress', this.obj)

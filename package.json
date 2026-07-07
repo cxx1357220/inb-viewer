@@ -1,6 +1,6 @@
 {
   "name": "viewer",
-  "version": "0.3.9",
+  "version": "0.5.0",
   "private": true,
   "scripts": {
     "mdToHtml": "node mdToHtml.js",
@@ -11,14 +11,19 @@
     "postinstall": "electron-builder install-app-deps",
     "postuninstall": "electron-builder install-app-deps"
   },
+  "workspaces":[
+    "apps/*"
+  ],
   "main": "background.js",
   "browser": {
     "crypto": false
   },
   "dependencies": {
     "@ffmpeg-installer/ffmpeg": "^1.1.0",
+    "@techstark/opencv-js": "^4.12.0-release.1",
     "axios": "^1.7.7",
     "cheerio": "^1.0.0",
+    "clipper-lib": "^6.4.2",
     "core-js": "^3.8.3",
     "cross-env": "^7.0.3",
     "crypto-browserify": "^3.12.0",
@@ -26,10 +31,13 @@
     "element-ui": "^2.15.13",
     "express": "4.18",
     "express-ws": "^5.0.2",
+    "fabric": "^5.3.0",
     "ffmpeg-static": "^5.2.0",
     "fluent-ffmpeg": "^2.1.2",
     "flv.js": "^1.6.2",
     "iconv-lite": "^0.6.3",
+    "jimp": "^0.22.12",
+    "js-yaml": "^4.2.0",
     "jsqr": "^1.4.0",
     "markdown-it": "^13.0.1",
     "md5": "^2.3.0",
@@ -38,9 +46,11 @@
     "multer": "^2.0.0-rc.4",
     "multiparty": "^4.2.3",
     "node-media-server": "^2.6.2",
+    "onnxruntime-node": "^1.23.2",
     "path-browserify": "^1.0.1",
     "qrcode": "^1.5.1",
     "serve-index": "^1.9.1",
+    "sherpa-onnx": "^1.12.37",
     "subtitle": "^4.2.2-alpha.0",
     "tree-kill": "^1.2.2",
     "tree-node-cli": "^1.6.0",

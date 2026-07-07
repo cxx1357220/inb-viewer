@@ -91,16 +91,6 @@ const bgPath = path.join(
     'bg.jpg'
 )
 
-//  ocr路径
-const ocrPath = path.join(
-    appPath,
-    process.env.NODE_ENV !== 'production' ? '../public' : '',
-    'ocr',
-    platform == "win32" ? 'ocr.exe' : 'ocr'
-);
-fs.chmod(ocrPath, 0o775, (err) => { })
-// 存在ocr
-const hasOcr = fs.existsSync(ocrPath)
 
 // 读取文件js的路径
 const readPath = path.join(
@@ -108,6 +98,19 @@ const readPath = path.join(
     process.env.NODE_ENV !== 'production' ? '../public' : '',
     'readJson.js'
 )
+const ocrServerPath = path.join(
+    appPath,
+    process.env.NODE_ENV !== 'production' ? '../public' : '',
+    'ocr.js'
+)
+const ocrModelPath = path.join(
+    appPath,
+    process.env.NODE_ENV !== 'production' ? '../public' : '',
+    'ocrModel',
+)
+
+
+
 
 // rePKG路径
 const rePKGPath = path.join(
@@ -119,11 +122,22 @@ fs.chmod(rePKGPath, 0o775, (err) => { })
 // 存在rePKG
 const hasRePKG = fs.existsSync(rePKGPath)
 
-// 分享的html路径
-const shareHtmlPath = path.join(
+// 文件分享的html路径
+const fileShareHtmlPath = path.join(
     appPath,
     process.env.NODE_ENV !== 'production' ? '../public' : '',
-    'shareHtml'
+    'fileShareHtml'
+)
+// const ocrPath = path.join(
+//     appPath,
+//     process.env.NODE_ENV !== 'production' ? '../public' : '',
+//     'ocr',
+//     'index.js'
+// )
+const ocrHtmlPath = path.join(
+    appPath,
+    process.env.NODE_ENV !== 'production' ? '../public' : '',
+    'ocrHtml'
 )
 
 // 观看的html路径
@@ -155,6 +169,44 @@ fs.chmod(fasterWhisperPath, 0o775, (err) => { })
 // 存在faster-whisper
 const hasFasterWhisper = fs.existsSync(fasterWhisperPath)
 
+
+
+
+// asr 模型路径
+const senseVoiceModelPath = path.join(
+    appPath,
+    process.env.NODE_ENV !== 'production' ? '../public' : '',
+    'asrModel',
+    'sherpa-onnx-sense-voice-small',
+    'model_q8.onnx'
+)
+
+// asr 模型对应token路径
+const senseVoiceTokenPath = path.join(
+    appPath,
+    process.env.NODE_ENV !== 'production' ? '../public' : '',
+    'asrModel',
+    'sherpa-onnx-sense-voice-small',
+    'tokens.txt'
+)
+const hasSenseVoice = fs.existsSync(senseVoiceModelPath) && fs.existsSync(senseVoiceTokenPath)
+// asr 模型对应token路径
+const sileroVadModelPath = path.join(
+    appPath,
+    process.env.NODE_ENV !== 'production' ? '../public' : '',
+    'asrModel',
+    'silero-vad',
+    // 'silero_vad.onnx'
+    // 'silero_vad_v5.onnx'
+    
+)
+// 读取文件js的路径
+const asrPath = path.join(
+    appPath,
+    process.env.NODE_ENV !== 'production' ? '../public' : '',
+    'asr.js'
+)
+
 // 图标路径
 const iconPath = path.join(appPath,
     process.env.NODE_ENV !== 'production' ? '../public' : '', platform === 'win32' ? 'icon.ico' : 'icon.png')
@@ -168,12 +220,15 @@ export {
     whisperCppModelPath,
     fasterWhisperModelPath,
     bgPath,
-    ocrPath,
-    hasOcr,
+    // ocrPath,
+    // hasOcr,
+    ocrServerPath,
+    ocrModelPath,
+    ocrHtmlPath,
     readPath,
     rePKGPath,
     hasRePKG,
-    shareHtmlPath,
+    fileShareHtmlPath,
     watchHtmlPath,
     hasWhisperCpp,
     whisperCppPath,
@@ -182,5 +237,11 @@ export {
     iconPath,
     imgCachePath,
     getJsCachePath,
-    baseGetDetailPath
+    baseGetDetailPath,
+
+    hasSenseVoice,
+    senseVoiceModelPath,
+    senseVoiceTokenPath,
+    sileroVadModelPath,
+    asrPath,
 }

@@ -13,6 +13,8 @@ mac里实在装不了electron-as-wallpaper包，可以先把package.json里的 e
 # echo FFMPEG_BINARIES_URL=https://cdn.npmmirror.com/binaries/ffmpeg-static
 
 npm install
+# or
+yarn install
 ```
 move ffmpeg
 ```bash
@@ -25,7 +27,15 @@ help page
 npm run mdToHtml
 ```
 
-whisper 和 ocr需要从inb-whisper/inb-ocr项目编译好再move过来
+去
+https://www.modelscope.cn/models/xiaowangge/sherpa-onnx-sense-voice-small/summary
+下载 model_q8.onnx 和 tokens.txt 到
+public/asrModel/sherpa-onnx-sense-voice-small 目录下
+
+
+<!-- whisper 和 ocr需要从inb-whisper/inb-ocr项目编译好再move过来 -->
+
+
 
 serve
 
@@ -33,9 +43,22 @@ serve
 npm run electron:serve
 ```
 
+
+局域网内ocr的html调试可通过
+```
+npm run serve --workspace=ocr-html
+```
+
+局域网内文件分享的html调试可通过
+```
+npm run serve --workspace=file-html
+```
+
+
 build
 
 ```
+npm run build --workspaces
 npm run electron:build
 ```
 
@@ -51,7 +74,7 @@ which python
 ```
 指定路径 
 ```bash
-export PYTHON_PATH=/Users/chenxihua/miniconda3/envs/py27/bin/python
+export PYTHON_PATH=/Users/cxx/miniconda3/envs/py27/bin/python
 ```
 
 > 要是 process.env.FLUENTFFMPEG_COV 报错，狠心点直接把
@@ -88,7 +111,7 @@ module.exports = process.env.FLUENTFFMPEG_COV ? require('./lib-cov/fluent-ffmpeg
 
 - ~~（future） 集成 deepspeech 可惜语言只有中英文~~
 
-- 集成whisper.cpp
+- ~~集成whisper.cpp~~
 
 - upload
 
@@ -128,9 +151,11 @@ module.exports = process.env.FLUENTFFMPEG_COV ? require('./lib-cov/fluent-ffmpeg
 
 - 尝试支持mac
 
-- faster-whisper替换掉whisper-cpp
+- ~~faster-whisper替换掉whisper-cpp~~
 
 - video类型可从网上下载srt/vtt，并可编辑
+
+- 不再使用whisper，用sherpa-onnx-sense-voice-small
 
 
 

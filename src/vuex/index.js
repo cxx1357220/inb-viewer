@@ -7,6 +7,7 @@ const store = new Vuex.Store({
   state: {
     repkgStateMap:{},
     whisperStateMap:{},
+    asrStateMap:{},
     copyStateMap:{},
     compressStateMap:{},
     runningWallpaper:'',
@@ -20,6 +21,9 @@ const store = new Vuex.Store({
     },
     setWhisperStateMap (state,[key,val]) {
       Vue.set(state.whisperStateMap,key ,val)
+    },
+    setAsrStateMap (state,[key,val]) {
+      Vue.set(state.asrStateMap,key ,val)
     },
     setCopyStateMap (state,[key,val]) {
       Vue.set(state.copyStateMap,key ,val)
@@ -41,6 +45,11 @@ const store = new Vuex.Store({
       for (const key in state.whisperStateMap) {
         if (state.whisperStateMap[key] == 'done' || state.whisperStateMap[key] == 'error') {
           Vue.set(state.whisperStateMap, key, '')
+        }
+      }
+      for (const key in state.asrStateMap) {
+        if (state.asrStateMap[key] == 'done' || state.asrStateMap[key] == 'error') {
+          Vue.set(state.asrStateMap, key, '')
         }
       }
       for (const key in state.compressStateMap) {

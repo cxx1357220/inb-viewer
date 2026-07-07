@@ -130,11 +130,16 @@ module.exports = defineConfig({
         //   "filter": ["**/*"]
         // }]
       },
-      externals: ["electron-screenshots"]
+      // externals: ["electron-screenshots"],
+
+      externals: ["electron-screenshots", "onnxruntime-node", "sherpa-onnx"],
       // extraResources: [{
-      //   "from": "shareHtml",
-      //   "to": ""
+      //   "from": "node_modules/onnxruntime-node/bin",
+      //   "to": "node_modules/onnxruntime-node/bin"
       // }],
+      // files:[
+      //   "node_modules/onnxruntime-node/**/*"
+      // ]
     }
   },
   configureWebpack,
