@@ -79,7 +79,8 @@
           </el-input>
           <el-button size="mini" plain icon="el-icon-setting" @click="setMoreApi">获取更多信息设置</el-button>
           <el-button v-if="baseConfig.hasFfmpeg" size="mini" plain icon="el-icon-setting" @click="compressDrawer = true">压缩视频设置</el-button>
-          <el-button v-show="baseConfig.hasFasterWhisper" size="mini" plain icon="el-icon-setting" @click="whisperDrawer = true">解析字幕设置</el-button>
+          <!-- <el-button v-show="baseConfig.hasFasterWhisper" size="mini" plain icon="el-icon-setting" @click="whisperDrawer = true">解析字幕设置</el-button> -->
+          <el-button v-show="baseConfig.hasSenseVoice" size="mini" plain icon="el-icon-setting" @click="senseVoiceDrawer = true">解析字幕设置</el-button>
           <el-input v-if="baseConfig.platform=='win32'" size="mini" v-model="wallpaperPath" style="width: 280px;margin-right: 10px;"
             placeholder="wallpaper路径"><el-button size="mini" slot="prepend" @click="setPath('file', ['wallpaperPath'])"
               icon="el-icon-folder">选择wallpaper路径</el-button>
@@ -106,12 +107,12 @@
           <el-popover trigger="hover" :popper-class="!serverState ? 'visibility-pop' : ''" placement="bottom">
             <div class="tip">
               <canvas id="qrCode"></canvas>
-              <span>{{ shareUrl }}</span>
+              <span>{{ fileShareUrl }}</span>
             </div>
             <el-button class="button" slot="reference" size="mini" :type="serverState ? 'success' : ''"
-              @click="server">局域网内服务</el-button>
+              @click="server">局域网内文件服务</el-button>
           </el-popover>
-          <ocrServe v-if="baseConfig.hasOcr"></ocrServe>
+          <ocrServe></ocrServe>
           <watchMe></watchMe>
         </el-form-item>
 
@@ -137,8 +138,8 @@
         </div>
         <div v-for="obj in showList" :key="obj.jsonPath" v-loading="newStateMap[obj.jsonPath]"
           :element-loading-text="newStateMap[obj.jsonPath]" element-loading-spinner="el-icon-loading">
-          <block :obj="obj" @reDetail="reDetail" :hasWhisperModel="!!modelList.length" @runWallpaper="runWallpaper" @copyDir="copyDir" @repkg="repkg"
-            @whisper="whisper" @compress="compress" @changeObj="changeObj" @cacheImg="cacheImg"></block>
+          <block :obj="obj" :baseConfig='baseConfig' @reDetail="reDetail" :hasWhisperModel="!!modelList.length" @runWallpaper="runWallpaper" @copyDir="copyDir" @repkg="repkg"
+            @whisper="whisper" @asr="asr" @compress="compress" @changeObj="changeObj" @cacheImg="cacheImg"></block>
         </div>
 
 
@@ -160,9 +161,6 @@
             <el-option v-for="item in modelList" :label="item.name" :value="item.path"></el-option>
           </el-select>
         </el-form-item>
-        <!-- <el-form-item label="翻译：">
-          <el-switch v-model="whisperSet.translate"></el-switch>
-        </el-form-item> -->
         <el-form-item label="解析语言：">
           <el-select size="mini" style="width:130px" clearable filterable v-model="whisperSet.language" placeholder="">
             <el-option v-for="o in languageList" :key="o.value" :value="o.value" :label="o.label"></el-option>
@@ -171,6 +169,46 @@
         <el-form-item v-if="Object.keys(downModelMap).length" label="ai模型下载：">
           <el-button v-for="(v, k) in downModelMap" size="mini" round @click="downModel(k, v)">
             {{ downPercentMap[k] ? downPercentMap[k] : k }}</el-button>
+        </el-form-item>
+
+      </el-form>
+    </el-drawer>
+
+
+    <el-drawer title="字幕解析设置" :size="'50%'" :visible.sync="senseVoiceDrawer">
+      <el-form label-width="200px" :model="senseVoiceSet">
+        <!-- <el-form-item label="字幕文件类型：">
+          <el-checkbox-group v-model="senseVoice.type" :min="1">
+            <el-checkbox v-for="o in senseVoiceOutTypeList" :key="o.label" :label="o.name" name="type">{{ o.name }}</el-checkbox>
+          </el-checkbox-group>
+        </el-form-item> -->
+        <el-form-item label="格式化wav：">
+          <el-switch
+            v-model="senseVoiceSet.formatWav">
+          </el-switch>
+        </el-form-item>
+
+        <el-form-item label="解析语言：">
+          <el-select size="mini" style="width:130px" clearable filterable v-model="senseVoiceSet.language" placeholder="">
+            <el-option v-for="o in senseVoiceLanguageList" :key="o.value" :value="o.value" :label="o.label"></el-option>
+          </el-select>
+        </el-form-item>
+        <el-form-item label="silero-vad版本：">
+          <el-select size="mini" style="width:130px" filterable v-model="senseVoiceSet.sileroVadVersion" placeholder="">
+            <el-option v-for="o in sileroVadVersionList" :key="o.value" :value="o.value" :label="o.label"></el-option>
+          </el-select>
+        </el-form-item>
+        <el-form-item label="语音阈值：">
+          <el-input style="width:130px" v-model="senseVoiceSet.threshold"></el-input>
+        </el-form-item>
+        <el-form-item label="最短语音（ms）：">
+          <el-input style="width:130px" v-model="senseVoiceSet.minSpeechDuration"></el-input>
+        </el-form-item>
+        <el-form-item label="静默持续（ms）：">
+          <el-input style="width:130px" v-model="senseVoiceSet.minSilenceDuration"></el-input>
+        </el-form-item>
+        <el-form-item label="最长语音（s）：">
+          <el-input style="width:130px" v-model="senseVoiceSet.maxSpeechDuration"></el-input>
         </el-form-item>
 
       </el-form>
@@ -285,7 +323,7 @@ export default {
       sortT: 1,
       type: 'all',
       serverState: false,
-      shareUrl: '',
+      fileShareUrl: '',
       copyVal: '',
       compressDrawer: false,
       compressSet: {},
@@ -301,6 +339,19 @@ export default {
       downModelMap: config.downModelMap,
       downPercentMap: {},
       languageList: config.languageList,
+
+      senseVoiceDrawer: false,
+      senseVoiceSet: {
+        formatWav:false,
+        language: '',
+        sileroVadVersion: 'silero_vad.onnx',
+        threshold: 0.1,
+        minSpeechDuration: 0.25,
+        minSilenceDuration: 0.5,
+        maxSpeechDuration: 5
+      },
+      senseVoiceLanguageList: config.senseVoiceLanguageList,
+      sileroVadVersionList: config.sileroVadVersionList,
       showNewProjectDialog: false,
       newStateMap: {},
       waitCopyMap: {},
@@ -383,9 +434,37 @@ export default {
       handler(n) {
         localStorage.setItem('tags', JSON.stringify(n))
       }
-    }
+    },
+    senseVoiceSet: {
+      deep: true,
+      handler(n) {
+        localStorage.setItem('senseVoiceSet', JSON.stringify(n))
+      }
+    },
+    whisperSet: {
+      deep: true,
+      handler(n) {
+        localStorage.setItem('whisperSet', JSON.stringify(n))
+      }
+    },
+    "projectVal.savePath": {
+      deep: true,
+      handler(n) {
+        localStorage.setItem('projectVal.savePath', n)
+      }
+    },
+
   },
+    
+
   created() {
+    this.projectVal.savePath = localStorage.getItem('projectVal.savePath')||''
+    if(localStorage.getItem('senseVoiceSet')){
+       this.senseVoiceSet = JSON.parse(localStorage.getItem('senseVoiceSet'))
+    }
+    if(localStorage.getItem('whisperSet')){
+       this.whisperSet = JSON.parse(localStorage.getItem('whisperSet'))
+    }
     this.baseConfig = localStorage.getItem('baseConfig') ? JSON.parse(localStorage.getItem('baseConfig')) : {}
     this.imgCachePath  = this.baseConfig.imgCachePath
     ipcRenderer.on('baseConfig', (e, obj) => {
@@ -427,6 +506,9 @@ export default {
     ipcRenderer.on('whisperPercent', (e, obj) => {
       this.$store.commit('setWhisperStateMap', [obj.jsonPath, obj.percent])
     })
+    ipcRenderer.on('asrPercent', (e, obj) => {
+      this.$store.commit('setAsrStateMap', [obj.jsonPath, obj.percent])
+    })
     ipcRenderer.on('copyPercent', (e, obj) => {
       this.$store.commit('setCopyStateMap', [obj.jsonPath, obj.percent])
     })
@@ -462,8 +544,8 @@ export default {
         this.$set(this.downPercentMap, obj.name, obj.percent)
       }
     })
-    ipcRenderer.on('shareUrl', (e, str) => {
-      this.shareUrl = str
+    ipcRenderer.on('fileShareUrl', (e, str) => {
+      this.fileShareUrl = str
       var canvas = document.getElementById('qrCode')
       QRCode.toCanvas(canvas, str, {
         height: 150,
@@ -564,6 +646,7 @@ export default {
       this.showList.forEach((o, i) => {
         if (obj[o.jsonPath]) {
           this.$set(this.showList[i], 'videoDuration', obj[o.jsonPath].videoDuration)
+          this.$set(this.showList, i, this.showList[i])
         }
       })
       this.loadingDuration = false
@@ -889,7 +972,7 @@ export default {
     },
     server() {
       this.serverState = !this.serverState
-      ipcRenderer.send('share', this.serverState, this.showList, this.openFolderPathMap)
+      ipcRenderer.send('fileShare', this.serverState, this.showList, this.openFolderPathMap)
     },
     copyDir(obj) {
       if (!this.copyVal) {
@@ -994,6 +1077,10 @@ export default {
       this.$store.commit('setWhisperStateMap', [obj.jsonPath, 'waiting'])
       // ipcRenderer.send('whisperCpp', obj, this.whisperSet)
       ipcRenderer.send('fasterWhisper', obj, this.whisperSet)
+    },
+    asr(obj) {
+      this.$store.commit('setAsrStateMap', [obj.jsonPath, 'waiting'])
+      ipcRenderer.send('asr', obj, this.senseVoiceSet)
     },
     searchTags(q, cb) {
       var r = this.tags;

@@ -8,6 +8,7 @@ import {
     app
 } from 'electron'
 const config = require('./config');
+const { createScreenshots } = require('./screenshots')
 import {
     createProtocol
 } from 'vue-cli-plugin-electron-builder/lib'
@@ -17,7 +18,7 @@ let tray = null // 在外面创建tray变量，防止被自动删除，导致图
 /**
  * 创建托盘图标
  */
-const setTray = () => {
+const setTray = (screenshots) => {
     if (config.platform == 'win32') {
         tray = new Tray(config.iconPath)
     } else {
@@ -27,9 +28,19 @@ const setTray = () => {
     }
     // 自定义托盘图标的内容菜单
     const contextMenu = Menu.buildFromTemplate([{
+        label: '打开',
+        click: function () {
+            winMap['main'].show();
+        }
+    }, {
         label: '帮助',
         click: function () {
             createWindow('help')
+        }
+    }, {
+        label: '截图',
+        click: function () {
+            screenshots.startCapture()
         }
     }, {
         label: '退出',
@@ -43,17 +54,24 @@ const setTray = () => {
     // 点击托盘图标，显示主窗口
     tray.on("click", () => {
         try {
-            winMap['main'].show();
             winMap['main'].setSkipTaskbar(false)
         } catch (error) {
             console.log('error: ', error);
 
         }
     })
+    tray.on('double-click', () => {
+        // 双击托盘图标时执行的操作，例如显示主窗口
+        if (winMap['main']) {
+            winMap['main'].show();
+            winMap['main'].focus();
+        }
+    });
 }
 
 app.whenReady().then(() => {
-    setTray()
+    let screenshots = createScreenshots()
+    setTray(screenshots)
     if (config.platform == 'win32') {
         Menu.setApplicationMenu(null)
     } else {
@@ -106,9 +124,13 @@ const {
 const {
     repkgData
 } = require('./repkg')
+// const {
+//     whisperData
+// } = require('./whisper')
+
 const {
-    whisperData
-} = require('./whisper')
+    asrData
+} = require('./asr')
 const {
     newData
 } = require('./newProject')
@@ -200,7 +222,7 @@ async function createWindow(winType = 'main', obj = {}) {
     switch (winType) {
         case 'main':
             win.webContents.send('home')
-            getModelList()
+            // getModelList()
             win.webContents.send('baseConfig', JSON.parse(JSON.stringify(config)))
             console.log('JSON.parse(JSON.stringify(config)): ', JSON.parse(JSON.stringify(config)));
             win.on('close', (e) => {
@@ -282,9 +304,10 @@ const open = (event, obj, type = 'content') => {
 }
 ipcMain.on('open', open)
 app.on('before-quit', (e) => {
-    if (whisperData.state || repkgData.state || copyData.state || compressData.state || cutData.state || newData.state || getData.state || concatData.state) {
+    if (asrData.state || repkgData.state || copyData.state || compressData.state || cutData.state || newData.state || getData.state || concatData.state) {
         let str = '任务'
-        whisperData.state && (str += ' 字幕解析 ')
+        // whisperData.state && (str += ' 字幕解析 ')
+        asrData.state && (str += ' 字幕解析 ')
         repkgData.state && (str += ' pkg解压 ')
         copyData.state && (str += ' 复制 ')
         compressData.state && (str += ' 视频压缩 ')

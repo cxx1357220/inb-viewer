@@ -315,5 +315,40 @@ const config = {
         "value": "yi"
     }
     ],
+    senseVoiceLanguageList: [{
+        "label": "auto",
+        "value": ""
+    },
+    {
+        "label": "Chinese",
+        "value": "zh"
+    },
+    {
+        "label": "English",
+        "value": "en"
+    },
+    {
+        "label": "Japanese",
+        "value": "ja"
+    },
+    {
+        "label": "Korean",
+        "value": "ko"
+    }
+    ],
+    sileroVadVersionList: [
+        {
+            label: 'v4',
+            value: 'silero_vad.onnx'
+        },
+        {
+            label: 'v5',
+            value: 'silero_vad_v5.onnx'
+        },
+        {
+            label: 'none',
+            value: 'none'
+        }
+    ],
 }
 module.exports = config

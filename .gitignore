@@ -1,11 +1,18 @@
 .DS_Store
-/node_modules
+node_modules
 /dist_electron
 /public/mpv/mpv.exe
 /public/ffmpeg
 /public/whisper
+# /public/ocrModel
+/public/ocrHtml
+/public/shareHtml
+/public/fileShareHtml
+
+/public/asrModel/sherpa-onnx-sense-voice-small/*
 /public/whisper-cpp/*
 /install_whisper.md
 /map.json
 /getDetail.js
-/public/ocr
+
+/build.sh

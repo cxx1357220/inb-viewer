@@ -4,13 +4,20 @@
             <el-tab-pane label="media list" name="list">
                 <div class="list">
                     <!-- <img v-for=" s in imgs" v-lazy="s" alt=""> -->
-                    <div class="img" v-for=" s in imgs" :key="s">
+                    <div class="img" v-for=" (s,i) in imgs" :key="s">
                         <div class="banner">
-                            <button v-show="showOcr" @click="ocr(s)">ocr</button>
+                            <!--  v-show="showOcr" @click="ocr(imgExtList[i])" -->
+                            <!-- <button @click="getOcr(s,imgExtList[i])" >OCR</button>
                             <button @click="imgSetPoster(s)">设置封面</button>
-                            <button @click="openPath(s)">打开路径</button>
+                            <button @click="openPath(s)">打开路径</button> -->
+
+
+                            <el-button size="mini" round @click="getOcr(s,imgExtList[i])" type="">OCR</el-button>
+                            <el-button size="mini" round @click="imgSetPoster(s)" type="">设置封面</el-button>
+                            <el-button size="mini" round @click="openPath(s)" type="">打开路径</el-button>
+
                         </div>
-                        <el-image :src="'file://'+s" lazy :preview-src-list="imgs">
+                        <el-image :src="imgExtList[i]" lazy :preview-src-list="imgExtList">
                         </el-image>
                     </div>
                     <div v-for="( s, i) in audios" :key="s" class="audio" v-loading="cutStateMap[s]"
@@ -51,9 +58,10 @@
                 </div>
             </el-tab-pane>
         </el-tabs>
-        <el-dialog  :visible.sync="showText"   title="ocr->text">
-            <el-input v-model="ocrText"   :autosize="{ minRows: 5, maxRows: 15 }" type="textarea"
-                 />
+        <el-dialog  :visible.sync="showText"  width="80%" title="ocr">
+            <!-- <el-input v-model="ocrText"   :autosize="{ minRows: 5, maxRows: 15 }" type="textarea"
+                 /> -->
+                 <showOcrImage v-if="showText" :res="ocrData" :url="showOcrImgUrl"/>
         </el-dialog>
     </div>
 </template>
@@ -65,7 +73,11 @@ const fs = require('fs');
 import axios from 'axios';
 import { throttle } from '../back/utils.js';
 
+
 import myVideo from '@/components/myVideo.vue';
+import showOcrImage from '@/components/showOcrImage.vue';
+
+
 export default {
     name: 'imgList',
     data() {
@@ -82,10 +94,13 @@ export default {
             newLoading: false,
             showOcr: false,
             ocrText:'',
-            showText:false
+            showText:false,
+            ocrData:{},
+            showOcrImgUrl:''
+
         }
     },
-    components: { myVideo },
+    components: { myVideo,showOcrImage },
     created() {
         this.showOcr = !(localStorage.getItem('ocrServe')=='false')
         console.log(this.$route.params);
@@ -144,6 +159,11 @@ export default {
                 message: 'refreshImg: ' + str
             });
         })
+    },
+    computed: {
+        imgExtList() {
+            return this.imgs.map(s => 'file://' + s)
+        }
     },
     mounted() {
     },
@@ -215,18 +235,18 @@ export default {
             return new File([blob], filename, { type: mimeType });
         },
         async ocr(s) {
+            // console.log('s: ', s);
             if (localStorage.getItem('ocrServe')=='false') {
                 this.showOcr = false
                 return false
             }
-            // const urlWithoutPort = window.location.origin.replace(/:(\d+)/, '')
+            let file = await this.urlToFile(s, 'img.png')
             const formData = new FormData();
-            const file = await this.urlToFile(s, 'example.png');
             formData.append('file', file);
             axios.post('http://127.0.0.1:5000/api/ocr', formData, {
-                headers: {
+                 headers: {
                     'Content-Type': 'multipart/form-data',
-                }
+                }  
             }).then(response => {
                 console.log('上传成功', response.data);
                 this.res = response.data
@@ -234,12 +254,32 @@ export default {
                 this.res.res.forEach(element => {
                     this.ocrText += element.value + '\n'
                 });
+                this.ocrData = response.data
+                this.showOcrImgUrl = s
                 this.showText = true
+
 
             }).catch(error => {
                 console.error('上传失败', error);
             });
-        }
+        },
+        async getOcr(filePath,url) { 
+            ipcRenderer.invoke("getOcr", {
+                filePath: filePath,
+            }).then(obj => {
+                console.log('obj: ', obj);
+                this.ocrData = obj
+                this.showOcrImgUrl = url
+                this.showText = true
+
+            }).catch(error => {
+                console.error('ocr失败', error);
+                this.$message({
+                    type: 'error',
+                    message: 'ocr失败'
+                });
+            });
+        },
     }
 
 }

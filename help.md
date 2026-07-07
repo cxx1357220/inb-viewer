@@ -40,13 +40,6 @@
 
     > size为视频分辨率，vcodec为解码器，fps为帧率
 
-- 用whisper.cpp对视频进行语音转文字的简单配置，[whisper-cpp](https://github.com/ggerganov/whisper.cpp)虽然没有[whisper](https://github.com/openai/whisper)好用，但不用考虑兼容性。。。用显卡倒是比cpu快，但考虑各种显卡的驱动。。。
-    > 慢的让人无语，模型越大质量越好也越慢;  
-    > 翻译几乎没用，ai模型没有想象中好用，当然也可以自己弄一个ai模型;  
-    > ai模型下载地址有墙：<https://huggingface.co/ggerganov/whisper.cpp>;  
-    > 可以自己手动下载ai模型到应用文件夹(*\viewer\resources\app\whisper-cpp\model);
-    > ____________________
-    > 其实能看到字幕的方式挺多的，手机上挺多这个功能的，window11微软提供实时字幕功能，下载个Potplayer播放器也有实时字幕功能，还带翻译。当然，这些都是边看边翻译的。
 - wallpaper.exe 的路径，第一次进应用当路径为空时，会自动查询电脑注册表看有没有该路径并设置（很慢）。也可手动设置路径。
 
 #### 功能

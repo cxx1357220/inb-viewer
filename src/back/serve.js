@@ -2,9 +2,9 @@ import {
     ipcMain,
 } from 'electron'
 var os = require('os')
-const shareJs = require('./share');
+const fileShareJs = require('./fileShare');
 const express = require('express');
-const { shareHtmlPath } = require('./config')
+const { fileShareHtmlPath } = require('./config')
 const {
     winSend
 } = require('./win')
@@ -13,17 +13,17 @@ class ShareServer {
         this.server = {
             close: () => { }
         };
-        ipcMain.on('share', this.share.bind(this))
+        ipcMain.on('fileShare', this.fileShare.bind(this))
         ipcMain.on('reServeList', this.reServeList.bind(this))
     }
     /**
-     * share服务
+     * fileShare服务
      * @param {*} event 
      * @param {boolean} boolean 是否开启
-     * @param {Array} list share的列表
+     * @param {Array} list fileShare的列表
      * @param {object} map 对应的路径修改map
      */
-    share(event, boolean, list, map) {
+    fileShare(event, boolean, list, map) {
         let that = this
         const port = 3000
         if (boolean) {
@@ -43,24 +43,26 @@ class ShareServer {
                 }
             }
             console.log('net: ', add);
-            shareJs.useArr(list, map)
-            shareJs.use('/app', express.static(shareHtmlPath))
-            that.server = shareJs.listen(port, () => {
+            fileShareJs.useArr(list, map)
+            fileShareJs.use('/app', express.static(fileShareHtmlPath))
+            that.server = fileShareJs.listen(port, () => {
                 console.log(`${add}:${port}/app/#/`)
-                winSend('main', 'shareUrl', `${add}:${port}/app/#/`)
+                winSend('main', 'fileShareUrl', `${add}:${port}/app/#/`)
             })
         } else {
-            that.server.close()
+            if (that.serve && that.serve.close) {
+                that.serve.close()
+            }
         }
     }
     /**
-     * 刷新share服务的数组
+     * 刷新fileShare服务的数组
      * @param {*} event 
-     * @param {Array} list share的列表
+     * @param {Array} list fileShare的列表
      * @param {object} map 对应的路径修改map
      */
     reServeList(event, list, map) {
-        shareJs.useArr(list, map)
+        fileShareJs.useArr(list, map)
     }
 }
 new ShareServer()

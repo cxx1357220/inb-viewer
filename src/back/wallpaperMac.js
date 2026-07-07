@@ -58,7 +58,6 @@ class WallpaperMac {
         this.win.webContents.send('wallpaper', obj)
         try {
             this.win.show();
-            console.log('win: ', win);
             setTimeout(() => {
                 this.win.focus()
             }, 5000);
