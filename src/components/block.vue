@@ -24,10 +24,11 @@
         <b v-for="idx in [0, 1, 2, 3, 4]" :class="idx < obj.star ? 'star' : 'unstar'" @click="reStar(obj, idx)"></b>
       </div>
       <p @click="reDetail" title="detail">{{ obj.title || '-----' }}</p>
+      <label class="acts" v-acts="obj.videoActs"></label>
 
       <!-- <p @click="add(obj, 'vip-')">vip-</p> -->
       <!-- <p @click="fixJsonFile(obj)">fixJsonFile</p> -->
-      <p @click="openDesc(obj)">获取更多信息</p>
+      <p class="more-detail" @click="openDesc(obj)">获取更多信息</p>
       <label @click="copyFileName(obj)">{{ obj.file }}</label>
       <i v-size="obj.allSize"></i>
       <span v-date="obj"></span>
@@ -175,6 +176,28 @@ export default {
         }
       },
     },
+    acts:{
+      bind(el, binding) {
+        try {
+          if (binding.value) {
+            el.innerHTML = binding.value?.join('-')
+          } else {
+            el.innerHTML = ''
+          }
+        } catch (error) {
+        }
+      },
+      update(el, binding) {
+        try {
+          if (binding.value) {
+            el.innerHTML = binding.value?.join('-')
+          } else {
+            el.innerHTML = ''
+          }
+        } catch (error) {
+        }
+      },
+    }
   },
   computed: {
     runningObj() {
@@ -428,8 +451,16 @@ export default {
     font-size: 12px;
     text-align: left;
   }
-
-  p+p {
+  .acts{
+    display: block;
+    color: gray;
+    word-break: break-word;
+    text-align: left;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .more-detail {
     color: #66b1ff;;
   }
 

@@ -43,6 +43,9 @@
           <el-button size="mini" plain
             :icon="key == 'videoDuration' ? (sortT == 1 ? 'el-icon-caret-bottom' : 'el-icon-caret-top') : ''"
             :type="key == 'videoDuration' ? 'primary' : ''" @click="sort('videoDuration')">时长</el-button>
+          <el-button size="mini" plain
+            :icon="key == 'videoActs' ? (sortT == 1 ? 'el-icon-caret-bottom' : 'el-icon-caret-top') : ''"
+            :type="key == 'videoActs' ? 'primary' : ''" @click="sort('videoActs')">主演</el-button>
         </el-form-item>
         <el-form-item>
           <span slot="label">过滤：</span>
@@ -171,7 +174,7 @@
             {{ downPercentMap[k] ? downPercentMap[k] : k }}</el-button>
         </el-form-item>
 
-      </el-form>
+        </el-form>
     </el-drawer>
 
 
@@ -434,7 +437,7 @@ export default {
       handler(n) {
         localStorage.setItem('tags', JSON.stringify(n))
       }
-    },
+      },
     senseVoiceSet: {
       deep: true,
       handler(n) {
@@ -451,8 +454,8 @@ export default {
       deep: true,
       handler(n) {
         localStorage.setItem('projectVal.savePath', n)
-      }
-    },
+    }
+  },
 
   },
     
@@ -464,7 +467,7 @@ export default {
     }
     if(localStorage.getItem('whisperSet')){
        this.whisperSet = JSON.parse(localStorage.getItem('whisperSet'))
-    }
+    }    
     this.baseConfig = localStorage.getItem('baseConfig') ? JSON.parse(localStorage.getItem('baseConfig')) : {}
     this.imgCachePath  = this.baseConfig.imgCachePath
     ipcRenderer.on('baseConfig', (e, obj) => {
@@ -837,6 +840,15 @@ export default {
         // this.showList = 
         this.showList.sort((a, b) => {
           if ((b[this.key] || '').toUpperCase() > (a[this.key] || '').toUpperCase()
+          ) {
+            return this.sortT
+          } else {
+            return this.sortT * -1
+          }
+        })
+      } else if(this.key=='videoActs'){
+        this.showList.sort((a, b) => {
+          if ((b[this.key] || []).join('-').toUpperCase() > (a[this.key] || []).join('-').toUpperCase()
           ) {
             return this.sortT
           } else {
