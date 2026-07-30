@@ -1,32 +1,49 @@
 import {
     ipcMain,
+    app
 } from 'electron'
 var os = require('os')
-const fileShareJs = require('./fileShare');
-const express = require('express');
-const { fileShareHtmlPath } = require('./config')
+const {
+    fork,
+} = require('child_process');
+const kill = require('tree-kill');
+
+const { fileShareHtmlPath, vditorPath, fileSharePath } = require('./config')
 const {
     winSend
 } = require('./win')
+const { randomKey } = require('./utils')
 class ShareServer {
     constructor() {
         this.server = {
             close: () => { }
         };
+        this.forked = null
         ipcMain.on('fileShare', this.fileShare.bind(this))
         ipcMain.on('reServeList', this.reServeList.bind(this))
+        let that = this
+        app.on('before-quit', (event, commandLine, workingDirectory) => {
+            console.log('before-quit');
+            that.close()
+        })
     }
     /**
      * fileShare服务
      * @param {*} event 
      * @param {boolean} boolean 是否开启
      * @param {Array} list fileShare的列表
-     * @param {object} map 对应的路径修改map
      */
-    fileShare(event, boolean, list, map) {
+    fileShare(event, boolean, list) {
         let that = this
-        const port = 3000
+        if (that.forked) {
+            // that.forked.kill('SIGKILL')
+            kill(that.forked.pid, 'SIGKILL')
+            that.forked = null
+        }
         if (boolean) {
+            const port = 3000
+            const pw = randomKey(2)
+            // const pw = 'aa'
             let ifaces = os.networkInterfaces()
             let add = ''
             for (let dev in ifaces) {
@@ -43,16 +60,28 @@ class ShareServer {
                 }
             }
             console.log('net: ', add);
-            fileShareJs.useArr(list, map)
-            fileShareJs.use('/app', express.static(fileShareHtmlPath))
-            that.server = fileShareJs.listen(port, () => {
-                console.log(`${add}:${port}/app/#/`)
-                winSend('main', 'fileShareUrl', `${add}:${port}/app/#/`)
+            that.forked = fork(fileSharePath)
+            that.forked.on('error', (err) => {
+                console.log('error: ', err);
             })
-        } else {
-            if (that.serve && that.serve.close) {
-                that.serve.close()
-            }
+            that.forked.on('exit', (code, signal) => {
+                console.log('exit: ', code, signal);
+            })
+            
+            that.forked.send({
+                type: 'start',
+                fileList: list,
+                password: pw,
+                htmlPath: fileShareHtmlPath,
+                vditorPath: vditorPath,
+                port: port,
+
+            })
+            that.forked.on('message', (msg) => {
+                winSend(msg.win, msg.event, msg.obj, msg.key, msg.val)
+            })
+            winSend('main', 'fileShareUrl', `${add}:${port}/app/#/?pw=${pw}`)
+            
         }
     }
     /**
@@ -62,7 +91,20 @@ class ShareServer {
      * @param {object} map 对应的路径修改map
      */
     reServeList(event, list, map) {
-        fileShareJs.useArr(list, map)
+        // fileShareJs.useArr(list, map)
+        if (this.forked) {
+            this.forked.send({
+                type: 'reServeList',
+                fileList: list,
+            })
+        }
+    }
+    close() {
+        if (this.forked) {
+            // this.forked.kill('SIGKILL')
+            kill(this.forked.pid, 'SIGKILL')
+            this.forked = null
+        }
     }
 }
 new ShareServer()

@@ -33,6 +33,11 @@ const imgCachePath = path.join(newSessionDataPath, 'imgCache');
 fs.mkdirSync(imgCachePath, {
     recursive: true
 });
+
+const tempPath = path.join(newSessionDataPath, 'temp');
+fs.mkdirSync(tempPath, {
+    recursive: true
+});
 // 缓存 getDetail js文件
 const getJsCachePath = path.join(newSessionDataPath, 'getJsCache');
 fs.mkdirSync(getJsCachePath, {
@@ -101,12 +106,19 @@ const readPath = path.join(
 const ocrServerPath = path.join(
     appPath,
     process.env.NODE_ENV !== 'production' ? '../public' : '',
-    'ocr.js'
+    'ocr',
+    'index.js'
 )
 const ocrModelPath = path.join(
     appPath,
     process.env.NODE_ENV !== 'production' ? '../public' : '',
     'ocrModel',
+)
+
+const vditorPath = path.join(
+    appPath,
+    process.env.NODE_ENV !== 'production' ? '../public' : '',
+    'vditor',
 )
 
 
@@ -206,6 +218,16 @@ const asrPath = path.join(
     process.env.NODE_ENV !== 'production' ? '../public' : '',
     'asr.js'
 )
+const fileSharePath = path.join(
+    appPath,
+    process.env.NODE_ENV !== 'production' ? '../public' : '',
+    'fileShare.js'
+)
+const winSharePath = path.join(
+    appPath,
+    process.env.NODE_ENV !== 'production' ? '../public' : '',
+    'winShare.js'
+)
 
 // 图标路径
 const iconPath = path.join(appPath,
@@ -237,6 +259,7 @@ export {
     iconPath,
     imgCachePath,
     getJsCachePath,
+    tempPath,
     baseGetDetailPath,
 
     hasSenseVoice,
@@ -244,4 +267,7 @@ export {
     senseVoiceTokenPath,
     sileroVadModelPath,
     asrPath,
+    vditorPath,
+    fileSharePath,
+    winSharePath,
 }

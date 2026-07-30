@@ -1,36 +1,19 @@
 <template>
-    <div class="home">
-        <input type="text" v-model="value" @blur="or">
+    <div class="init">
     </div>
-
 </template>
 
 <script>
 export default {
     name: 'HomeView',
-    data() {
-        return {
-            value: ''
+    created() {
+        if (this.$route.query.pw) {
+            this.$router.push({
+                name: 'home',
+                params: { pw: this.$route.query.pw }
+            })
         }
-    },
-    watch: {
-        value(n) {
-            if (n == '665533') {
-                // this.$router.push({
-                //     name: 'home',
-                // })
-            }
-        }
-    },
-    methods: {
-        or() {
-            if (this.value == '665533') {
-                this.$router.push({
-                    name: 'home',
-                    params: { value: this.value }
-                })
-            }
-        }
+
     }
 
 }

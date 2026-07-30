@@ -29,6 +29,7 @@ export default {
         this.obj = this.$route.params;
         let that = this
         console.log('this.obj : ', this.obj);
+        let linkBase = path.dirname(this.obj.path)
         fs.readFile(this.obj.path, 'utf8', (err, data) => {
             if (err) {
                 this.$message({
@@ -36,14 +37,12 @@ export default {
                     message: err
                 });
             }
-            data = this.filterPath(data)
             this.mdVal = data
             this.contentEditor = new Vditor('contentEditor', {
                 value: data,
                 height: '100vh',
                 // toolbar: ['emoji', 'headings', 'bold', 'italic', 'strike','|' , 'line', 'quote', 'list', 'ordered-list', 'check', 'outdent', 'indent', 'code', 'inline-code',' insert-after', 'insert-before', 'undo', 'redo', 'upload', 'link', 'table', 'record', 'edit-mode', 'both', 'preview', 'fullscreen', 'outline', 'code-theme', 'content-theme', 'export', 'devtools', 'info', 'help', 'br'],
                 toolbar: [{
-                    hotkey: '⇧⌘S',
                     name: 'save',
                     tipPosition: 'se',
                     tip: 'save',
@@ -51,7 +50,26 @@ export default {
                     icon: '<svg class="icon" style="vertical-align: middle;fill: currentColor;overflow: hidden;" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="3521"><path d="M608 320C625.664 320 640 305.696 640 288L640 160C640 142.304 625.664 128 608 128 590.336 128 576 142.304 576 160L576 288C576 305.696 590.336 320 608 320L608 320ZM960 896C960 931.328 931.328 960 896 960L128 960C92.672 960 64 931.328 64 896L64 128C64 92.672 92.672 64 128 64L192 64 192 384C192 419.328 220.672 448 256 448L768 448C803.328 448 832 419.328 832 384L832 64 896 64C931.328 64 960 92.672 960 128L960 896 960 896ZM256 64 768 64 768 352C768 369.696 753.664 384 736 384L288 384C270.336 384 256 369.696 256 352L256 64 256 64ZM896 0 128 0C57.312 0 0 57.312 0 128L0 896C0 966.688 57.312 1024 128 1024L896 1024C966.688 1024 1024 966.688 1024 896L1024 128C1024 57.312 966.688 0 896 0L896 0Z" fill="#000000" p-id="3522"></path></svg>',
                     click() {
                         let val = that.contentEditor.getValue()
-                        fs.writeFileSync(that.obj.path, val)
+                        // fs.writeFileSync(that.obj.path, val)
+                        fs.writeFile(
+                            that.obj.path,
+                            val,
+                            function (err) {
+                                if (err) {
+                                    console.log('err: ', err);
+                                    that.$message({
+                                        type: 'error',
+                                        message: '保存失败'
+                                    });
+                                    return false
+                                }
+                                that.$message({
+                                    type: 'success',
+                                    message: '保存成功'
+                                });
+                            }
+                        )
+
                     },
                 }, 'headings', 'bold', 'italic', 'strike', '|', 'line', 'quote', 'list', 'ordered-list', 'check', 'outdent', 'indent', 'code', 'inline-code', '|', 'undo', 'redo', 'upload', 'link', 'table', 'edit-mode', 'both', 'outline'],
                 toolbarConfig: {
@@ -59,7 +77,10 @@ export default {
                 },
                 cdn: location.origin+'/vditor',
                 preview: {
-                    actions: []
+                    actions: [],
+                    markdown:{
+                        linkBase: 'file:///'+linkBase
+                    }
                 },
                 link: {
                     isOpen: true,
@@ -73,26 +94,33 @@ export default {
                 upload: {
                     accept: 'image/*',
                     handler(files) {
-                        let to = path.join(path.dirname(that.obj.path), files[0].name)
+                        let ext = path.extname(files[0].name)
+                        console.log('ext: ', ext);
+                        let name = path.basename(files[0].name,ext)
+                        console.log('name: ', name);
+                        let newName = that.singleName(path.dirname(that.obj.path),name,ext).name
+                        console.log('newName: ', newName);
+                        let to = path.join(path.dirname(that.obj.path), newName)
                         fs.copyFile(decodeURIComponent(encodeURIComponent(files[0].path)), decodeURIComponent(to), (err) => {
                             if (err) {
                                 console.log('err: ', err);
                                 return false
                             }
-                            let s = '![' + files[0].name + '](file:///' + to.replaceAll(' ', '%20') + ')';
+
+                            let s = '![' + files[0].name + '](./' + newName.replaceAll(' ', '%20') + ')';
                             that.contentEditor.insertValue(s)
-                            return new Promise((resolve, reject) => {
-                                resolve(JSON.stringify({
-                                    "msg": "",
-                                    "code": 0,
-                                    "data": {
-                                        // "errFiles": ['filename', 'filename2'],
-                                        "succMap": {
-                                            [files[0].name]: 'file:///' + to.replaceAll(' ', '%20'),
-                                        }
-                                    }
-                                }))
-                            })
+                            // return new Promise((resolve, reject) => {
+                            //     resolve(JSON.stringify({
+                            //         "msg": "",
+                            //         "code": 0,
+                            //         "data": {
+                            //             // "errFiles": ['filename', 'filename2'],
+                            //             "succMap": {
+                            //                 [files[0].name]: 'file:///' + to.replaceAll(' ', '%20'),
+                            //             }
+                            //         }
+                            //     }))
+                            // })
                             // ret
                         })
 
@@ -123,29 +151,23 @@ export default {
             })
         })
     },
-    mounted() {
-
-    },
-    methods: {
-        filterPath(str) {
-            const pattern = /!\[(.*?)\]\((.*?)\)/mg;
-            const result = [];
-            let matcher;
-            while ((matcher = pattern.exec(str)) !== null) {
-                result.push({
-                    alt: matcher[1],
-                    url: matcher[2]
-                });
-            }
-            result.forEach(obj => {
-                if (obj.url.indexOf('http') !== 0) {
-                    str = str.replace(obj.url, 'file:///' + path.join(path.dirname(this.obj.path), path.basename(obj.url)))
+    methods: { 
+        singleName(basePath, newName,  fileExt = '.md',i = 0) {
+            console.log('basePath: ', basePath);
+            let name = newName + (i ? ('(' + i + ')'+fileExt) : fileExt)
+            let s = path.join(basePath, name)
+            console.log('s: ', s, i);
+            if (fs.existsSync(s)) {
+                return this.singleName(basePath, newName, fileExt,i + 1)
+            } else {
+                return {
+                    name,
+                    path: s
                 }
-            })
-            return str
+            }
 
-        }
-    }
+        },
+    },
 
 }
 </script>

@@ -60,9 +60,18 @@ function debounce(func, wait) {
     };
 }
 
+function randomKey(len=2) {
+  let key = ''
+  for (let i = 0; i < len; i++) {
+    key+=String.fromCharCode(Math.floor(Math.random() * 26) + 97) 
+  }
+  return key
+}
+
 export {
   throttle,
   times,
   durationToSeconds,
-  debounce
+  debounce,
+  randomKey
 }

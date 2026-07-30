@@ -2,6 +2,7 @@
   <div class="home">
     <div class="search">
       <div class="button-list">
+        <span>排序：</span>
         <el-button size="mini" plain
           :icon="key == 'date' ? (sortT == 1 ? 'el-icon-caret-bottom' : 'el-icon-caret-top') : ''"
           :type="key == 'date' ? 'primary' : ''" @click="sort('date')">日期</el-button>
@@ -11,17 +12,18 @@
         <el-button size="mini" plain
           :icon="key == 'visits' ? (sortT == 1 ? 'el-icon-caret-bottom' : 'el-icon-caret-top') : ''"
           :type="key == 'visits' ? 'primary' : ''" @click="sort('visits')">阅量</el-button>
-        <el-button size="mini" plain
+        <!-- <el-button size="mini" plain
           :icon="key == 'allSize' ? (sortT == 1 ? 'el-icon-caret-bottom' : 'el-icon-caret-top') : ''"
-          :type="key == 'allSize' ? 'primary' : ''" @click="sort('allSize')">大小</el-button>
+          :type="key == 'allSize' ? 'primary' : ''" @click="sort('allSize')">大小</el-button> -->
         <el-button size="mini" plain
           :icon="key == 'title' ? (sortT == 1 ? 'el-icon-caret-bottom' : 'el-icon-caret-top') : ''"
           :type="key == 'title' ? 'primary' : ''" @click="sort('title')">标题</el-button>
-        <el-button size="mini" plain
+        <!-- <el-button size="mini" plain
           :icon="key == 'videoDuration' ? (sortT == 1 ? 'el-icon-caret-bottom' : 'el-icon-caret-top') : ''"
-          :type="key == 'videoDuration' ? 'primary' : ''" @click="sort('videoDuration')">时长</el-button>
+          :type="key == 'videoDuration' ? 'primary' : ''" @click="sort('videoDuration')">时长</el-button> -->
       </div>
       <div class="button-list">
+        <span>类型：</span>
         <el-button size="mini" plain :type="type == 'video' ? 'primary' : ''"
           @click="changeType('video')">视频</el-button>
         <el-button size="mini" plain :type="type == 'other' ? 'primary' : ''"
@@ -36,29 +38,35 @@
 
     </div>
     <div class="home-list">
-      <div v-for="obj in showList" :key="obj.jsonPath">
-        <div class="img-box" @click="open(obj)">
-          <img v-lazy="obj.newimg" alt="" />
-          <div class="visits" v-if="obj.visits">
-            <i class="el-icon-view"></i>
-            <span>{{ obj.visits }}</span>
+      <div v-for="obj in showList" :key="obj.webBasePath">
+        <div class="content">
+          <div class="img-box" @click="open(obj)">
+            <img v-lazy="obj.webImgPath" alt="" />
+            <div class="visits" v-if="obj.visits">
+              <i class="el-icon-view"></i>
+              <span>{{ obj.visits }}</span>
+            </div>
+            <div class="video-duration" v-if="obj.videoDuration">
+              <i class="el-icon-time"></i>
+              <span v-time="obj.videoDuration"></span>
+            </div>
+            <i :class="['type-icon', obj.type == 'video' ? 'el-icon-video-play' : 'el-icon-document']"></i>
+
           </div>
-          <div class="video-duration" v-if="obj.videoDuration">
-            <i class="el-icon-time"></i>
-            <span v-time="obj.videoDuration"></span>
+          <div class="stars">
+            <i class="el-icon-star-on" v-for="idx in [0, 1, 2, 3, 4]" @click="changeStar(idx, obj)"
+              :style="{ 'color': idx < obj.star ? '#FF9900' : 'darkgray' }"></i>
+            <!-- <b v-for="idx in [0, 1, 2, 3, 4]" @click="changeStar(idx, obj)"
+              :style="{ 'background-color': idx < obj.star ? 'red' : 'darkgray' }"></b> -->
           </div>
-          <i :class="['type-icon', obj.type == 'video' ? 'el-icon-video-play' : 'el-icon-document']"></i>
+          <label>{{ obj.title }}</label>
+          <!-- <span>{{ obj.file }}</span> -->
+          <!-- <i>{{ obj.allSize || 0 }}MB</i> -->
+
+          <span v-date="obj.date"></span>
+          <i @click="openPath(obj)" class="el-icon-tickets"></i>
 
         </div>
-        <div class="stars">
-          <b v-for="idx in [0, 1, 2, 3, 4]" @click="changeStar(idx, obj)"
-            :style="{ 'background-color': idx < obj.star ? 'red' : 'darkgray' }"></b>
-        </div>
-        <label>{{ obj.title }}</label>
-        <p @click="openPath(obj)">打开路径</p>
-        <span>{{ obj.file }}</span>
-        <i>{{ obj.allSize || 0 }}MB</i>
-        <span v-date="obj.date"></span>
       </div>
     </div>
   </div>
@@ -127,12 +135,16 @@ export default {
     }
   },
   async created() {
-    if (this.$route.params.value || sessionStorage.getItem('old')) {
+    // if (this.$route.query.pw || sessionStorage.getItem('old')) {
       let list = []
       // if (sessionStorage.getItem('list')) {
       //   list = JSON.parse(sessionStorage.getItem('list'))
       // } else {
-      await axios.get('/api/list').then((item) => {
+      let url = '/api/list'
+      if (this.$route.params.pw) {
+        url += '?pw=' + this.$route.params.pw
+      }
+      await axios.get(url).then((item) => {
         list = item?.data
         console.log('item: ', item);
         sessionStorage.setItem('list', JSON.stringify(list))
@@ -155,7 +167,7 @@ export default {
         document.body.scrollTop = document.documentElement.scrollTop = obj.scrollTop;
 
       }
-    }
+    // }
   },
   methods: {
     open(obj) {
@@ -175,13 +187,13 @@ export default {
         }
       }
       sessionStorage.setItem('list', JSON.stringify(this.list))
-      axios.post('/api/visits', obj).then((item) => {
+      axios.post('/api/visits', {webBasePath:obj.webBasePath}).then((item) => {
         console.log('item: ', item);
       }).catch((err) => {
         console.log('err: ', err);
       })
 
-      sessionStorage.setItem(obj.newBasePath, JSON.stringify(obj))
+      sessionStorage.setItem(obj.webBasePath, JSON.stringify(obj))
       // if (obj.type == 'video') {
       //   this.$router.push({
       //     name: 'video',
@@ -194,7 +206,7 @@ export default {
       //   })
       // }
       let routeData = this.$router.resolve({
-        query: { id: obj.newBasePath },
+        query:obj.type == 'video' ? { webFilePath: obj.webFilePath }: { webBasePath: obj.webBasePath },
         name: obj.type == 'video' ? 'video' : 'content'
       });
       window.open(routeData.href, '_blank');
@@ -202,7 +214,7 @@ export default {
     },
     openPath(obj) {
       console.log('obj: ', obj);
-      window.open(location.origin + obj.newBasePath, '_blank');
+      window.open(location.origin + obj.webBasePath, '_blank');
     },
     sort(key) {
       if (key) {
@@ -237,7 +249,7 @@ export default {
         }
       }
       sessionStorage.setItem('list', JSON.stringify(this.list))
-      axios.post('/api/changeStar', obj).then((item) => {
+      axios.post('/api/changeStar', {webBasePath:obj.webBasePath}).then((item) => {
         console.log('item: ', item);
       }).catch((err) => {
         console.log('err: ', err);
@@ -267,7 +279,7 @@ export default {
       this.showList = this.list.filter(obj => {
         if (!n) { return isType(obj) }
         let reg = new RegExp(n, 'i');
-        return (reg.test(obj.title) || reg.test(obj.file)||isDesc(obj)) && isType(obj)
+        return (reg.test(obj.title) || reg.test(obj.file) || isDesc(obj)) && isType(obj)
       })
       this.sort()
     },
@@ -279,7 +291,7 @@ export default {
 
 }
 </script>
-<style lang="less">
+<style lang="less" scoped>
 .home {
   display: flex;
   justify-content: space-between;
@@ -287,6 +299,7 @@ export default {
   width: 100vw;
   height: 100vh;
   overflow: hidden;
+  background-color: snow;
 }
 
 .search {
@@ -305,7 +318,11 @@ export default {
   justify-content: left;
   padding-bottom: 10px;
 
-  .el-button {
+  &>span {
+    font-size: 12px;
+  }
+
+  & /deep/.el-button {
     flex: 1;
     padding: 5px 0 !important;
   }
@@ -313,10 +330,6 @@ export default {
 
 
 
-.button-list /deep/ .el-button {
-  flex: 1;
-  padding: 5px 0 !important;
-}
 
 .home-list {
   display: flex;
@@ -324,16 +337,35 @@ export default {
   font-size: 12px;
   flex: 1;
   overflow-y: auto;
+  align-content: flex-start;
+
 
   &>div {
     box-sizing: border-box;
-    display: flex;
-    flex-direction: column;
     width: 33%;
-    border-radius: 5px;
-    padding: 5px;
-    padding-bottom: 20px;
+    padding: 3px;
+    // padding-bottom: 20px;
     text-align: center;
+
+
+    .content {
+      display: flex;
+      flex-direction: column;
+      // border-radius: 5px;
+      position: relative;
+      box-shadow: 0 2px 12px 0 rgba(0, 0, 0, .1);
+      overflow: hidden;
+      border: 1px solid #ebeef5;
+      background-color: white;
+
+
+      &>i {
+        position: absolute;
+        bottom: 7px;
+        right: 5px;
+        color: green;
+      }
+    }
 
     .img-box {
       position: relative;
@@ -398,11 +430,15 @@ export default {
       color: black;
       padding-bottom: 5px;
       word-break: break-word;
+      text-align: left;
+      padding: 5px;
     }
 
     span {
       color: gray;
       word-break: break-word;
+      text-align: left;
+      padding: 5px;
     }
 
     p {
@@ -420,12 +456,15 @@ export default {
 
     .stars {
       box-sizing: border-box;
-      padding: 10px;
+      // padding: 10px;
       width: 100%;
       display: flex;
       align-items: center;
-      justify-content: space-between;
+      // justify-content: space-between;
       flex-direction: row;
+      font-size: 20px;
+      text-align: left;
+
 
       b {
         display: block;

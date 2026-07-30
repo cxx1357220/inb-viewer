@@ -2,8 +2,8 @@
     <div class="video" @touchstart="touchstart"
             @touchmove="touchmove" 
             @touchend="touchend">
-        <video ref="videoPlay" :src="obj.newPath" class="video-js " controls  >
-            <track kind="subtitles" default label="vtt" :src="obj.vtt" />
+        <video ref="videoPlay" :src="webFilePath" class="video-js " controls  >
+            <track kind="subtitles" default label="vtt" :src="vtt" />
         </video>
     </div>
 </template>
@@ -16,7 +16,8 @@ export default {
     name: 'videoP',
     data() {
         return {
-            obj: {},
+            webFilePath:'',
+            vtt: '',
             startPos: {},
             rate: 1,
             player:{}
@@ -24,19 +25,18 @@ export default {
         }
     },
     created() {
-        console.log(this.$route.query.id);
-        this.obj = JSON.parse(sessionStorage.getItem(this.$route.query.id) || "{}")
-        console.log('this.obj : ', this.obj);
-        let l = this.obj.newPath.split('.')
+
+        this.webFilePath = this.$route.query.webFilePath
+        let l = this.webFilePath.split('.')
         l.pop()
-        this.obj.vtt = l.join('.') + '.vtt'
+        this.vtt = l.join('.') + '.vtt'
     },
     mounted() {
         this.player = videojs(this.$refs.videoPlay, {
             controls: true,
             sources: [
                 {
-                    src: this.obj.newPath.replace('#', '%23'),
+                    src: this.webFilePath.replace('#', '%23'),
                 }
             ],
             autoplay: false,

@@ -41,19 +41,19 @@ const defaultOcrConfig = {
  */
 class SimpleOcrProcessor {
 
-  constructor(ocrModelPath) {
+  constructor() {
     this.modelConfig = defaultOcrConfig;
-    this.ocrModelPath = ocrModelPath;
+    this.ocrModelPath = null
     this.cv = null;
     this.ort = null;
     this.detModel = null;
     this.recModel = null;
     this.disposeTimeout = null;
   }
-  async sourceToMat(cv, filePath) {
-    console.log('filePath: ', filePath);
+  async sourceToMat(cv, imagePath) {
+    console.log('imagePath: ', imagePath);
 
-    var jimpSrc = await Jimp.default.read(filePath);
+    var jimpSrc = await Jimp.default.read(imagePath);
     var sourceMat = cv.matFromImageData(jimpSrc.bitmap);
     return {
       width: jimpSrc.bitmap.width,
@@ -108,8 +108,8 @@ class SimpleOcrProcessor {
   /**
    * 处理单个图像的OCR
    */
-  async predictSingle(input) {
-    this.disposeTimeout && clearTimeout(this.disposeTimeout);
+  async predictSingle(input, ocrModelPath) {
+    this.ocrModelPath = ocrModelPath;
     if (!this.detModel || !this.recModel || !this.cv || !this.ort) {
       await this.initialize();
     }
@@ -179,9 +179,6 @@ class SimpleOcrProcessor {
         const sumRecMs = nowMs() - recStart;
         const totalElapsed = nowMs() - totalStart;
 
-        this.disposeTimeout = setTimeout(() => {
-          this.dispose();
-        }, 30000);
         return {
           image: {
             width: sourceImage.width,
@@ -225,19 +222,17 @@ class SimpleOcrProcessor {
 
 
 
-// process.on('message', function (obj) {
-//   try {
-//     const ocr = new SimpleOcrProcessor(obj.ocrModelPath);
-//     ocr.initialize().then(() => {
-//       ocr.predictSingle(obj.filePath).then(res => {
-//         process.send(res)
-//         ocr.dispose()
-//       })
-//     })
-//   } catch (error) {
-//     process.send({
-//       error: error
-//     })
-//   }
-// })
+const ocr = new SimpleOcrProcessor();
+process.on('message', function (obj) {
+  try {
+    ocr.predictSingle(obj.imagePath, obj.ocrModelPath).then(res => {
+      process.send({ res, imagePath: obj.imagePath })
+    })
+  } catch (error) {
+    process.send({
+      error: error
+      , imagePath: obj.imagePath
+    })
+  }
+})
 module.exports = { SimpleOcrProcessor };

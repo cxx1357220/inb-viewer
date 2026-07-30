@@ -61,8 +61,8 @@ export default {
         select() {
             ipcRenderer.invoke("getScreen").then(list => {
                 console.log('list: ', list)
-                let idx = list.findIndex(o=>o.id==this.checked)
-                if(idx==-1){
+                let idx = list.findIndex(o => o.id == this.checked)
+                if (idx == -1) {
                     this.checked = ''
                 }
                 this.screenList = list
@@ -125,6 +125,16 @@ export default {
             this.stream.getTracks().forEach(track => {
                 peer.addTrack(track)
             });
+            const senders = peer.getSenders();
+
+            senders.forEach(async (sender) => {
+                if (sender && sender.track.kind === 'video') {
+                    const params = sender.getParameters();
+                    params.encodings[0].maxBitrate = 1024 * 1024 * 20; // 设置码率为10MB
+                    await sender.setParameters(params);
+                }
+            });
+
             let a = await peer.createOffer()
             await peer.setLocalDescription(a)
             this.ws.send(JSON.stringify({ key: key, msg: a, msgType: 'offer' }))
@@ -225,7 +235,7 @@ export default {
                 }
             }
             // mac 涉及音频需要特殊插件，先不做
-            if(process.platform=='win32'){
+            if (process.platform == 'win32') {
                 constraints['audio'] = {
                     mandatory: {
                         chromeMediaSource: 'desktop',
@@ -278,7 +288,7 @@ export default {
         padding: 5px;
         border: 2px solid transparent;
         border-radius: 5px;
-    
+
         p {
             overflow: hidden;
             text-overflow: ellipsis;
@@ -288,7 +298,8 @@ export default {
             -webkit-box-orient: vertical;
             line-height: 20px;
             font-size: 16px;
-            img{
+
+            img {
                 width: 20px;
                 margin-right: 6px;
             }

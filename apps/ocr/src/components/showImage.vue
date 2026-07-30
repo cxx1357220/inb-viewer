@@ -46,7 +46,7 @@ export default {
       const formData = new FormData();
       formData.append('file', this.obj.file);
       // axios.post(urlWithoutPort + ':5000/api/ocr', formData, {
-      axios.post(window.location.origin+'/api/ocr', formData, {
+      axios.post(window.location.origin+'/api/ocr'+location.search, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         }

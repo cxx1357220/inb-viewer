@@ -44,6 +44,13 @@ export default {
         params: obj
       })
     })
+    ipcRenderer.on('imageDetail', (e, obj) => {
+      console.log('obj: ', obj);
+      this.$router.push({
+        name: 'imageDetail',
+        params: obj
+      })
+    })
     ipcRenderer.on('home', (e) => {
       this.$router.push({
         name: 'home',

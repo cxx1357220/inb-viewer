@@ -44,9 +44,6 @@
 <p>size为视频分辨率，vcodec为解码器，fps为帧率</p>
 </blockquote>
 </li>
-<li>
-<p>wallpaper.exe 的路径，第一次进应用当路径为空时，会自动查询电脑注册表看有没有该路径并设置（很慢）。也可手动设置路径。</p>
-</li>
 </ul>
 <h4>功能</h4>
 <ul>
@@ -54,13 +51,13 @@
 <li>批量处理展示的视频</li>
 <li>批量解压展示的场景，来源<a href="https://github.com/notscuffed/repkg">repkg</a></li>
 <li>批量复制展示的内容到已选好的复制路径</li>
-<li>批量删除展示的内容，密码665533，直接删除，不经过回收站</li>
+<li>批量删除展示的内容，弹出框输入sure，直接删除，不经过回收站</li>
 <li>获取展示的视频类型的时长</li>
 <li>播放当前显示的视频，➡前进百分之10；⬅ 后退60s； ⬆ 上一个视频； ⬇ 下一个视频；ctrl+d 删除；</li>
 <li>清除已经操作完成的状态</li>
 <li>合并视频，ffmepg -filter_complex 实现视频concat，相同编码下不进行解码还是蛮快的。解码真太慢了，cpu还吃满</li>
 <li>批量获取屏幕信息，默认根据标题从imbd获取视频相关信息，可自己编写js脚本</li>
-<li>局域网内服务，局域网内创建一个网站，可在局域网内查看展示的内容，网站密码665533</li>
+<li>局域网内服务，局域网内创建一个网站，可在局域网内查看展示的内容</li>
 <li>局域网内ocr服务，局域网内创建一个网站，可在局域网内对图片进行ocr，ocr来源<a href="https://paddlepaddle.github.io/PaddleOCR/main/index.html">paddleocr</a></li>
 <li>局域网内分享屏幕，局域网内创建一个网站，可查看电脑当前屏幕</li>
 <li>ctrl+alt+a 截图</li>
@@ -84,7 +81,7 @@
 <li>解压场景pkg</li>
 <li>压缩视频，仅限视频类型</li>
 <li>制作字幕，仅限视频类型</li>
-<li>wallpaper内打开项目，只支持场景和视频类型</li>
+<li>wallpaper内打开项目，只支持视频类型</li>
 <li>复制</li>
 </ul>
 <h3>内容详情页</h3>
@@ -96,14 +93,13 @@
 <li>设置当前帧为主页预览图片</li>
 <li>视频按照时间点切割成几段（ffmpeg并不能精准到秒切割视频），删掉所有时间点勾选libx264可修改视频格式</li>
 <li>在资源管理器内打开视频所在路径</li>
-<li>在<a href="https://github.com/mpv-player/mpv">mpv</a>播放器内打开视频（格式兼容比纯浏览器多）</li>
 </ul>
 <h4>图片</h4>
 <blockquote>
 <p>左上的按钮组</p>
 </blockquote>
 <ul>
-<li>开启ocr服务的时候，可对图片进行ocr</li>
+<li>可对图片进行ocr</li>
 <li>设置当前图片为主页预览图片</li>
 <li>在资源管理器内打开图片所在路径</li>
 </ul>

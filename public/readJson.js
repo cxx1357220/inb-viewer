@@ -1,5 +1,4 @@
 const fs = require('fs');
-// const tree = require('tree-node-cli');
 const join = require('path').join;
 const dirname = require('path').dirname;
 let sizePathMap = {}

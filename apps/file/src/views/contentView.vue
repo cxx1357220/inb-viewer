@@ -19,7 +19,7 @@
             <iframe :src="haveHtml" frameborder="0"></iframe>
         </el-tab-pane>
         <el-tab-pane label="upload" name="upload">
-            <el-upload class="upload-demo" :on-success="onSuccess" :headers="headers" multiple ref="upload"
+            <el-upload class="upload-content" :on-success="onSuccess" :headers="headers" multiple ref="upload"
                 action="/api/upload" :on-preview="handlePreview" :on-remove="handleRemove" :file-list="fileList"
                 :auto-upload="false">
                 <el-button slot="trigger" size="small" type="primary">选取文件</el-button>
@@ -92,13 +92,12 @@ export default {
         },
     },
     created() {
-        console.log(this.$route.query.id);
-        let obj = JSON.parse(sessionStorage.getItem(this.$route.query.id) || "{}")
+        
+        let obj = JSON.parse(sessionStorage.getItem(this.$route.query.webBasePath) || "{}")
         console.log('obj: ', obj);
         this.obj = obj
         this.headers = {
-            basepath: encodeURIComponent(obj.basePath),
-            newbasepath: encodeURIComponent(obj.newBasePath)
+            webbasepath: encodeURIComponent(this.$route.query.webBasePath),
         }
         this.getList()
     },
@@ -106,7 +105,7 @@ export default {
     },
     methods: {
         getList() {
-            axios.post('/api/contentList', this.obj).then((res) => {
+            axios.post('/api/contentList', {webBasePath:this.$route.query.webBasePath}).then((res) => {
                 console.log('res: ', res);
                 this.imgs = res?.data?.imgs || []
                 this.videos = res?.data?.videos || []
@@ -133,7 +132,7 @@ export default {
         },
         open(s) {
             let routeData = this.$router.resolve({
-                query: { path: s, id: this.$route.query.id },
+                query: { file: s, webBasePath: this.$route.query.webBasePath },
                 name: 'mdView'
             });
             window.open(routeData.href, '_blank');
@@ -150,22 +149,15 @@ export default {
                 return false
             }
             this.newLoading = true
-
-            let obj = JSON.parse(sessionStorage.getItem(this.$route.query.id) || "{}")
-            console.log('obj: ', obj);
             axios.post('/api/createMd', {
                 name: this.newName,
-            }, {
-                headers: {
-                    basepath: encodeURIComponent(obj.basePath),
-                    newbasepath: encodeURIComponent(obj.newBasePath)
-                }
+                webBasePath: this.$route.query.webBasePath
             }).then(response => {
                 console.log('response: ', response);
                 this.newLoading = false
                 if (response?.data?.code == 200) {
 
-                    this.markdowns.unshift(this.$route.query.id + response?.data.name)
+                    this.markdowns.unshift('/'+response?.data.name)
 
                 } else {
                     this.$message({
@@ -187,6 +179,9 @@ export default {
 }
 </script>
 <style lang="less">
+.upload-content{
+    padding: 8px;
+}
 .list {
 
     // width:100vw;

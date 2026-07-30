@@ -1,4 +1,4 @@
 下载mpv.exe到/public/mpv/
-https://nchc.dl.sourceforge.net/project/mpv-player-windows/64bit/mpv-x86_64-20230416-git-c50f536.7z
+https://github.com/mpv-player/mpv/releases/tag/git-release
 
-
+在[mpv](https://github.com/mpv-player/mpv)播放器内打开视频（格式兼容比纯浏览器多）

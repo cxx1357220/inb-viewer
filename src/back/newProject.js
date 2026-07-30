@@ -84,7 +84,7 @@ class NewProject {
                 recursive: true
             })
         } catch (error) {
-            winSend('main', 'callMap', {
+            winSend('main', 'callMap',JSON.stringify ({
                 [path.join(toPath, 'project.json')]: {
                     allSize: "0.00",
                     basePath: toPath,
@@ -102,7 +102,7 @@ class NewProject {
                     description: obj.description || '',
                     waitKey: obj.waitKey
                 }
-            }, obj.savePath, obj.tags || [])
+            }), obj.savePath, obj.tags || [])
             winSend('main', 'newPercent', {
                 jsonPath: jsonPath,
                 percent: '',
@@ -170,7 +170,7 @@ class NewProject {
                 }
 
                 let size = that.pathSize(toPath)
-                winSend('main', 'callMap', {
+                winSend('main', 'callMap', JSON.stringify ({
                     [path.join(toPath, 'project.json')]: {
                         allSize: size,
                         basePath: toPath,
@@ -187,7 +187,7 @@ class NewProject {
                         tags: obj.tags || [],
                         description: obj.description || ''
                     }
-                }, obj.savePath, obj.tags || [])
+                }), obj.savePath, obj.tags || [])
                 that.state = false
                 if (that.list.length) {
                     that.newProject('', ...that.list.shift())
@@ -243,7 +243,7 @@ class NewProject {
                 }
 
                 let size = that.pathSize(toPath)
-                winSend('main', 'callMap', {
+                winSend('main', 'callMap',JSON.stringify ( {
                     [path.join(toPath, 'project.json')]: {
                         allSize: size,
                         basePath: toPath,
@@ -260,7 +260,7 @@ class NewProject {
                         tags: obj.tags || [],
                         description: obj.description || ''
                     }
-                }, obj.savePath, obj.tags || [])
+                }), obj.savePath, obj.tags || [])
                 that.state = false
                 if (that.list.length) {
                     that.newProject('', ...that.list.shift())
@@ -268,7 +268,7 @@ class NewProject {
             });
         }
 
-        winSend('main', 'callMap', {
+        winSend('main', 'callMap', JSON.stringify ({
             [path.join(toPath, 'project.json')]: {
                 allSize: "0.00",
                 basePath: toPath,
@@ -286,7 +286,7 @@ class NewProject {
                 description: obj.description || '',
                 waitKey: obj.waitKey
             }
-        }, obj.savePath, obj.tags || [])
+        }), obj.savePath, obj.tags || [])
 
 
     }

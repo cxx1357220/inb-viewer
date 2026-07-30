@@ -1,5 +1,5 @@
 <template>
-  <el-input type="password" v-model="password" v-if="password != 665533"></el-input>
+  <el-input type="password" v-model="password" v-if="password != 666666"></el-input>
   <div class="home" v-loading="loading" v-else>
     <nav class="layout">
       <div class="left">
@@ -314,7 +314,7 @@ export default {
   name: 'HomeView',
   data() {
     return {
-      password: '665533',
+      password: '666666',
       loading: false,
       baseConfig: {},
       allDataMap: {},
@@ -413,11 +413,6 @@ export default {
 
   },
   watch: {
-    // filterVal(n) {
-    //   if (n == '665533') {
-    //     // ipcRenderer.send('openTool')
-    //   }
-    // },
     copyVal(n) {
       localStorage.setItem('copyVal', n || "")
     },
@@ -488,13 +483,17 @@ export default {
       this.filterList(this.filterVal)
     }
     old = ''
-    ipcRenderer.on('callMap', (e, map, openFolderPath, tags) => {
+    ipcRenderer.on('callMap', (e, mapString, openFolderPath, tags) => {
       this.loading = false
+      if(!mapString){
+        return
+      }
+      let map = JSON.parse(mapString)
       if (Object.keys(map).length) {
         if (Object.keys(map).length == 1 && Object.values(map)[0].waitKey) {
           delete this.waitCopyMap[Object.values(map)[0].waitKey]
         }
-        this.openFolderPathMap[openFolderPath] = window.btoa(openFolderPath).match(/[0-9a-zA-Z]/g).join('')
+        this.openFolderPathMap[openFolderPath] = 1
         Object.assign(this.allDataMap, map)
         localStorage.setItem('allDataMap', JSON.stringify(this.allDataMap))
         this.filterList(this.filterVal)
@@ -984,7 +983,7 @@ export default {
     },
     server() {
       this.serverState = !this.serverState
-      ipcRenderer.send('fileShare', this.serverState, this.showList, this.openFolderPathMap)
+      ipcRenderer.send('fileShare', this.serverState, this.showList)
     },
     copyDir(obj) {
       if (!this.copyVal) {
@@ -1016,11 +1015,10 @@ export default {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
         inputValue: '',
-        inputPlaceholder: '665533',
-        inputType: 'number'
+        inputPlaceholder: 'sure',
       }).then(({ value }) => {
 
-        if (value == "665533") {
+        if (value == "sure") {
           console.log('value: ', value);
           this.showList.forEach((obj) => {
             ipcRenderer.send('rmPath', obj)

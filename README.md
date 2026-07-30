@@ -51,7 +51,7 @@ npm run serve --workspace=ocr-html
 
 局域网内文件分享的html调试可通过
 ```
-npm run serve --workspace=file-html
+npm run serve --workspace=file-share-html
 ```
 
 

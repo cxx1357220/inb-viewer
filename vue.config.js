@@ -86,7 +86,7 @@ const configureWebpack = {
 //   }
 // }
 module.exports = defineConfig({
-  productionSourceMap:false,
+  productionSourceMap: false,
   devServer: {
     client: {
       overlay: false
@@ -132,7 +132,8 @@ module.exports = defineConfig({
       },
       // externals: ["electron-screenshots"],
 
-      externals: ["electron-screenshots", "onnxruntime-node", "sherpa-onnx"],
+      // 子进程的引用第三方，如果项目没使用到，build的时候不会被打进去，需要在这写一下
+      externals: ["electron-screenshots", "onnxruntime-node", "sherpa-onnx", "md5", "express-ws", "@techstark/opencv-js", "jimp", "js-yaml", "clipper-lib"],
       // extraResources: [{
       //   "from": "node_modules/onnxruntime-node/bin",
       //   "to": "node_modules/onnxruntime-node/bin"

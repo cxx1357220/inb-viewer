@@ -3,22 +3,21 @@ import {
     ipcMain,
 } from 'electron'
 var os = require('os')
-
-const path = require('path')
 const { fork } = require('child_process')
+const md5 = require('md5')
 const {
     winSend
 } = require('./win')
 const express = require('express')
+const kill = require('tree-kill')
 const multiparty = require('multiparty');
 const fs = require('fs')
 const bodyParser = require('body-parser')
-const { SimpleOcrProcessor } = require('./ocr/index')
-// build 成dmg后fork无法正常引入jimp等包
-const { ocrHtmlPath, ocrModelPath } = require('./config');
+const { ocrHtmlPath, ocrModelPath, tempPath, ocrServerPath } = require('./config');
+const { randomKey } = require('./utils')
+console.log('tempPath: ', tempPath);
 
 
-const ocr = new SimpleOcrProcessor(ocrModelPath)
 
 
 class OcrServe {
@@ -26,10 +25,11 @@ class OcrServe {
         this.server = {
             close: () => { }
         };
-        // this.session = null
-        // this.ocrWorker = null
-        // this.taskId = 0
-        // this.pendingTasks = new Map()
+        this.express = null
+        this.pw = ''
+        this.ocrWorker = null
+        this.pendingTasks = new Map()
+        this.disposeTimeout = null
 
         ipcMain.on('startOcr', this.startOcr.bind(this))
         ipcMain.on('closeOcr', this.closeOcr.bind(this))
@@ -37,119 +37,123 @@ class OcrServe {
         app.on('before-quit', (event, commandLine, workingDirectory) => {
             console.log('before-quit');
             that.closeOcr()
+            that.closeWorker()
         })
     }
-    // async recognizeWithWorker(imagePath) {
-    //     this.taskId++
-    //     const id = this.taskId
-    //     return new Promise((resolve, reject) => {
-    //         pendingTasks.set(id, { resolve, reject })
-    //         this.ocrWorker.send({ taskId: id, imagePath })
-    //     })
-    // }
+
+    closeWorker(){
+        console.log('closeWorker');
+        if(this.ocrWorker){
+            kill(this.ocrWorker.pid)
+            this.ocrWorker = null
+        }
+    }
+    async recognizeWithWorker(imagePath) {
+        console.log('imagePath: ', imagePath);
+        let that = this
+        that.disposeTimeout&& clearTimeout(that.disposeTimeout)
+        const id = md5(imagePath)
+        if(this.ocrWorker==null){
+            this.ocrWorker = fork(ocrServerPath)
+            this.ocrWorker.on('exit', (code) => {
+                console.log('ocrWorker exit: ', code);
+                that.closeWorker()
+            })
+            this.ocrWorker.on('message', (callback) => { 
+                that.disposeTimeout&& clearTimeout(that.disposeTimeout)
+                that.disposeTimeout = setTimeout(()=>{
+                    that.closeWorker()
+                }, 1000 * 60 * 5)
+
+                let id = md5(callback.imagePath)
+                if (callback.res) {
+                    that.pendingTasks.get(id).resolve(callback.res)
+                } else {
+                    that.pendingTasks.get(id).reject(new Error(callback))
+                }
+
+            })
+        }
+        return new Promise((resolve, reject) => {
+            this.pendingTasks.set(id, { resolve, reject })
+            this.ocrWorker.send({  imagePath , ocrModelPath  })
+        })
+    }
     /**
      * 启动OCR服务
      */
     async startOcr() {
-        // build 成dmg后fork无法正常引入jimp等包
-        // this.ocrWorker = fork(ocrServerPath,[],{
-        //       execPath: process.execPath, // 👈 关键：使用当前 Electron 的 Node.js？
-        // })
-        // this.ocrWorker.on('message', (payload) => {
-        //     const { taskId, success, data, error } = payload
-        //     const task = pendingTasks.get(taskId)
-        //     if (task) {
-        //     pendingTasks.delete(taskId)
-        //     if (success) task.resolve(data)
-        //     else task.reject(new Error(error))
-        //     }
-        // })
+        this.closeOcr()
+        const that = this
+
+        if (!this.express) {
+            this.express = express()
+
+            this.express.use(bodyParser.urlencoded({
+                extended: false
+            }))
+            this.express.use(bodyParser.json())
+            // this.express.use('/api/ocr', express.raw({ type: 'application/octet-stream' }))
+            this.express.post('/api/ocr', async (req, res) => {
+                console.log('req.body: ', req.body);
+                let query = req.query
+                if (query.pw !== this.pw) {
+                    res.destroy();
+                    return
+                }
+                try {
+                    var form = new multiparty.Form({
+                        uploadDir: tempPath
+                    })
+                    form.parse(req);
 
 
-        // const ocr = new SimpleOcrProcessor()
-        // this.session = ocr
-        // await ocr.initialize()
+                    form.on('file', async (name, file) => {
+                        console.log('文件', name, file);
+                        
+                        try {
+                            const output = await that.recognizeWithWorker(file.path)
+                            console.log('output: ', output);
+                            const resValue = []
+                            output.items.forEach(o => {
+                                if (o.score > 0.8) {
+                                    resValue.push({
+                                        value: o.text,
+                                        points: o.poly,
+                                        score: o.score
+                                    })
+                                }
+                            })
+
+                            fs.unlink(file.path, (err) => {
+                                if (err) throw err;
+                                console.log('文件已被删除');
+                            });
+                            res.json({ res: resValue });
+                        } catch (error) {
+                            res.status(500).send('服务器内部错误');
+                        }
 
 
-
-        const serve = express()
-
-        serve.use(bodyParser.urlencoded({
-            extended: false
-        }))
-        serve.use(bodyParser.json())
-        // serve.use('/api/ocr', express.raw({ type: 'application/octet-stream' }))
-        serve.post('/api/ocr', async (req, res) => {
-            try {
-                var form = new multiparty.Form({})
-                form.parse(req);
-
-
-                form.on('file', async (name, file) => {
-                    console.log('文件', name, file);
-                    // const forked = fork(ocrPath);
-                    // forked.on('message', function (output) {
-                    //     console.log('output: ', output);
-                    //     const resValue = output.items.map(o => {
-                    //         return {
-                    //             value: o.text,
-                    //             points: o.poly,
-                    //             score: o.score
-                    //         }
-                    //     })
-
-                    //     fs.unlink(file.path, (err) => {
-                    //         if (err) throw err;
-                    //         console.log('文件已被删除');
-                    //     });
-                    //     res.json({ res: resValue });
-                    //     forked.kill()
-
-                    // })
-                    // forked.on('close', function (code) {
-                    //     console.log('子进程已退出，退出码close ' + code);
-                    // });
-                    // forked.on('exit', function (code) {
-                    //     console.log('子进程已关闭，退出码exit ' + code);
-                    //     if (code) {
-                    //         res.status(500).send('服务器内部错误');
-                    //     }
-                    // });
-                    // forked.send({ filePath: file.path, ocrModelPath })
-                    try {
-                        const output = await ocr.predictSingle(file.path)
-                        console.log('output: ', output);
-                        const resValue = output.items.map(o => {
-                            return {
-                                value: o.text,
-                                points: o.poly,
-                                score: o.score
-                            }
-                        })
-
-                        fs.unlink(file.path, (err) => {
-                            if (err) throw err;
-                            console.log('文件已被删除');
-                        });
-                        res.json({ res: resValue });
-                    } catch (error) {
-                        res.status(500).send('服务器内部错误');
-                    }
-
-
-                });
+                    });
 
 
 
 
-            } catch (err) {
-                console.error(err);
-                res.status(500).json({ error: err.message });
-            }
+                } catch (err) {
+                    console.error(err);
+                    res.status(500).json({ error: err.message });
+                }
 
-        })
+            })
+            this.express.use('/', express.static(ocrHtmlPath))
+
+        }
 
 
+
+        this.pw = randomKey(3)
+        // this.pw = 'aaa'
 
         let ifaces = os.networkInterfaces()
         let add = '',
@@ -167,10 +171,9 @@ class OcrServe {
                 }
             }
         }
-        serve.use('/', express.static(ocrHtmlPath))
-        this.serve = serve.listen(port, () => {
-            console.log(`${add}:${port}/#/`)
-            winSend('main', 'ocrUrl', `${add}:${port}/#/`)
+        this.serve = this.express.listen(port, () => {
+            console.log(`${add}:${port}/?pw=${this.pw}`)
+            winSend('main', 'ocrUrl', `${add}:${port}/?pw=${this.pw}`)
         })
     }
 
@@ -178,28 +181,32 @@ class OcrServe {
      * 关闭OCR服务
      */
     async closeOcr() {
+        console.log('closeOcr');
         if (this.serve && this.serve.close) {
             this.serve.close()
         }
-        
+
         // await this.session.dispose()
         // this.ocrWorker.kill()
     }
 }
-new OcrServe()
+const ocr = new OcrServe()
 
 
 const getOcr = async (event, args) => {
 
     return new Promise(async (resolve, reject) => {
         try {
-            const output = await ocr.predictSingle(args.filePath)
+            const output = await ocr.recognizeWithWorker(args.filePath)
             console.log('output: ', output);
-            const resValue = output.items.map(o => {
-                return {
-                    value: o.text,
-                    points: o.poly,
-                    score: o.score
+            const resValue = []
+            output.items.forEach(o => {
+                if (o.score > 0.8) {
+                    resValue.push({
+                        value: o.text,
+                        points: o.poly,
+                        score: o.score
+                    })
                 }
             })
             resolve({ res: resValue })
@@ -207,38 +214,6 @@ const getOcr = async (event, args) => {
             console.log('error: ', error);
             reject('ocr服务内部错误')
         }
-        // const forked = fork(ocrPath, ['child'], {
-        //     execPath: process.execPath,
-        // });
-        // forked.on('message', function (output) {
-        //     console.log('output: ', output);
-        //     const resValue = output.items.map(o => {
-        //         return {
-        //             value: o.text,
-        //             points: o.poly,
-        //             score: o.score
-        //         }
-        //     })
-        //     resolve({ res: resValue })
-        //     forked.kill()
-
-        // })
-        // forked.on('uncaughtException', (err) => {
-        //     console.log('捕获到未捕获的异常:', err);
-        // });
-        // forked.on('error', (err) => {
-        //     console.log('子进程发送错误:', err);
-        // });
-        // forked.on('close', function (code) {
-        //     console.log('子进程已退出，退出码close ' + code);
-        // });
-        // forked.on('exit', function (code) {
-        //     console.log('子进程已关闭，退出码exit ' + code);
-        //     if (code) {
-        //         reject('ocr服务内部错误')
-        //     }
-        // });
-        // forked.send({ filePath: args.filePath, ocrModelPath })
     })
 
 }

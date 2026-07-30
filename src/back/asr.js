@@ -5,6 +5,8 @@ const path = require('path');
 const {
     fork,
 } = require('child_process');
+const kill = require('tree-kill');
+
 const {
     asrPath
 } = require('./config')
@@ -125,7 +127,8 @@ class Asr {
                     percent: forkedRes.percent,
                 })
                 if (forkedRes.percent == 'done') {
-                    forked.kill()
+                    // forked.kill()
+                    kill(forked.pid)
                     let name = path.join(obj.basePath, path.parse(obj.file).name)
                     if(set.sileroVadVersion=='none'){
                         fs.writeFile(name + '.txt', forkedRes.text, function (err) {
@@ -136,6 +139,13 @@ class Asr {
                     }else{
                         writeFile(name, forkedRes.outList)
                     }
+                }
+                if (forkedRes.percent == 'error') {
+                    winSend('main', 'asrPercent', {
+                        jsonPath: obj.jsonPath,
+                        percent: 'error',
+                    })
+                    kill(forked.pid)
                 }
             })
             forked.on('close', function (code) {

@@ -56,6 +56,11 @@ const routes = [
     component: () => import('../views/outDesc.vue')
   },
   {
+    path: '/imageDetail',
+    name: 'imageDetail',
+    component: () => import('../views/imageDetail.vue')
+  },
+  {
     path: '/notification',
     name: 'notification',
     component: () => import('../views/notification.vue')

@@ -9,6 +9,10 @@ import {
 } from 'electron'
 const config = require('./config');
 const { createScreenshots } = require('./screenshots')
+const md5 = require('md5')
+const path = require('path')
+const fs = require('fs')
+
 import {
     createProtocol
 } from 'vue-cli-plugin-electron-builder/lib'
@@ -40,7 +44,7 @@ const setTray = (screenshots) => {
     }, {
         label: '截图',
         click: function () {
-            screenshots.startCapture()
+            screenshots.start()
         }
     }, {
         label: '退出',
@@ -175,6 +179,10 @@ async function createWindow(winType = 'main', obj = {}) {
             winKey = 'videoList'
             obj.winKey = winKey
             break;
+        case 'imageDetail':
+            winKey = md5(obj.url)
+            obj.winKey = winKey
+            break;
         default:
             winKey = winType
             break;
@@ -273,6 +281,12 @@ async function createWindow(winType = 'main', obj = {}) {
                 delete winMap[winKey]
             })
             break;
+        case 'imageDetail': 
+            win.webContents.send('imageDetail', obj)
+            win.on('close', (e) => {
+                delete winMap[winKey]
+            })
+            break;
         default:
             let cutStateMap = {}
             cutData.list.forEach(list => {
@@ -304,6 +318,12 @@ const open = (event, obj, type = 'content') => {
 }
 ipcMain.on('open', open)
 app.on('before-quit', (e) => {
+    let dir = config.tempPath
+    let files = fs.readdirSync(dir)
+    for (var i = 0; i < files.length; i++) {
+        let newPath = path.join(dir, files[i]);
+        fs.unlinkSync(newPath);
+    }
     if (asrData.state || repkgData.state || copyData.state || compressData.state || cutData.state || newData.state || getData.state || concatData.state) {
         let str = '任务'
         // whisperData.state && (str += ' 字幕解析 ')

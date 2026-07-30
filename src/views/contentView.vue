@@ -70,7 +70,7 @@
 const ipcRenderer = require('electron').ipcRenderer;
 const path = require('path');
 const fs = require('fs');
-import axios from 'axios';
+// import axios from 'axios';
 import { throttle } from '../back/utils.js';
 
 
@@ -120,19 +120,22 @@ export default {
             let ls = fs.readdirSync(p) || []
             for (const o of ls) {
                 console.log('o: ', o);
-                var stat = fs.statSync(path.join(p, o));
+                let filePath = path.join(p, o)
+                let name = filePath.replace(basePath, '')
+                var stat = fs.statSync(filePath);
+
                 if (stat.isDirectory()) {
-                    read(path.join(p , o))
+                    read(filePath)
                 } else {
                     let ext = path.extname(o).toLowerCase()
-                    if (imgExtList.indexOf(ext) != -1 && (path.join(p, o)) != this.obj.img.split('?rand=')[0]) {
-                        imgs.push(path.join(p, o))
+                    if (imgExtList.indexOf(ext) != -1 && (filePath) != this.obj.img.split('?rand=')[0]) {
+                        imgs.push(filePath)
                     } else if (videoExtList.indexOf(ext) != -1) {
-                        videos.push(path.join(p, o))
+                        videos.push(filePath)
                     } else if (audioExtList.indexOf(ext) != -1) {
-                        audios.push(path.join(p, o))
+                        audios.push(filePath)
                     } else if (mdExt == ext) {
-                        mdList.push({ path: path.join(p, o), name: o })
+                        mdList.push({ path: filePath, name: name })
                     }
                 }
             }
@@ -189,19 +192,19 @@ export default {
                 }
             });
         },
-        singleName(i = 0) {
-            let name = this.newName + (i ? ('(' + i + ').md') : '.md')
-            let s = path.join(this.obj.basePath, name)
+        singleName(basePath, newName,  fileExt = '.md',i = 0) {
+            let name = newName + (i ? ('(' + i + ')'+fileExt) : fileExt)
+            let s = path.join(basePath, name)
             console.log('s: ', s, i);
-            let has = this.mdList.some(o => o.path == s)
-            if (has) {
-                return this.singleName(i + 1)
+            if (fs.existsSync(s)) {
+                return this.singleName(basePath, newName, fileExt,i + 1)
             } else {
                 return {
                     name,
                     path: s
                 }
             }
+
         },
         newMd() {
             if (this.newLoading) {
@@ -215,7 +218,7 @@ export default {
                 return false
             }
             this.newLoading = true
-            let obj = this.singleName()
+            let obj = this.singleName(this.obj.basePath, this.newName, '.md',0)
             fs.writeFile(obj.path, '', (err) => {
                 this.newLoading = false
                 if (err) {
@@ -234,51 +237,53 @@ export default {
             const blob = await response.blob();
             return new File([blob], filename, { type: mimeType });
         },
-        async ocr(s) {
-            // console.log('s: ', s);
-            if (localStorage.getItem('ocrServe')=='false') {
-                this.showOcr = false
-                return false
-            }
-            let file = await this.urlToFile(s, 'img.png')
-            const formData = new FormData();
-            formData.append('file', file);
-            axios.post('http://127.0.0.1:5000/api/ocr', formData, {
-                 headers: {
-                    'Content-Type': 'multipart/form-data',
-                }  
-            }).then(response => {
-                console.log('上传成功', response.data);
-                this.res = response.data
-                this.ocrText = ''
-                this.res.res.forEach(element => {
-                    this.ocrText += element.value + '\n'
-                });
-                this.ocrData = response.data
-                this.showOcrImgUrl = s
-                this.showText = true
+        // async ocr(s) {
+        //     // console.log('s: ', s);
+        //     if (localStorage.getItem('ocrServe')=='false') {
+        //         this.showOcr = false
+        //         return false
+        //     }
+        //     let file = await this.urlToFile(s, 'img.png')
+        //     const formData = new FormData();
+        //     formData.append('file', file);
+        //     axios.post('http://127.0.0.1:5000/api/ocr', formData, {
+        //          headers: {
+        //             'Content-Type': 'multipart/form-data',
+        //         }  
+        //     }).then(response => {
+        //         console.log('上传成功', response.data);
+        //         this.res = response.data
+        //         this.ocrText = ''
+        //         this.res.res.forEach(element => {
+        //             this.ocrText += element.value + '\n'
+        //         });
+        //         this.ocrData = response.data
+        //         this.showOcrImgUrl = s
+        //         this.showText = true
 
 
-            }).catch(error => {
-                console.error('上传失败', error);
-            });
-        },
+        //     }).catch(error => {
+        //         console.error('上传失败', error);
+        //     });
+        // },
         async getOcr(filePath,url) { 
-            ipcRenderer.invoke("getOcr", {
-                filePath: filePath,
-            }).then(obj => {
-                console.log('obj: ', obj);
-                this.ocrData = obj
-                this.showOcrImgUrl = url
-                this.showText = true
+            ipcRenderer.send('open', { url:filePath }, 'imageDetail')
+            // ipcRenderer.invoke("getOcr", {
+            //     filePath: filePath,
+            // }).then(obj => {
+            //     console.log('obj: ', obj);
+            //     this.ocrData = obj
+            //     this.showOcrImgUrl = url
+            //     this.showText = true
 
-            }).catch(error => {
-                console.error('ocr失败', error);
-                this.$message({
-                    type: 'error',
-                    message: 'ocr失败'
-                });
-            });
+            // }).catch(error => {
+            //     console.error('ocr失败', error);
+            //     this.$message({
+            //         type: 'error',
+            //         message: 'ocr失败'
+            //     });
+            // });
+            
         },
     }
 

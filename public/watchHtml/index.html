@@ -18,9 +18,11 @@
         // 结束调试后，可移除掉
         // vConsole.destroy();
     </script> -->
-    <button id="startButton">start connect</button>
-    <button id="playButton" disabled>play video</button>
-    <button id="closeButton" disabled>close connect</button>
+    <menu id="buttonList" class="show">
+        <button id="startButton">start connect</button>
+        <button id="playButton" disabled>play video</button>
+        <button id="closeButton" disabled>close connect</button>
+    </menu>
     <video id="video"></video>
 
     <script>
@@ -28,16 +30,19 @@
         const startButton = document.getElementById('startButton');
         const closeButton = document.getElementById('closeButton');
         const playButton = document.getElementById('playButton');
+        const buttonList = document.getElementById('buttonList');
+
 
         let ws;
         let stream = {}
         let peer
         let key
         const gotMediaStream = () => {
-            let wsPath = 'ws://' + location.host + '?v=1&user=child'
+            let wsPath = 'ws://' + location.host + location.search+'&v=1&user=child'
             ws = new WebSocket(wsPath);
             ws.onopen = function () {
                 console.log('ws onopen');
+                buttonList.classList.remove('show')
                 playButton.removeAttribute('disabled')
                 closeButton.removeAttribute('disabled')
             };
@@ -93,7 +98,8 @@
                 console.log('onclose: ', e);
                 video.pause()
                 playButton.className = ''
-                playButton.re
+                buttonList.classList.add('show')
+                
                 startButton.className = ''
                 playButton.setAttribute('disabled', true)
                 closeButton.setAttribute('disabled', true)
@@ -122,9 +128,24 @@
 
     </script>
     <style>
+        body{
+            position: relative;
+        }
         * {
             margin: 0;
             padding: 0;
+        }
+        menu{
+            position: absolute;
+            top: 0;
+            left: 0;
+            opacity: 0.2;
+        }
+        menu:hover{
+            opacity: 1;
+        }
+        .show{
+            opacity: 1;
         }
 
         button {
@@ -138,6 +159,9 @@
 
         video {
             width: 100vw;
+            height: 100vh;
+            vertical-align: bottom;
+            background-color:black;
         }
 
         .bg {
