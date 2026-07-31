@@ -6,10 +6,6 @@
                     <!-- <img v-for=" s in imgs" v-lazy="s" alt=""> -->
                     <div class="img" v-for=" (s,i) in imgs" :key="s">
                         <div class="banner">
-                            <!--  v-show="showOcr" @click="ocr(imgExtList[i])" -->
-                            <!-- <button @click="getOcr(s,imgExtList[i])" >OCR</button>
-                            <button @click="imgSetPoster(s)">设置封面</button>
-                            <button @click="openPath(s)">打开路径</button> -->
 
 
                             <el-button size="mini" round @click="getOcr(s,imgExtList[i])" type="">OCR</el-button>
@@ -92,7 +88,6 @@ export default {
             mdList: [],
             newName: '',
             newLoading: false,
-            showOcr: false,
             ocrText:'',
             showText:false,
             ocrData:{},
@@ -102,7 +97,6 @@ export default {
     },
     components: { myVideo,showOcrImage },
     created() {
-        this.showOcr = !(localStorage.getItem('ocrServe')=='false')
         console.log(this.$route.params);
         this.obj = this.$route.params;
         console.log('this.obj : ', this.obj);
@@ -237,35 +231,6 @@ export default {
             const blob = await response.blob();
             return new File([blob], filename, { type: mimeType });
         },
-        // async ocr(s) {
-        //     // console.log('s: ', s);
-        //     if (localStorage.getItem('ocrServe')=='false') {
-        //         this.showOcr = false
-        //         return false
-        //     }
-        //     let file = await this.urlToFile(s, 'img.png')
-        //     const formData = new FormData();
-        //     formData.append('file', file);
-        //     axios.post('http://127.0.0.1:5000/api/ocr', formData, {
-        //          headers: {
-        //             'Content-Type': 'multipart/form-data',
-        //         }  
-        //     }).then(response => {
-        //         console.log('上传成功', response.data);
-        //         this.res = response.data
-        //         this.ocrText = ''
-        //         this.res.res.forEach(element => {
-        //             this.ocrText += element.value + '\n'
-        //         });
-        //         this.ocrData = response.data
-        //         this.showOcrImgUrl = s
-        //         this.showText = true
-
-
-        //     }).catch(error => {
-        //         console.error('上传失败', error);
-        //     });
-        // },
         async getOcr(filePath,url) { 
             ipcRenderer.send('open', { url:filePath }, 'imageDetail')
             // ipcRenderer.invoke("getOcr", {

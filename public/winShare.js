@@ -101,7 +101,7 @@ class WinShare {
 
 
 
-    start(password = '', port = 3333, watchHtmlPath) {
+    start(password = '', port, watchHtmlPath) {
         console.log('watchHtmlPath: ', watchHtmlPath);
         process.send(watchHtmlPath)
 

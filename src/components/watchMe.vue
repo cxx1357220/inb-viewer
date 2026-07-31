@@ -125,15 +125,6 @@ export default {
             this.stream.getTracks().forEach(track => {
                 peer.addTrack(track)
             });
-            const senders = peer.getSenders();
-
-            senders.forEach(async (sender) => {
-                if (sender && sender.track.kind === 'video') {
-                    const params = sender.getParameters();
-                    params.encodings[0].maxBitrate = 1024 * 1024 * 20; // 设置码率为10MB
-                    await sender.setParameters(params);
-                }
-            });
 
             let a = await peer.createOffer()
             await peer.setLocalDescription(a)
@@ -144,7 +135,13 @@ export default {
         gotMediaStream(s) {
             this.watchState = true
             this.stream = s
-            this.ws = new WebSocket('ws://localhost:3333?v=1&user=father');
+            console.log('this.watchUrl: ', this.watchUrl);
+            let watchUrl = this.watchUrl
+            if(!watchUrl.startsWith('http')){
+                watchUrl = 'http://' + watchUrl
+            }
+            const url = new URL(watchUrl);
+            this.ws = new WebSocket(`ws://localhost:${url.port}?v=1&user=father`);
             this.ws.onopen = async function () {
                 console.log('ws onopen');
             };

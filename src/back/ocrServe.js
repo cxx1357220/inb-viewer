@@ -14,7 +14,7 @@ const multiparty = require('multiparty');
 const fs = require('fs')
 const bodyParser = require('body-parser')
 const { ocrHtmlPath, ocrModelPath, tempPath, ocrServerPath } = require('./config');
-const { randomKey } = require('./utils')
+const { randomKey, findFreePort } = require('./utils')
 console.log('tempPath: ', tempPath);
 
 
@@ -158,6 +158,13 @@ class OcrServe {
         let ifaces = os.networkInterfaces()
         let add = '',
             port = 5000
+        port = await findFreePort(port)
+        if(typeof port !== 'number'){
+            winSend('main', 'error', '无可用端口')
+            winSend('main', 'ocrUrl', ``)
+            return
+        }
+        
         for (let dev in ifaces) {
             let iface = ifaces[dev]
             for (let i = 0; i < iface.length; i++) {

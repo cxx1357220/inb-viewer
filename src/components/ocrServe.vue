@@ -21,11 +21,12 @@ export default {
             ocrUrl: '',
         }
     },
-    created() {
-        localStorage.setItem('ocrServe',false)
-    },
     mounted() {
         ipcRenderer.on('ocrUrl', (e, str) => {
+            if(!str){
+                this.ocrState = false
+                return
+            }
             console.log('str: ', str);
             this.ocrUrl = str
             var canvas = this.$refs.qrCode
@@ -39,9 +40,6 @@ export default {
         })
     },
     
-    beforeDestroy(){
-        localStorage.setItem('ocrServe',false)
-    },
     methods: {
         startOcr() {
             this.ocrState = !this.ocrState
@@ -49,12 +47,10 @@ export default {
                 this.closeOcr()
             } else {
                 ipcRenderer.send('startOcr', this.ocrState)
-                localStorage.setItem('ocrServe',true)
             }
         },
         closeOcr() {
             ipcRenderer.send('closeOcr', this.ocrState)
-            localStorage.setItem('ocrServe',false)
         },
 
 

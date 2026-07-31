@@ -35,6 +35,12 @@ export default {
     },
     methods: {
         async readQrcode() {
+            if(window.BarcodeDetector) {
+                console.log('支持二维码识别');
+            } else {
+                console.log('不支持二维码识别');
+                return 
+            }
             const detector = new BarcodeDetector({
                 formats: ['qr_code'],
             });

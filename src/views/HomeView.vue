@@ -547,6 +547,11 @@ export default {
       }
     })
     ipcRenderer.on('fileShareUrl', (e, str) => {
+      if(!str){
+        this.serverState = false
+        this.fileShareUrl = ''
+        return
+      }
       this.fileShareUrl = str
       var canvas = document.getElementById('qrCode')
       QRCode.toCanvas(canvas, str, {

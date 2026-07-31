@@ -1,3 +1,44 @@
+const net = require('net');
+/**
+ * 寻找可用端口
+ * @param {number} startPort 起始端口
+ * @param {number} endPort 最大端口（防止无限循环）
+ * @returns {Promise<number>} 空闲端口
+ */
+function findFreePort(startPort = 3000, endPort = 65535) {
+  return new Promise((resolve, reject) => {
+    let port = startPort;
+
+    function tryPort() {
+      if (port > endPort) {
+        return reject(`范围内没有空闲端口 ${startPort} ~ ${endPort}`);
+      }
+
+      const server = net.createServer();
+      // 尝试监听
+      server.listen(port, () => {
+        // 监听成功 → 端口可用，立刻关闭服务返回端口
+        const freePort = server.address().port;
+        server.close(() => resolve(freePort));
+      });
+
+      server.on('error', (err) => {
+        // EADDRINUSE = 端口被占用，尝试下一个
+        if (err.code === 'EADDRINUSE') {
+          port++;
+          tryPort();
+        } else {
+          reject(err);
+        }
+      });
+    }
+
+    tryPort();
+  });
+}
+
+
+
 /**
  * 节流
  * @param {Function} fn 执行function
@@ -73,5 +114,6 @@ export {
   times,
   durationToSeconds,
   debounce,
-  randomKey
+  randomKey,
+  findFreePort
 }

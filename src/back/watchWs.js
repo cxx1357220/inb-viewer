@@ -2,7 +2,7 @@ import {
     ipcMain,
 } from 'electron'
 var os = require('os')
-const { randomKey } = require('./utils')
+const { randomKey, findFreePort } = require('./utils')
 const { fork } = require('child_process')
 const kill = require('tree-kill')
 let {
@@ -22,7 +22,7 @@ class WatchServer {
      * 打开watch，并返回网址，让前端rtc开始推流,
      * 不开这个服务挂这个ws服务也没啥意思
      */
-    startWs() {
+    async startWs() {
         if (this.worker) {
             // this.worker.kill('SIGTERM')
             kill(this.worker.pid, 'SIGTERM')
@@ -49,7 +49,12 @@ class WatchServer {
                 }
             }
         }
-        const port = 3333
+        let port = 3333
+        port = await findFreePort(port)
+        if(typeof port !== 'number'){
+            winSend('main', 'error', '无可用端口')
+            return
+        }
         try {
             this.worker = fork(winSharePath)
             this.worker.on('error', (err) => {

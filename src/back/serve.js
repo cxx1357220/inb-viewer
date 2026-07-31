@@ -12,7 +12,7 @@ const { fileShareHtmlPath, vditorPath, fileSharePath } = require('./config')
 const {
     winSend
 } = require('./win')
-const { randomKey } = require('./utils')
+const { randomKey, findFreePort } = require('./utils')
 class ShareServer {
     constructor() {
         this.server = {
@@ -33,7 +33,7 @@ class ShareServer {
      * @param {boolean} boolean 是否开启
      * @param {Array} list fileShare的列表
      */
-    fileShare(event, boolean, list) {
+    async fileShare(event, boolean, list) {
         let that = this
         if (that.forked) {
             // that.forked.kill('SIGKILL')
@@ -41,7 +41,14 @@ class ShareServer {
             that.forked = null
         }
         if (boolean) {
-            const port = 3000
+            let port = 3000
+            port = await findFreePort(port)
+            if(typeof port !== 'number'){
+                winSend('main', 'error', '无可用端口')
+                winSend('main', 'fileShareUrl', ``)
+                return
+            }
+
             const pw = randomKey(2)
             // const pw = 'aa'
             let ifaces = os.networkInterfaces()

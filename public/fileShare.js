@@ -321,8 +321,8 @@ class FileShare {
             obj.webBasePath = key
             obj.webFilePath = obj.filePath.replace(obj.basePath, key).split(path.sep).join('/')
             obj.webImgPath = obj.img.replace(obj.basePath, key).split(path.sep).join('/')
-            this.useKeyMap[key] = obj
             if (!this.useKeyMap[key]) {
+                this.useKeyMap[key] = obj
                 this.app.use(key, serveIndex(obj.basePath, {
                     'icons': true
                 }), express.static(obj.basePath))
