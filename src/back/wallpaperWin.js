@@ -53,7 +53,11 @@ class WallpaperWin {
      */
     runWallpaper(event, path, exePath) {
         this.wallpaperPath = exePath
-        electronAsWallpaperWin.closePaper()
+        try {
+            electronAsWallpaperWin.closePaper()
+        } catch (e) {
+            console.log('e: ', e);
+        }
         exec(this.wallpaperPath + ' -control openWallpaper -file "' + path + '"', (
             err, stdout, stderr) => {
             if (stderr) {

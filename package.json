@@ -5,11 +5,12 @@
   "scripts": {
     "mdToHtml": "node mdToHtml.js",
     "moveFfmpeg": "node moveFfmpeg.js",
+    "rebuildElectronAsWallpaper": "node rebuildWallpaperCpp.js",
     "serve": "vue-cli-service serve",
     "build": "vue-cli-service build",
     "electron:build": "vue-cli-service electron:build",
     "electron:serve": "vue-cli-service electron:serve",
-    "postinstall": "electron-builder install-app-deps && npm run moveFfmpeg && npm run build --workspaces",
+    "postinstall": "electron-builder install-app-deps && npm run moveFfmpeg && npm run build --workspaces && npm run rebuildElectronAsWallpaper",
     "postuninstall": "electron-builder install-app-deps"
   },
   "workspaces": [
