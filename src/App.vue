@@ -51,6 +51,12 @@ export default {
         params: obj
       })
     })
+    ipcRenderer.on('faceApi', (e, obj) => {
+      this.$router.push({
+        name: 'faceApi',
+        params: obj
+      })
+    })
     ipcRenderer.on('home', (e) => {
       this.$router.push({
         name: 'home',

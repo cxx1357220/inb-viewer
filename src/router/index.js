@@ -61,6 +61,11 @@ const routes = [
     component: () => import('../views/imageDetail.vue')
   },
   {
+    path: '/faceApi',
+    name: 'faceApi',
+    component: () => import('../views/faceApi.vue')
+  },
+  {
     path: '/notification',
     name: 'notification',
     component: () => import('../views/notification.vue')

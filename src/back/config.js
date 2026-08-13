@@ -34,6 +34,11 @@ fs.mkdirSync(imgCachePath, {
     recursive: true
 });
 
+const faceCachePath = path.join(newSessionDataPath, 'faceCache');
+fs.mkdirSync(faceCachePath, {
+    recursive: true
+});
+
 const tempPath = path.join(newSessionDataPath, 'temp');
 fs.mkdirSync(tempPath, {
     recursive: true
@@ -113,6 +118,12 @@ const ocrModelPath = path.join(
     appPath,
     process.env.NODE_ENV !== 'production' ? '../public' : '',
     'ocrModel',
+)
+// face-api模型路径
+const faceApiModelPath = path.join(
+    appPath,
+    process.env.NODE_ENV !== 'production' ? '../public' : '',
+    'faceApiModel',
 )
 
 const vditorPath = path.join(
@@ -246,6 +257,8 @@ export {
     // hasOcr,
     ocrServerPath,
     ocrModelPath,
+    faceApiModelPath,
+    faceCachePath,
     ocrHtmlPath,
     readPath,
     rePKGPath,

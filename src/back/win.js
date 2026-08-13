@@ -183,6 +183,10 @@ async function createWindow(winType = 'main', obj = {}) {
             winKey = md5(obj.url)
             obj.winKey = winKey
             break;
+        case 'faceApi':
+            winKey = 'faceApi'
+            obj.winKey = winKey
+            break;
         default:
             winKey = winType
             break;
@@ -191,6 +195,9 @@ async function createWindow(winType = 'main', obj = {}) {
     if (winMap[winKey]) {
         winMap[winKey].show()
         winMap[winKey].focus()
+        if(winKey == 'faceApi'){
+            winMap[winKey].webContents.send('faceApiImgList', obj)
+        }
         return false
     }
     // Create the browser window.
@@ -281,8 +288,14 @@ async function createWindow(winType = 'main', obj = {}) {
                 delete winMap[winKey]
             })
             break;
-        case 'imageDetail': 
+        case 'imageDetail':
             win.webContents.send('imageDetail', obj)
+            win.on('close', (e) => {
+                delete winMap[winKey]
+            })
+            break;
+        case 'faceApi':
+            win.webContents.send('faceApi', obj)
             win.on('close', (e) => {
                 delete winMap[winKey]
             })

@@ -3,31 +3,40 @@
         <el-tabs v-model="activeName" type="border-card">
             <el-tab-pane label="media list" name="list">
                 <div class="list">
-                    <!-- <img v-for=" s in imgs" v-lazy="s" alt=""> -->
-                    <div class="img" v-for=" (s,i) in imgs" :key="s">
-                        <div class="banner">
-
-
-                            <el-button size="mini" round @click="getOcr(s,imgExtList[i])" type="">OCR</el-button>
-                            <el-button size="mini" round @click="imgSetPoster(s)" type="">设置封面</el-button>
-                            <el-button size="mini" round @click="openPath(s)" type="">打开路径</el-button>
-
+                    <template v-if="imgs.length">
+                        <div class="section-header">
+                            <span><i class="el-icon-picture-outline"></i> 图片 ({{ imgs.length }})</span>
+                            <el-button size="mini" type="text" icon="el-icon-cpu" @click="openFaceApi">人脸识别图片</el-button>
                         </div>
-                        <el-image :src="imgExtList[i]" lazy :preview-src-list="imgExtList">
-                        </el-image>
-                    </div>
-                    <div v-for="( s, i) in audios" :key="s" class="audio" v-loading="cutStateMap[s]"
-                        :element-loading-text="cutStateMap[s]">
-                        <!-- <audio controls :src="s">
-                    </audio> -->
-                        <myVideo :fobj="obj" :url="s" :idx="i" :videoList="audios" isAudio="1" />
-                    </div>
-                    <div v-for="( s, i) in videos" :key="s" class="video" v-loading="cutStateMap[s]"
-                        :element-loading-text="cutStateMap[s]">
-                        <myVideo :fobj="obj" :url="s" :idx="i" :videoList="videos" />
-                    </div>
+                        <div class="img" v-for=" (s,i) in imgs" :key="s">
+                            <div class="banner">
+                                <el-button size="mini" round @click="getOcr(s,imgExtList[i])" type="">OCR</el-button>
+                                <el-button size="mini" round @click="imgSetPoster(s)" type="">设置封面</el-button>
+                                <el-button size="mini" round @click="openPath(s)" type="">打开路径</el-button>
+                            </div>
+                            <el-image :src="imgExtList[i]" lazy :preview-src-list="imgExtList">
+                            </el-image>
+                        </div>
+                    </template>
+                    <template v-if="audios.length">
+                        <div class="section-header">
+                            <span><i class="el-icon-headset"></i> 音频 ({{ audios.length }})</span>
+                        </div>
+                        <div v-for="( s, i) in audios" :key="s" class="audio" v-loading="cutStateMap[s]"
+                            :element-loading-text="cutStateMap[s]">
+                            <myVideo :fobj="obj" :url="s" :idx="i" :videoList="audios" isAudio="1" />
+                        </div>
+                    </template>
+                    <template v-if="videos.length">
+                        <div class="section-header">
+                            <span><i class="el-icon-video-camera"></i> 视频 ({{ videos.length }})</span>
+                        </div>
+                        <div v-for="( s, i) in videos" :key="s" class="video" v-loading="cutStateMap[s]"
+                            :element-loading-text="cutStateMap[s]">
+                            <myVideo :fobj="obj" :url="s" :idx="i" :videoList="videos" />
+                        </div>
+                    </template>
                     <el-empty v-if="!imgs.length && !audios.length && !videos.length" description="nothing"></el-empty>
-
                 </div>
             </el-tab-pane>
             <el-tab-pane label="html" v-if="haveHtml" name="html">
@@ -174,6 +183,11 @@ export default {
         open: throttle(function (obj) {
             ipcRenderer.send('open', obj, 'mdView')
         },300),
+        openFaceApi() {
+            if (this.imgs.length) {
+                ipcRenderer.send('open', { list: this.imgs }, 'faceApi')
+            }
+        },
         delPath(s) {
             fs.unlink(s, (err) => {
                 if (err) {
@@ -259,10 +273,26 @@ export default {
     overflow: auto;
     height: 100%;
 
-    // // width:100vw;
-    // button {
-    //     display: block;
-    // }
+    .section-header {
+        position: sticky;
+        top: 0;
+        z-index: 9;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0 16px;
+        height: 40px;
+        box-sizing: border-box;
+        background: #f5f7fa;
+        border-bottom: 1px solid #e4e7ed;
+        font-size: 13px;
+        font-weight: 600;
+        color: #606266;
+
+        i {
+            margin-right: 4px;
+        }
+    }
 
     img {
         width: 100%;

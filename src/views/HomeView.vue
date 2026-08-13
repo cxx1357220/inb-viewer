@@ -101,6 +101,8 @@
             rateDuration }})</span></el-button>
 
           <el-button size="mini" @click="openVideoList">播放当前列表</el-button>
+          <el-button size="mini" @click="openFaceApi">人脸识别封面图</el-button>
+
 
           <el-button size="mini" @click="clearState">清除已操作状态</el-button>
           <!-- <el-button size="mini" @click="dataCount">数据统计</el-button> -->
@@ -1245,6 +1247,14 @@ export default {
     },
     setMoreApi() {
       ipcRenderer.send('open', {}, 'codeView')
+    },
+    openFaceApi() {
+      let list = this.showList
+      if (list.length) {
+        ipcRenderer.send('open', { list }, 'faceApi')
+      } else {
+        this.$message({ type: 'warning', message: '没有可用的图片' })
+      }
     }
   }
 
