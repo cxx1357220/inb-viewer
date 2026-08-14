@@ -15,14 +15,16 @@
 
     <div class="main-content" v-loading="loading" :element-loading-text="loadingText">
       <div class="image-list">
+        
         <div v-for="(item, idx) in list" :key="idx" :ref="'imgItem' + idx"
           :class="['image-item', { active: currentIdx === idx }]" @click="selectImage(idx)">
           <img :src="'file://' + (item.img || '').split('?')[0]" @error="onImgError" />
+          <el-badge :value="results[idx] ? results[idx].length : 0"
+            :type="results[idx] && results[idx].length ? 'primary' : 'info'" class="face-badge">
+          </el-badge>
           <div class="image-info">
             <span class="image-title">{{ item.title || '未命名' }}</span>
-            <el-badge :value="results[idx] ? results[idx].length : 0"
-              :type="results[idx] && results[idx].length ? 'primary' : 'info'" class="face-badge">
-            </el-badge>
+            <el-button size="mini" @click="showDetection(idx)"  icon="el-icon-view" class="detection-btn" ></el-button>
           </div>
         </div>
       </div>
@@ -42,7 +44,6 @@
                 <div v-for="face in group.faces" :key="face.id" :data-img-idx="face.imgIdx"
                   :class="['group-face', { highlight: face.imgIdx === currentIdx }]">
                   <img :src="face.thumb" @click="selectImage(face.imgIdx)" />
-                  <span class="face-age">{{ face.age.toFixed(0) }}岁 {{ face.gender }}</span>
                   <el-button size="mini" type="text" class="save-btn"
                     @click.stop="openSaveFace(face, gi)">录入</el-button>
                 </div>
@@ -74,7 +75,6 @@
         </div>
         <div class="base-entry-info">
           <div class="base-entry-name">{{ entry.name }}</div>
-          <div class="base-entry-count">{{ entry.value[0].gender }}</div>
         </div>
         <div class="base-entry-actions">
           <el-button size="mini" icon="el-icon-folder-opened"
@@ -83,6 +83,12 @@
         </div>
       </div>
     </el-drawer>
+
+    <div v-if="detectionDialog" class="lightbox" @click.self="detectionDialog = false">
+      <el-button class="lightbox-close" icon="el-icon-close" circle
+        @click="detectionDialog = false"></el-button>
+      <canvas ref="detectionCanvas" class="lightbox-canvas"></canvas>
+    </div>
   </div>
 </template>
 
@@ -121,6 +127,7 @@ export default {
       faceCachePath: '',
       faceGroupJsonPath: '',
       drawerVisible: false,
+      detectionDialog: false,
       saveDialog: {
         visible: false,
         name: '',
@@ -146,7 +153,6 @@ export default {
       await Promise.all([
         faceapi.nets.faceLandmark68Net.loadFromUri(modelPath),
         faceapi.nets.faceRecognitionNet.loadFromUri(modelPath),
-        faceapi.nets.ageGenderNet.loadFromUri(modelPath),
         faceapi.nets.ssdMobilenetv1.loadFromUri(modelPath)
       ])
       this.modelsLoaded = true
@@ -223,8 +229,6 @@ export default {
 
         const faceEntry = {
           descriptor: descArr,
-          age: face.age,
-          gender: face.gender,
           thumb: thumbFullPath,
         }
         const foundIdx = this.baseFaceGroup.findIndex(g => g.name === name)
@@ -294,7 +298,6 @@ export default {
             .detectAllFaces(img)
             .withFaceLandmarks()
             .withFaceDescriptors()
-            .withAgeAndGender()
 
           this.$set(this.results, i, detections)
           console.log('detections: ', detections);
@@ -309,9 +312,6 @@ export default {
               id: faceId++,
               imgIdx: i,
               descriptor: d.descriptor,
-              age: d.age,
-              gender: d.gender,
-              genderProbability: d.genderProbability,
               detection: d.detection,
               thumb: faceThumb,
             })
@@ -363,76 +363,116 @@ export default {
       }
       return false
     },
+    showDetection(idx) {
+      this.detectionDialog = true
+      this.$nextTick(() => {
+        this.drawDetections(idx)
+      })
+    },
+    drawDetections(idx) {
+      if (idx === null) return
+      const detections = this.results[idx] || []
+      const item = this.list[idx]
+      if (!item || !item.img) return
+      const img = new Image()
+      img.onload = () => {
+        const canvas = this.$refs.detectionCanvas
+        if (!canvas) return
+        const maxW = window.innerWidth - 80
+        const maxH = window.innerHeight - 80
+        const scale = Math.min(1, maxW / img.width, maxH / img.height)
+        canvas.width = Math.round(img.width * scale)
+        canvas.height = Math.round(img.height * scale)
+        const ctx = canvas.getContext('2d')
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+        detections.forEach(d => {
+          const box = d.detection.box
+          ctx.strokeStyle = '#409eff'
+          ctx.lineWidth = 1
+          ctx.strokeRect(box.x * scale, box.y * scale, box.width * scale, box.height * scale)
+          const positions = d.landmarks.positions
+          ctx.fillStyle = '#ffeb3b'
+          positions.forEach(p => {
+            ctx.beginPath()
+            ctx.arc(p.x * scale, p.y * scale, 1, 0, Math.PI * 2)
+            ctx.fill()
+          })
+        })
+      }
+      img.onerror = () => {
+        this.$message.error('图片加载失败')
+      }
+      img.src = 'file://' + item.img.split('?')[0]
+    },
     groupFaces() {
       if (this.allFaces.length === 0) {
         this.faceGroups = []
         return
       }
 
-      let baseEntries = []
+      // 质心聚类：每个组维护 descriptor 均值（质心），base 和新人脸都参与，
+      // 新人脸只和组质心比较，距离小于阈值才加入，否则新建组。
+      const groups = []
+      const addToGroup = (group, face) => {
+        group.faces.push(face)
+        const desc = face.descriptor
+        if (!group.sum) {
+          group.sum = Array.from(desc)
+          group.count = 1
+        } else {
+          for (let k = 0; k < group.sum.length; k++) group.sum[k] += desc[k]
+          group.count++
+        }
+      }
+      const centroid = (group) => group.sum.map(v => v / group.count)
+
       if (this.baseFaceGroup && this.baseFaceGroup.length) {
         this.baseFaceGroup.forEach(entry => {
           const name = entry.name || ''
           let faces = entry.value
           if (!faces) return
           if (!Array.isArray(faces)) faces = [faces]
+          const group = { baseNames: new Set(name ? [name] : []), faces: [] }
           faces.forEach(f => {
             if (f && f.descriptor) {
-              baseEntries.push({ name, descriptor: f.descriptor })
+              addToGroup(group, { descriptor: f.descriptor, isBase: true, baseName: name })
             }
           })
+          if (group.count) groups.push(group)
         })
       }
 
-      // 合并 base descriptor 和新检测的人脸，一起做并查集
-      const allDescs = baseEntries.map(b => ({ descriptor: b.descriptor, isBase: true, baseName: b.name }))
-        .concat(this.allFaces.map(f => ({ ...f, isBase: false, baseName: '' })))
-
-      const parent = allDescs.map((_, i) => i)
-      const find = (x) => {
-        while (parent[x] !== x) {
-          parent[x] = parent[parent[x]]
-          x = parent[x]
-        }
-        return x
-      }
-      const union = (a, b) => {
-        const ra = find(a)
-        const rb = find(b)
-        if (ra !== rb) parent[ra] = rb
-      }
-
-      for (let i = 0; i < allDescs.length; i++) {
-        for (let j = i + 1; j < allDescs.length; j++) {
-          const dist = faceapi.euclideanDistance(
-            allDescs[i].descriptor,
-            allDescs[j].descriptor
-          )
-          if (dist < this.threshold) {
-            union(i, j)
+      this.allFaces.forEach(f => {
+        const face = { ...f, isBase: false, baseName: '' }
+        let bestGroup = null
+        let bestDist = Infinity
+        groups.forEach(group => {
+          const dist = faceapi.euclideanDistance(face.descriptor, centroid(group))
+          if (dist < bestDist) {
+            bestDist = dist
+            bestGroup = group
           }
-        }
-      }
-
-      const groupMap = {}
-      allDescs.forEach((face, i) => {
-        const root = find(i)
-        if (!groupMap[root]) groupMap[root] = []
-        groupMap[root].push(face)
-      })
-
-      const groups = Object.values(groupMap)
-        .filter(g => g.some(f => !f.isBase))
-        .sort((a, b) => b.length - a.length)
-
-      this.faceGroups = groups.map(g => {
-        const names = [...new Set(g.filter(f => f.isBase && f.baseName).map(f => f.baseName))]
-        const cleaned = g.filter(f => !f.isBase).map(({ isBase, baseName, ...face }) => face)
-        return {
-          name: names.join('、'),
-          faces: cleaned,
+        })
+        if (bestGroup && bestDist < this.threshold) {
+          addToGroup(bestGroup, face)
+        } else {
+          const g = { baseNames: new Set(), faces: [] }
+          addToGroup(g, face)
+          groups.push(g)
         }
       })
+
+      this.faceGroups = groups
+        .filter(g => g.faces.some(f => !f.isBase))
+        .sort((a, b) => b.faces.length - a.faces.length)
+        .map(g => {
+          const names = [...g.baseNames].filter(Boolean)
+          const cleaned = g.faces.filter(f => !f.isBase).map(({ isBase, baseName, ...rest }) => rest)
+          return {
+            name: names.join('、'),
+            faces: cleaned,
+          }
+        })
       this.activeGroups = this.faceGroups.map((_, gi) => gi)
     },
   },
@@ -485,6 +525,7 @@ export default {
   border-right: 1px solid #eee;
   background: #fafafa;
   flex-shrink: 0;
+  position: relative;
 
   .image-item {
     margin: 8px;
@@ -494,6 +535,14 @@ export default {
     border-radius: 6px;
     transition: all 0.2s;
     background: #fff;
+    position: relative;
+
+    .face-badge {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      z-index: 10;
+    }
 
     &:hover {
       background: #f5f5f5;
@@ -507,7 +556,7 @@ export default {
     img {
       width: 100%;
       height: 180px;
-      object-fit: cover;
+      object-fit: contain;
       display: block;
     }
 
@@ -533,6 +582,7 @@ export default {
   flex: 1;
   overflow-y: auto;
   background: #fff;
+  position: relative;
 
   .empty-tip {
     text-align: center;
@@ -578,13 +628,6 @@ export default {
       &.highlight img {
         border-color: #409eff;
         box-shadow: 0 0 6px rgba(64, 158, 255, 0.6);
-      }
-
-      .face-age {
-        font-size: 11px;
-        display: block;
-        margin-top: 2px;
-        color: #666;
       }
 
       .save-btn {
@@ -653,6 +696,32 @@ export default {
     display: flex;
     gap: 6px;
     flex-shrink: 0;
+  }
+}
+
+.lightbox {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 3000;
+
+  .lightbox-close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    z-index: 10;
+  }
+
+  .lightbox-canvas {
+    max-width: calc(100vw - 80px);
+    max-height: calc(100vh - 80px);
+    object-fit: contain;
   }
 }
 </style>
